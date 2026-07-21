@@ -8,12 +8,20 @@ sidebar_position: 6
 
 ## Build orchestration with Nuke
 
-CI (and, optionally, local development) runs through a [Nuke](https://nuke.build) build defined in [build/Build.cs](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/build/Build.cs). It's a thin, generic layer over the same `dotnet` commands described below — install it once, then call targets instead of raw CLI commands:
+CI (and, optionally, local development) runs through a [Nuke](https://nuke.build) build defined in [build/Build.cs](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/build/Build.cs). It's a thin, generic layer over the same `dotnet` commands described below — call targets instead of raw CLI commands:
 
 ```shell
+./build.ps1 Test Pack                                    # no install needed
+# or, via the global tool:
 dotnet tool install --global Nuke.GlobalTool --version 10.1.0
 nuke Test Pack       # any combination of targets in one command; shared dependencies run once
 ```
+
+:::note Requires the .NET 10 SDK
+`build/_build.csproj` targets `net10.0` because **Nuke.Common 10.x ships `lib/net10.0` only**. That's independent of the libraries it builds, which still target `net8.0-windows10.0.26100` — so a machine (or CI runner) needs **both** SDKs: 10.0.x to run Nuke, 8.0.x to run the tests.
+
+The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
+:::
 
 Targets: `Restore`, `Compile`, `Test`, `IntegrationTest` (opt-in, see below), `Coverage`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus a local-only `Clean`. Every target also works standalone (`nuke Compile` restores and builds; `nuke Pack` restores, builds, and packs) since each declares its own dependency chain.
 
@@ -55,7 +63,8 @@ Collected with coverlet, rendered with ReportGenerator:
 dotnet test SubZeroDev.WinGet.sln --collect:"XPlat Code Coverage"
 # or: nuke Coverage   (runs Test first, then renders TestResults/**/coverage.cobertura.xml
 #                      into coverage/SummaryGithub.md + coverage/Cobertura.xml via Nuke's
-#                      ReportGenerator component - no separate tool install needed)
+#                      ReportGenerator component, resolved from the PackageDownload
+#                      declared in build/_build.csproj - no global tool install needed)
 ```
 
 Current numbers (2026-07-21): unit-only **28.9% line / 50.2% method**; merged with a live integration run **54.9% line / 70.6% method**. Everything unit-testable sits at or near 100% — the uncovered remainder is COM-operation internals that only execute during real mutating operations.
@@ -68,7 +77,7 @@ Every push/PR to `main` runs the GitHub Actions workflow ([build.yml](https://gi
 2. `nuke Coverage` — renders the coverage summary onto the run page
 3. `nuke Pack` → NuGet package uploaded as a run artifact
 
-`main` is protected: all changes land via pull request, and the `build` check must pass before merge. Both CI jobs now check out full git history (`fetch-depth: 0`), not just the release job — Nuke resolves the `[GitVersion]` field in `Build.cs` eagerly at startup regardless of which target is requested, and that resolution fails outright on a shallow clone even in the job that never calls the GitVersion-dependent target.
+`main` is protected: all changes land via pull request, and the `build` check must pass before merge. Both CI jobs check out full git history (`fetch-depth: 0`). Nuke resolves the `[GitVersion]` field eagerly at startup regardless of which target is requested, but a failed resolution is only a *warning* — full history is strictly required just by `PublishGitHubPackages`; keeping both checkouts identical is simply tidier.
 
 ## Publishing
 

@@ -21,6 +21,8 @@ artifacts/
 ## `nuke Test`/`nuke Coverage` are easy to run locally too, ignore them for real)
 TestResults/
 coverage/
+## Nuke scratch dir (build.schema.json and parameters.json ARE tracked)
+.nuke/temp/
 
 ## Reference clones (research only, not part of this repo)
 /UniGetUI/

@@ -1,26 +1,39 @@
 # TODO — Nuke build port (`feature/nuke-build`)
 
-Committed locally on branch `feature/nuke-build` (commit `746b310`). Not pushed and no PR opened — this environment has no GitHub credentials.
+Branch is pushed. The Nuke build has now been **compiled and run on a real Windows host**
+(2026-07-21) — `nuke Test Coverage Pack --configuration Release` completes green through the
+global tool, the same invocation path CI uses.
 
-## To finish this
+## Fixed during validation
 
-1. Push the branch:
+The original port had never been compiled ("treat the first real CI run as validation").
+Four defects surfaced, all environmental/packaging rather than API-signature mistakes — the
+`Build.cs` target code written from Nuke's docs was correct:
 
-   ```
-   git push -u origin feature/nuke-build
-   ```
+1. **`Nuke.Common` 10.1.0 ships `lib/net10.0` only**, but `build/_build.csproj` targeted
+   `net8.0` → every Nuke type unresolvable (43 compile errors). Build project moved to
+   `net10.0`; CI's `setup-dotnet` now installs both `10.0.x` (for Nuke) and `8.0.x` (the
+   runtime the library and tests execute on).
+2. **`build/Configuration.cs` was missing** — `Build.cs` references the `Configuration`
+   type that Nuke's templates normally generate alongside it. Added.
+3. **Bootstrappers were missing.** The global tool locates a build by searching for
+   `build.ps1`/`build.sh`; without them `nuke <Target>` opens an interactive setup prompt
+   that hard-fails in CI (`Failed to read input in non-interactive mode`). Added both, plus
+   converted the legacy `.nuke` marker *file* into the modern `.nuke/` directory. This
+   reverses the port's documented "global tool, no bootstrapper scripts" decision — that
+   combination simply does not work.
+4. **NuGet-backed tools weren't declared.** `Coverage` failed with *"Missing package
+   reference/download"*, and `[GitVersion]` injection silently degraded to a warning.
+   Added `PackageDownload` entries for `ReportGenerator` and `GitVersion.Tool`.
 
-2. Open the PR (GitHub UI, or `gh pr create`).
+Also corrected in the docs: the claim that `[GitVersion]` injection "fails outright on a
+shallow clone" — it is a warning, and only `PublishGitHubPackages` truly needs full history.
 
-3. Let CI actually run. This has **not been compiled or executed anywhere** — no Windows host or dotnet SDK was available while writing it. Treat the first real CI run as the actual validation, not the PR review. Expect to fix minor API-signature mismatches if any slipped through (e.g. exact `DotNetPackSettings` / `ReportGeneratorSettings` method names) — see `SPECIFICATION.md` §11 item 8.
+## Remaining
 
-## Things worth double-checking on that first run
+1. Open the PR for this branch and let GitHub Actions run — the one thing still unverified is
+   `setup-dotnet` provisioning both SDKs on `windows-latest`.
+2. The two publish targets (`PublishNuGet`, `PublishGitHubPackages`) remain unexercised by
+   design: they push packages. See SPECIFICATION.md §11 items 6–7.
 
-- **Both CI jobs now use `fetch-depth: 0`** (full git history), not just `publish-github-packages`. Nuke resolves the `[GitVersion]` field in `build/Build.cs` eagerly at startup regardless of which target is requested, and that resolution errors outright on a shallow clone — even in jobs that never touch GitVersion. This is a deliberate behavior change (slightly slower checkout), not an oversight.
-- **Fixed a latent bug** while porting: the NuGet.org publish step used to pass `--skip-duplicates` (plural, invalid); the real `dotnet nuget push` flag is singular. Never caught before because that path has never actually run.
-- `build/_build.csproj` is deliberately **not** added to `SubZeroDev.WinGet.sln`.
-- Nuke install mechanism is the **global tool** (`dotnet tool install --global Nuke.GlobalTool`), invoked as `nuke <Target>` — not Nuke's bootstrapper scripts. This was a tradeoff: Nuke's `[GitHubActions]` auto-generation attribute only knows how to emit bootstrapper-script invocations, so using the global tool meant keeping the workflow YAML hand-authored instead of generated.
-
-## If you'd rather I push/open the PR myself
-
-Authorize the GitHub connector (via `claude mcp` or `/mcp` in an interactive session) — once connected I can push and open the PR directly.
+Delete this file once the PR merges.

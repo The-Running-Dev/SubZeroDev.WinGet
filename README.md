@@ -112,9 +112,10 @@ The integration tests are `[Explicit]`, read-only by design, and run against the
 CI runs the same steps through a generic [Nuke](https://nuke.build) build ([build/Build.cs](build/Build.cs)) instead of hand-written `dotnet` CLI steps. Equivalent locally:
 
 ```
-dotnet tool install --global Nuke.GlobalTool --version 10.1.0
-nuke Test Pack   # any combination of targets in one command
+./build.ps1 Test Pack     # any combination of targets in one command
 ```
+
+The Nuke build project targets `net10.0` (Nuke.Common 10.x ships `lib/net10.0` only), so running it needs the **.NET 10 SDK** alongside the .NET 8 SDK the library itself uses.
 
 See [docs/testing.md](docs/testing.md#build-orchestration-with-nuke) for the full target list.
 
