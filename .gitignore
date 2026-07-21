@@ -11,3 +11,12 @@ obj/
 
 ## VS Code
 .vscode/
+
+## Local CI (act) and pack output
+.act-artifacts/
+artifacts/
+
+## Reference clones (research only, not part of this repo)
+/UniGetUI/
+/Winget-AutoUpdate/
+/winget-cli/

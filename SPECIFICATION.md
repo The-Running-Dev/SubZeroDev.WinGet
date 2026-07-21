@@ -1,6 +1,6 @@
 # SubZeroDev.PackageManagement — WinGet Client Library Specification
 
-*Rewritten 2026-07-21. This repository now contains only the standalone WinGet client library — previously extracted into a subfolder of a larger WinUpdater web-app repo, now spun out as its own project. This document replaces the old root-level `SPECIFICATION.md` (legacy multi-project WinUpdater app) and `SPECIFICATION-v2.md` (WinUpdater v2 winget-based web app plan), which described a different repository's projects (`WinUpdater.API`, `.Client`, `.CLI`, `.Formulas`, `.Services`, `.Data`, a React SPA, etc.) that do not exist here and are out of scope for this repo. That history is condensed in §1; nothing else from those two files carries forward, since it described code and plans that live elsewhere.*
+*Updated 2026-07-21 after the "complete COM wrapper" expansion. The library grew from a minimal 6-method client into a full wrapper of the WinGet COM API surface (contract 29), informed by studying three reference codebases: the official winget-cli source (the authoritative IDL and CLSIDs), UniGetUI (real-world COM usage patterns and elevation workarounds), and Winget-AutoUpdate (operational lessons from enterprise-scale winget automation).*
 
 ## 1. Origin & Scope
 
@@ -8,209 +8,173 @@ This library's lineage, briefly:
 
 1. **WinUpdater (legacy)** — a from-scratch Homebrew/MacUpdater clone for Windows, predating `winget`, with a hand-maintained catalog of ~26 per-app "formula" recipes. Archived; not evolved.
 2. **WinUpdater v2** — a plan to rebuild as a web UI + API around `winget`. Its first integration approach (shelling out to `winget.exe` and parsing column-aligned CLI text output) was tried and then **replaced** after discovering the WinGet **COM API** (`Microsoft.Management.Deployment`) gives structured, non-text-parsing access instead.
-3. **This library** is that COM-API client, verified working end-to-end against a live machine (search, list installed, install/upgrade/uninstall, progress reporting), and judged a plausible candidate for standalone NuGet publication — hence its own repository.
+3. **This library** is that COM-API client, spun out as its own repository and expanded into a general-purpose wrapper intended to be usable by any consumer (web apps, services, CLIs, fleet tooling) that needs programmatic WinGet access.
 
-**Scope of this repo:** just the client library and its tests. It has no dependency on, and makes no assumptions about, any consuming web app, CLI, or service. Anyone building a WinUpdater-style tool (or anything else that needs programmatic WinGet access) is a valid consumer.
+**Scope of this repo:** just the client library and its tests. No dependency on, or assumptions about, any consuming application.
 
 ## 2. What This Is
 
-A C# client library over the **WinGet COM API** (`Microsoft.Management.Deployment`, the same in-process API `winget.exe` itself is a thin wrapper over), via Microsoft's official `Microsoft.WindowsPackageManager.ComInterop` interop package. No console output is parsed anywhere.
+A C# client library over the **WinGet COM API** (`Microsoft.Management.Deployment`, the same in-process API `winget.exe` itself wraps), via Microsoft's official `Microsoft.WindowsPackageManager.ComInterop` interop package.
 
-The public surface never leaks a COM/WinRT type — callers only ever see plain C# records, an enum, and two interfaces. That encapsulation is the main design property worth preserving as this evolves.
+Design properties worth preserving:
+
+- **The public surface never leaks a COM/WinRT type** — callers only see plain C# records, enums, and interfaces.
+- **No console output is parsed** for anything the COM API can do. The single, deliberate exception is `WinGetCliClient` (§4.4): pin management and export/import have **no COM equivalent at any contract version** (verified against the winget-cli IDL), so those two features — and only those — shell out to `winget.exe`, isolated behind their own interface.
+- **Composite catalogs everywhere.** Every lookup merges remote sources with local install state via `CreateCompositePackageCatalog` — the architecturally correct way (and what winget itself does) to correlate "installed" with "available".
 
 ## 3. Project Layout
 
 | Project | Role |
 |---|---|
-| [SubZeroDev.PackageManagement](SubZeroDev.PackageManagement) | The library. Class library, no external app dependencies. |
-| [SubZeroDev.PackageManagement.Tests](SubZeroDev.PackageManagement.Tests) | NUnit tests: fast mocked unit tests + opt-in live integration tests. |
+| [SubZeroDev.PackageManagement](SubZeroDev.PackageManagement) | The library. Packs as the `SubZeroDev.PackageManagement` NuGet package (v0.1.0, MIT). |
+| [SubZeroDev.PackageManagement.Tests](SubZeroDev.PackageManagement.Tests) | NUnit tests: 44 mocked unit tests + 12 opt-in live integration tests. |
 | [SubZeroDev.PackageManagement.sln](SubZeroDev.PackageManagement.sln) | Solution containing just these two projects. |
+| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to master. NuGet publish is **off by default**: manual `workflow_dispatch` with the `push_to_nuget` input, gated on a `NUGET_API_KEY` secret. |
+| [README.md](README.md) | Consumer-facing readme; embedded in the NuGet package. |
 
-Project, namespace, and assembly names all match the repo (`SubZeroDev.PackageManagement`) as of 2026-07-21 — the naming inconsistency flagged in earlier drafts of this spec is resolved.
+Reference clones used for research (`winget-cli/`, `UniGetUI/`, `Winget-AutoUpdate/`) sit in the working directory but are git-ignored — they are not part of the repo.
 
-## 4. Public API Surface (as built today)
+## 4. Architecture
 
-### Models (`SubZeroDev.PackageManagement.Models`)
-
-```csharp
-public sealed record PackageInfo(
-    string Id,
-    string Name,
-    string? Publisher,
-    string? InstalledVersion,
-    string? AvailableVersion,
-    bool IsInstalled,
-    bool IsUpdateAvailable,
-    string Source);
-
-public enum PackageOperationState
-{
-    Queued, Downloading, Installing, PostInstall, Completed, Failed
-}
-
-public sealed record PackageOperationProgress(
-    PackageOperationState State,
-    double PercentComplete,
-    string? StatusMessage);
-
-public sealed record PackageOperationResult(
-    bool Succeeded,
-    string? ErrorMessage,
-    int? ExtendedErrorCode,
-    bool RebootRequired)
-{
-    public static PackageOperationResult Success(bool rebootRequired = false);
-    public static PackageOperationResult Failure(string errorMessage, int? extendedErrorCode = null);
-}
+```
+                    ┌─────────────────────────────┐
+Consumers ────────► │ IPackageManagementService    │  validation, logging, retry policy,
+                    │ IPackageSourceService        │  result normalization
+                    └──────┬───────────────┬───────┘
+                           │               │
+              ┌────────────▼──┐   ┌────────▼─────────┐   ┌──────────────────┐
+              │ IWinGetClient  │   │ IWinGetSourceClient│  │ IWinGetCliClient  │
+              │ (packages)     │   │ (sources)          │  │ (pin, export/import│
+              └────────┬───────┘   └────────┬──────────┘  │  — CLI shim)      │
+                       │                    │             └────────┬──────────┘
+              ┌────────▼────────────────────▼──────┐               │
+              │ WinGetFactory (internal)            │        winget.exe process
+              │ resilient COM activation chain      │        (ArgumentList, no shell)
+              └────────┬────────────────────────────┘
+                       │
+              Microsoft.Management.Deployment (COM/WinRT, contract 29)
 ```
 
-### Abstractions (`SubZeroDev.PackageManagement.Abstractions`)
+### 4.1 `WinGetFactory` — resilient COM activation (`Com/WinGetFactory.cs`)
 
-```csharp
-public interface IWinGetClient
-{
-    Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, int limit, CancellationToken cancellationToken);
-    Task<IReadOnlyList<PackageInfo>> GetInstalledPackagesAsync(CancellationToken cancellationToken);
-    Task<PackageInfo?> GetPackageAsync(string packageId, CancellationToken cancellationToken);
-    Task<PackageOperationResult> InstallAsync(string packageId, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken);
-    Task<PackageOperationResult> UpgradeAsync(string packageId, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken);
-    Task<PackageOperationResult> UninstallAsync(string packageId, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken);
-}
+Standard WinRT projection activation (`new PackageManager()`) is known to fail in some elevated/service process contexts — UniGetUI's production code and the WinGet PowerShell module both carry workarounds for this. The factory tries, in order:
 
-public interface IPackageManagementService
-{
-    Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken cancellationToken = default);
-    Task<PackageInfo?> GetDetailsAsync(string packageId, CancellationToken cancellationToken = default);
-    Task<PackageOperationResult> InstallAsync(string packageId, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
-    Task<PackageOperationResult> UpdateAsync(string packageId, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
-    Task<PackageOperationResult> UninstallAsync(string packageId, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
-}
-```
+1. **Projection activation** (`new T()`) — the normal path; works in interactive user contexts.
+2. **`CoCreateInstance` (CLSCTX_LOCAL_SERVER)** against the out-of-proc production CLSIDs (taken from winget-cli's own `Microsoft.Management.Deployment.Projection/ClassesDefinition.cs`).
+3. **`CoCreateInstance` with `CLSCTX_ALLOW_LOWER_TRUST_REGISTRATION` (0x4000000)** — the documented mitigation for elevated hosts.
 
-### Implementations
+The first mode that works is cached and used for **every** subsequent COM object, so all objects share one activation context (mixing contexts between e.g. a `PackageManager` and an `InstallOptions` is unreliable). If all three fail, a public **`WinGetUnavailableException`** is thrown with an actionable message — no raw `COMException` escapes for the "WinGet isn't installed/available" case.
 
-- **`WinGetClient : IWinGetClient`** — the real COM-backed implementation. Owns a `PackageManager` instance; every method is a thin, verified-correct translation to/from the COM API (see §6).
-- **`PackageManagementService : IPackageManagementService`** — business-logic layer (query trimming/validation, structured logging of outcomes). Depends only on `IWinGetClient`, so it's fully unit-testable without touching COM.
-- **`ServiceCollectionExtensions.AddPackageManagement(IServiceCollection)`** — registers both as singletons.
+Note: the projection's default interfaces (`IPackageManager`, …) are `internal` in the ComInterop package, so IIDs for the CoCreateInstance path are resolved by reflection (`I` + class name from the projected class's assembly).
 
-### What each operation actually does today
+### 4.2 `WinGetClient` — package operations
 
-| Method | Behavior |
+Full package surface: `GetWinGetVersionAsync`, `SearchAsync` (optionally restricted to one source), `GetInstalledPackagesAsync`, `GetAvailableUpgradesAsync`, `GetPackageAsync`, `GetPackageDetailsAsync` (full manifest metadata: description, license, agreements, docs, icons, tags, all available versions), `InstallAsync`, `UpgradeAsync`, `UninstallAsync`, `DownloadAsync` (installer download without install), `RepairAsync`.
+
+Request records (`InstallRequest`, `UninstallRequest`, `DownloadRequest`, `RepairRequest`) expose the full option surface of the IDL: version pinning, scope, silent/interactive mode, architecture, installer type, install location, log path, `--override`/`--custom` argument equivalents, force, hash-mismatch, skip-dependencies, agreements, correlation data.
+
+Catalog strategy per operation:
+- **Search** → composite of remote sources, `RemotePackagesFromAllCatalogs` (installed state correlated into results).
+- **Installed / upgrades** → composite, `LocalCatalogs` behavior (remote correlation gives a meaningful `IsUpdateAvailable`).
+- **Get-by-id / all mutating ops** → composite, `AllCatalogs`, exact-Id selector — returns the exact `CatalogPackage` WinGet associates with the installed app, which upgrade/uninstall/repair require.
+- **Unreachable-source resilience**: if the composite fails to connect, each source is probed individually and the composite is rebuilt from the reachable subset (UniGetUI's production pattern).
+
+### 4.3 `WinGetSourceClient` — source management
+
+The `winget source` equivalent via COM (contract 12/28): `GetSourcesAsync`, `GetSourceAsync`, `AddSourceAsync`, `RemoveSourceAsync` (with `preserveData` = the "reset" behavior), `RefreshSourceAsync`, `UpdateSourceAsync` (Explicit/Priority editing). Add/remove require an elevated caller (WinGet returns `AccessDenied` otherwise).
+
+### 4.4 `WinGetCliClient` — the isolated CLI shim
+
+Pin management (`GetPinsAsync`, `AddPinAsync` with version-gating/blocking, `RemovePinAsync`) and `ExportAsync`/`ImportAsync`. These features are CLI-only in WinGet — the contract-29 IDL has no pinning or import/export surface at all.
+
+- winget.exe resolution: App Execution Alias first; for service/SYSTEM contexts (no alias), globs `Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*` and picks the highest version — the strategy Winget-AutoUpdate uses at scale.
+- Arguments passed via `ArgumentList` (no shell, no quoting bugs); `--disable-interactivity --accept-source-agreements` always set so nothing blocks waiting for console input.
+- `pin list` is the only table parsing in the library: column offsets derived from the header row at runtime, never hardcoded.
+
+### 4.5 Service layer — validation, logging, retry policy
+
+`PackageManagementService` and `PackageSourceService` wrap the clients with argument validation, structured `ILogger` logging, and a small **documented auto-retry policy** derived from error handling proven in UniGetUI/Winget-AutoUpdate (each rule retries at most once):
+
+| Condition | Action |
 |---|---|
-| `SearchAsync` | Connects to `PredefinedPackageCatalog.OpenWindowsCatalog` only. Queries `Name`, `Moniker`, `Id`, and `Tag` **separately** (see §6.1 for why) and merges/de-duplicates by `Id`, capped at `limit`. |
-| `GetInstalledPackagesAsync` | Connects to `LocalPackageCatalog.InstalledPackages` and returns everything, unfiltered. |
-| `GetPackageAsync` | Looks in the installed catalog first (exact `Id` match), then the default source, so upgrade/uninstall always operate on the exact `CatalogPackage` instance WinGet already associates with the installed app. |
-| `InstallAsync` / `UpgradeAsync` | `InstallOptions { PackageInstallScope = Any, AcceptPackageAgreements = true }` — no version pinning, architecture, installer-type, custom arguments, or install-location control yet. |
-| `UninstallAsync` | Default `UninstallOptions()` — no "keep app data" / force flags exposed yet. |
+| Install fails with an "already installed"-family code (`0x8A150061`, `0x8A15010D`, `0x8A15010E`, `0x8A15004F`) | Normalize to success |
+| Install/Upgrade fails `NoApplicableInstallers`/`NoApplicableUpgrade` **and** the request constrained architecture/installer-type/scope | Retry unconstrained (the constraint may exclude the only installer the package ships) |
+| Upgrade fails with `UPGRADE_VERSION_UNKNOWN` (`0x8A150050`) | Retry with `AllowUpgradeToUnknownVersion` |
+
+Raw single-attempt behavior is always available by calling `IWinGetClient` directly. Common WinGet HRESULTs are published as constants in `WinGetErrorCodes`.
+
+### 4.6 DI registration
+
+`services.AddPackageManagement()` registers all five interfaces as singletons over one shared `WinGetFactory`.
 
 ## 5. Dependencies
 
 | Package | Version | Why |
 |---|---|---|
-| `Microsoft.WindowsPackageManager.ComInterop` | `1.29.280` | The actual WinGet COM/WinRT projection. Version is pinned to match the original dev machine's installed WinGet (`winget --version` → `v1.29.280`) — **not yet validated against any other version**, see §9. |
-| `Microsoft.Extensions.DependencyInjection.Abstractions` | `10.0.10` | For `AddPackageManagement`. |
-| `Microsoft.Extensions.Logging.Abstractions` | `10.0.10` | `ILogger<T>` in `PackageManagementService`. |
-| (tests) `NUnit`, `FluentAssertions`, `Moq`, `coverlet.collector` | — | Standard NUnit test-tooling stack. |
+| `Microsoft.WindowsPackageManager.ComInterop` | `1.29.280` | The WinGet COM/WinRT projection (contract 29). Pinned to match this dev machine's WinGet; not yet validated against other versions. |
+| `Microsoft.Extensions.DependencyInjection.Abstractions` | `10.0.10` | `AddPackageManagement`. |
+| `Microsoft.Extensions.Logging.Abstractions` | `10.0.10` | `ILogger<T>` in the services. |
+| (tests) `NUnit`, `FluentAssertions`, `Moq`, `coverlet.collector` | — | Standard NUnit stack. |
 
 ## 6. Build & Platform Requirements
 
-- **`net8.0-windows10.0.26100`** — the interop package requires this specific Windows-flavored TFM (minimum Windows SDK contract 10.0.26100). Confirmed by direct restore failure when a plain `net8.0`/`net9.0` TFM was tried first.
-- **Platform must be pinned to `x64` (or `ARM64`)** — `Microsoft.Management.Deployment.dll` is not published `AnyCPU`. Both `.csproj` files set:
-  ```xml
-  <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</Platform>
-  <Platforms>x64;ARM64</Platforms>
-  <PlatformTarget>x64</PlatformTarget>
-  ```
-  so plain `dotnet build`/`dotnet test` resolves correctly without callers needing to pass `-p:Platform=x64` manually. **ARM64 is declared but not yet built/tested on real ARM64 hardware.**
-- **Any project that actually *runs* code from this library needs a *direct* `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`, not just a `ProjectReference` to `SubZeroDev.PackageManagement`.** The interop package's `.targets` file copies a native activation-factory DLL (`Microsoft.Management.Deployment.dll`) to the *directly-referencing* project's own output directory only — this does not flow transitively through a `ProjectReference`. Confirmed by a real failure: the test project could compile against `WinGetClient` but got `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` at runtime until it took the same direct package reference. **This is the single most important integration note for any consumer of this library**, published or internal.
+- **`net8.0-windows10.0.26100`** — the interop package requires this Windows-flavored TFM.
+- **Platform pinned to `x64` (or `ARM64`)** — `Microsoft.Management.Deployment.dll` is not `AnyCPU`; both `.csproj` files default `AnyCPU` → `x64` so plain `dotnet build`/`test` works. ARM64 declared but never built/tested on hardware.
+- **Consumers that *run* code from this library need a direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`**, not just a `ProjectReference`: the interop package's `.targets` copies the native activation-factory DLL only into the directly-referencing project's output. Verified by a real `COMException 0x80040154` until the test project took the direct reference. **The most important integration note for any consumer.**
 
 ## 7. Verified Findings (found by running it, not by reading docs)
 
-Nearly the entire API surface matched public documentation/samples on the first attempt — these are the specific corrections that only surfaced by actually building, reflecting the real assembly, and executing against the live WinGet catalog.
+### 7.1 Selectors are OR'd; Filters are AND'd
 
-### 7.1 `FindPackagesOptions.Filters` are ANDed, not ORed
+The original implementation added one filter per field to `FindPackagesOptions.Filters` and got zero results (Filters are AND'd), then worked around it with four separate queries. The IDL documents the real model: `(Selectors...) && Filters...` — **Selectors are OR'd**. One call with four selectors (Id/Name/Moniker/Tag, ContainsCaseInsensitive) reproduces `winget search` exactly. Verified live. (Supersedes the old four-queries-and-merge workaround.)
 
-Adding one filter per field (`Name`, `Moniker`, `Id`, `Tag`) with the same search value to a single `FindPackagesOptions` returned **zero** matches for a query that legitimately matched by name alone. `winget search <query>`'s CLI behavior — "match any of name/id/moniker/tag" — is not reproducible with one multi-filter COM call. `SearchAsync` works around this by issuing one query per field and merging results by `Id` itself.
+### 7.2 Enumerating CsWinRT-projected `IReadOnlyList<T>` via `foreach`/LINQ throws
 
-### 7.2 Enumerating `IReadOnlyList<MatchResult>` via `foreach`/LINQ throws
+`InvalidCastException: No such interface supported` from the projected enumerator (confirmed against interop 1.29.280). **Indexer access (`.Count`/`[i]`) is reliable** — every collection traversal in the library uses indexed `for` loops.
 
-```
-System.InvalidCastException: No such interface supported
-   at WinRT.IObjectReference.As[T](Guid iid)
-   at System.Collections.Generic.IReadOnlyListImpl`1.Make_IEnumerableObjRef()
-```
+### 7.3 `*Result.ExtendedErrorCode` is an `Exception`, not an `int`
 
-A real marshaling bug in this version's CsWinRT-projected collection enumerator (confirmed against `Microsoft.WindowsPackageManager.ComInterop` 1.29.280). **Indexer access (`.Count` / `[i]`) works reliably.** Every call site funnels through a shared `ToPackages()` helper that uses an indexed `for` loop — `foreach`, `.Select()`, or any other LINQ/enumerator-based traversal of a WinRT-projected list from this API should be treated as unsafe until proven otherwise on a newer interop version.
+Success/failure comes from `.Status`; the numeric code, when present, is `.HResult` on the `ExtendedErrorCode` exception. `InstallerErrorCode`/`UninstallerErrorCode`/`RepairerErrorCode` are separate `uint`s only meaningful for the corresponding error status.
 
-### 7.3 `InstallResult`/`UninstallResult.ExtendedErrorCode` is an `Exception`, not an `int`
+### 7.4 Every operation has its own WinRT progress struct
 
-Reflection showed:
-```
-Exception ExtendedErrorCode { get; }
-InstallResultStatus Status { get; }      // not "InstallResultStatus" as a member name — the property is called Status
-Boolean RebootRequired { get; }
-```
-Success/failure is read from `.Status` (`InstallResultStatus.Ok` / `UninstallResultStatus.Ok`); the numeric error code, when present, comes from `.HResult` on the `Exception`.
+`InstallProgress`, `UninstallProgress`, `PackageDownloadProgress`, `RepairProgress` are distinct structs with public fields and non-overlapping shapes — four separate progress mappers, all normalized to one public `PackageOperationProgress` record.
 
-### 7.4 `InstallProgress` and `UninstallProgress` are different WinRT structs
+### 7.5 The projection's default interfaces are `internal` in the ComInterop package
 
-Both are plain structs with **public fields** (not properties), and non-overlapping shapes:
-```
-InstallProgress:   State (PackageInstallProgressState), BytesDownloaded, BytesRequired, DownloadProgress, InstallationProgress
-UninstallProgress: State (PackageUninstallProgressState), UninstallationProgress
-```
-Hence two separate progress-mapping functions (`ReportInstallProgress` / `ReportUninstallProgress`), not one shared one.
+`typeof(IPackageManager)` doesn't compile against `Microsoft.WindowsPackageManager.ComInterop` (they're public in winget-cli's own projection, internal here). IIDs for the CoCreateInstance path are resolved via reflection from the projected class's assembly.
 
-### 7.5 Basic (unpackaged, non-elevated) COM activation works fine
+### 7.6 Pre-indexed source metadata quirks
 
-`new PackageManager()` and all read operations (search, list installed, get details) succeeded from a plain unpackaged console app — no special manifest, package identity, or elevation needed. This meaningfully de-risks whatever hosts this library later (a Windows Service, an ASP.NET Core app, etc.).
+`GetCatalogPackageMetadata()` works live against the winget source, but populates `ShortDescription` while leaving full `Description` empty for many packages. Treat every metadata field as optional.
 
-### 7.6 Live-verified end-to-end
+### 7.7 Live-verified end-to-end (this machine, 2026-07-21)
 
-- `SearchAsync("vscode", 10, ...)` → 10 real catalog matches (`Microsoft.VisualStudioCode` and related).
-- `GetInstalledPackagesAsync()` → all real installed packages, including correctly-flagged non-WinGet entries (raw ARP registry key as `Id`, e.g. `ARP\Machine\X64\EditPad Pro 7`).
-- `GetPackageAsync("Microsoft.VisualStudioCode")` → correct publisher (`Microsoft Corporation`) and available version.
+12/12 integration tests green: version query; search (incl. single-source restriction returning only that source); installed list via composite (all entries `IsInstalled`); upgrades list (only `IsUpdateAvailable`); get-by-id hit and miss; full details (publisher, description, tags, versions); source list/get (`winget` present with type/argument); `pin list`; real `winget export` to JSON.
 
 ## 8. Testing
 
 | Suite | What | How to run | Status |
 |---|---|---|---|
-| Unit tests (`PackageManagementServiceTests`, `PackageOperationResultTests`) | Mocked `IWinGetClient` via Moq; zero COM dependency; ~0.5s | `dotnet test` (default) | 18/18 passing |
-| Integration tests (`WinGetClientIntegrationTests`) | Real `WinGetClient` against the live WinGet catalog and this machine's real installed packages. Marked NUnit `[Explicit]` so they're excluded from normal runs. **Deliberately read-only** — no Install/Upgrade/Uninstall, since those would mutate whatever machine runs the tests. | `dotnet test --filter "FullyQualifiedName~WinGetClientIntegrationTests"` | 4/4 passing |
+| Unit (44 tests) | `PackageManagementService`, `PackageSourceService`, retry policy, result records, `ParsePinList` — all mocked, zero COM | `dotnet test` | 44/44 passing |
+| Integration (12 tests) | Real COM API + real winget.exe on the machine. `[Explicit]`, **deliberately read-only** (export writes only a temp file) | `dotnet test --filter "FullyQualifiedName~IntegrationTests"` | 12/12 passing |
+| CI | GitHub Actions (`windows-latest`): restore, build, unit tests, pack, artifact. Integration tests are excluded automatically by `[Explicit]` — GitHub-hosted runners do have winget, but read-only live tests in CI are a deliberate non-goal for now. Verified locally with act in host mode (`-P windows-latest=-self-hosted`). | push/PR, or `act push -P windows-latest=-self-hosted` | passing |
 
-**Not yet covered by any test**: Install/Upgrade/Uninstall against the real API. Doing so safely needs a deliberately disposable, side-effect-free test package (see §9).
+**Not covered**: mutating operations (install/upgrade/uninstall/repair/import, source add/remove/refresh, pin add/remove) against the real API — needs a disposable test package and (for sources) elevation.
 
-## 9. Roadmap — Toward a Fully Functional, Publishable WinGet Client
+## 9. Deliberately Out of Scope
 
-### 9.1 Functional gaps
+- **`Microsoft.Management.Configuration`** (DSC-style declarative configuration) — a separate COM namespace and a separate concern; would be its own package if ever needed.
+- **`PackageManagerSettings`** (caller telemetry id, state separation) — in-proc-only COM surface; revisit if a host needs state isolation.
+- **Catalog TLS certificate pinning** (`ConnectionValidationHandler`, contract 29) — in-proc-only, niche; not exposed.
 
-- **Multi-source / composite catalogs.** The library only ever connects to `PredefinedPackageCatalog.OpenWindowsCatalog`. The COM API supports enumerating configured sources and building a *composite* catalog (installed + all remote sources merged) — that's the architecturally correct way to do "is there an update available" cross-referencing, rather than the current two-separate-connects-plus-manual-fallback approach in `FindByIdAsync`. **This is the single biggest real gap**, not just a missing feature but an architectural improvement over what exists.
-- **Source management** — list/add/remove/reset/update the configured sources themselves (the `winget source` equivalent).
-- **Richer install/uninstall/upgrade options.** Today only `PackageInstallScope` and `AcceptPackageAgreements` are set. A full client needs: version pinning, architecture selection, installer-type selection, custom/override installer arguments, install location, silent-vs-interactive, allow-reboot, uninstall-previous-on-upgrade, skip/only-dependencies.
-- **Pin management** — the `winget pin` equivalent (prevent a package from upgrading, or pin to a specific version).
-- **Export/import** — snapshot a machine's installed set to a manifest and restore it elsewhere. Broadly useful beyond any one consuming app (e.g., machine provisioning).
-- **Download-only** — fetch the installer without running it.
-- **Authenticated/private sources** — `PackageCatalogReference` already exposes `AuthenticationArguments`/`AuthenticationInfo`; unused so far. Matters for enterprise/private package feeds.
-
-### 9.2 Robustness gaps
-
-- **Graceful failure when WinGet/App Installer isn't present or is too old.** Right now a missing/incompatible WinGet on the host machine surfaces as a raw `COMException` — should be caught and re-thrown as a clear, typed exception (e.g. `WinGetUnavailableException`) with an actionable message.
-- **Elevation behavior is still genuinely untested.** Deliberately out of scope for the current read-only integration tests. Open question: does a non-elevated caller installing a machine-scope package get a clean failure, a UAC prompt, or a silent fallback to user-scope?
-- **Verify COM apartment/threading behavior** under a Windows Service host and under ASP.NET Core/Kestrel — only exercised from a console app and a VSTest host so far (and the VSTest host needed its own fix, see §6).
-- **A real compatibility matrix.** What's the minimum WinGet/App Installer version required? Does the library degrade gracefully on older machines where the installed WinGet predates the pinned interop package's expected COM surface? ARM64/x86 are declared as supported platforms but never actually built or run.
-
-### 9.3 Packaging gaps (specific to NuGet publication)
-
-- XML doc comments across the full public surface, README, LICENSE, semantic versioning, and CI to build/pack/push.
-- A public package name/id decision — see open question below.
-- Live integration coverage for the mutating operations (Install/Upgrade/Uninstall), using a deliberately disposable, safe-to-repeatedly-install-and-remove test package rather than mutating arbitrary real software.
-
-## 10. Open Questions
+## 10. Open Questions / Remaining Work
 
 | # | Item |
 |---|---|
-| 1 | Minimum supported WinGet/App Installer version, and behavior on older machines. |
-| 2 | Whether to build/validate the already-declared ARM64 platform. |
-| 3 | Elevation behavior for machine-scope installs from a non-elevated caller. |
-| 4 | Whether composite-catalog support (§9.1) should land before or after any first consuming app, given it changes `FindByIdAsync`'s current architecture. |
+| 1 | **Elevation behavior for mutating ops is still untested** — does a non-elevated caller installing a machine-scope package get a clean failure, a UAC prompt, or silent user-scope fallback? The activation chain is built for elevated hosts, but no mutating op has been run elevated. |
+| 2 | **Windows Service / SYSTEM hosting unverified.** The factory's fallback chain and the WindowsApps winget.exe glob exist precisely for this, but no test has run under LocalSystem. Also note Winget-AutoUpdate's finding: SYSTEM-context installs may need winget's own settings.json patched to machine scope. |
+| 3 | Minimum supported WinGet/App Installer version and a compatibility matrix (interop pinned at 1.29.280; contract-13+ members like `PackageManager.Version` are guarded, most others are not). |
+| 4 | ARM64 declared but never built/run on hardware. |
+| 5 | Live mutating-operation coverage using a disposable test package. |
+| 6 | First actual NuGet publish: set the `NUGET_API_KEY` repository secret, confirm the MIT license choice and v0.1.0 as the initial version, then run the workflow with `push_to_nuget`. (Packaging metadata, README embedding, LICENSE, and the CI pack step are done.) |

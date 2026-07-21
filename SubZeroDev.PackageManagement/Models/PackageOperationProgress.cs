@@ -5,15 +5,19 @@ public enum PackageOperationState
     Queued,
     Downloading,
     Installing,
-    PostInstall,
+    Uninstalling,
+    Repairing,
+    PostOperation,
     Completed,
     Failed
 }
 
 /// <summary>
-/// A single progress update for an in-flight install/upgrade/uninstall operation.
+/// A single progress update for an in-flight package operation.
 /// </summary>
 public sealed record PackageOperationProgress(
     PackageOperationState State,
     double PercentComplete,
-    string? StatusMessage);
+    string? StatusMessage,
+    ulong BytesDownloaded = 0,
+    ulong BytesRequired = 0);

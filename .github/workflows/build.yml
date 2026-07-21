@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      push_to_nuget:
+        description: Push the built package to NuGet.org
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        # Skipped under act host mode — the host machine already has a .NET SDK.
+        if: ${{ !env.ACT }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SubZeroDev.PackageManagement.sln
+
+      - name: Build
+        run: dotnet build SubZeroDev.PackageManagement.sln --configuration Release --no-restore
+
+      - name: Test
+        # Integration tests are NUnit [Explicit] and are automatically excluded here;
+        # only the mocked unit tests run (no WinGet/COM needed on the runner).
+        # A failing test fails this step and stops the job — Pack/Push never run.
+        run: dotnet test SubZeroDev.PackageManagement.sln --configuration Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults
+
+      - name: Coverage report
+        # Renders the coverage summary onto the workflow run page (GITHUB_STEP_SUMMARY),
+        # which surfaces alongside the green/red check on the commit/PR.
+        run: |
+          dotnet tool update --global dotnet-reportgenerator-globaltool
+          & "$env:USERPROFILE\.dotnet\tools\reportgenerator.exe" -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:coverage "-reporttypes:MarkdownSummaryGithub;Cobertura"
+          Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/Cobertura.xml
+
+      - name: Pack
+        run: dotnet pack SubZeroDev.PackageManagement/SubZeroDev.PackageManagement.csproj --configuration Release --no-build --output artifacts
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg
+
+      - name: Push to NuGet.org
+        # Off by default: runs only on a manual workflow_dispatch with push_to_nuget checked.
+        # Requires the NUGET_API_KEY repository secret.
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true }}
+        run: dotnet nuget push artifacts/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicates
