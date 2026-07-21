@@ -29,7 +29,7 @@ Design properties worth preserving:
 | [SubZeroDev.WinGet](SubZeroDev.WinGet) | The library. Packs as the `SubZeroDev.WinGet` NuGet package (v0.1.0, MIT). |
 | [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 44 mocked unit tests + 12 opt-in live integration tests. |
 | [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing just these two projects. |
-| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to master. NuGet publish is **off by default**: manual `workflow_dispatch` with the `push_to_nuget` input, gated on a `NUGET_API_KEY` secret. |
+| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to main (direct pushes to main are blocked by a repository ruleset — all changes land via PR). NuGet publish is **off by default**: manual `workflow_dispatch` with the `push_to_nuget` input, gated on a `NUGET_API_KEY` secret. |
 | [README.md](README.md) | Consumer-facing readme; embedded in the NuGet package. |
 
 Reference clones used for research (`winget-cli/`, `UniGetUI/`, `Winget-AutoUpdate/`) sit in the working directory but are git-ignored — they are not part of the repo.
