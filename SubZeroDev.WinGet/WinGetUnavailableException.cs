@@ -5,10 +5,5 @@ namespace SubZeroDev.WinGet;
 /// WinGet (App Installer) is not installed, is too old for the pinned interop contract, or COM
 /// activation is blocked in the current process context (e.g. some elevated/service hosts).
 /// </summary>
-public sealed class WinGetUnavailableException : Exception
-{
-    public WinGetUnavailableException(string message, Exception? innerException = null)
-        : base(message, innerException)
-    {
-    }
-}
+public sealed class WinGetUnavailableException(string message, Exception? innerException = null)
+    : Exception(message, innerException);

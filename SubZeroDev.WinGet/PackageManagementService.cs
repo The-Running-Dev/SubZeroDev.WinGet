@@ -19,27 +19,18 @@ namespace SubZeroDev.WinGet;
 /// AllowUpgradeToUnknownVersion enabled.</item>
 /// </list>
 /// </summary>
-public sealed class PackageManagementService : IPackageManagementService
+public sealed class PackageManagementService(
+    IWinGetClient winGetClient,
+    IWinGetCliClient cliClient,
+    ILogger<PackageManagementService> logger)
+    : IPackageManagementService
 {
     private const int DefaultSearchLimit = 50;
-
-    private readonly IWinGetClient _winGetClient;
-
-    private readonly IWinGetCliClient _cliClient;
-
-    private readonly ILogger<PackageManagementService> _logger;
-
-    public PackageManagementService(IWinGetClient winGetClient, IWinGetCliClient cliClient, ILogger<PackageManagementService> logger)
-    {
-        _winGetClient = winGetClient;
-        _cliClient = cliClient;
-        _logger = logger;
-    }
 
     /// <inheritdoc />
     public Task<string?> GetWinGetVersionAsync(CancellationToken cancellationToken = default)
     {
-        return _winGetClient.GetWinGetVersionAsync(cancellationToken);
+        return winGetClient.GetWinGetVersionAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -50,21 +41,21 @@ public sealed class PackageManagementService : IPackageManagementService
             return Array.Empty<PackageInfo>();
         }
 
-        _logger.LogDebug("Searching for packages matching {Query}", query);
+        logger.LogDebug("Searching for packages matching {Query}", query);
 
-        return await _winGetClient.SearchAsync(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken);
+        return await winGetClient.SearchAsync(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken cancellationToken = default)
     {
-        return _winGetClient.GetInstalledPackagesAsync(cancellationToken);
+        return winGetClient.GetInstalledPackagesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgradesAsync(CancellationToken cancellationToken = default)
     {
-        return _winGetClient.GetAvailableUpgradesAsync(cancellationToken);
+        return winGetClient.GetAvailableUpgradesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -72,7 +63,7 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        return _winGetClient.GetPackageAsync(packageId, cancellationToken);
+        return winGetClient.GetPackageAsync(packageId, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -80,7 +71,7 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        return _winGetClient.GetPackageDetailsAsync(packageId, cancellationToken);
+        return winGetClient.GetPackageDetailsAsync(packageId, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -89,22 +80,22 @@ public sealed class PackageManagementService : IPackageManagementService
         RequirePackageId(packageId);
         request ??= new InstallRequest();
 
-        _logger.LogInformation("Installing {PackageId}", packageId);
+        logger.LogInformation("Installing {PackageId}", packageId);
 
-        var result = await _winGetClient.InstallAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.InstallAsync(packageId, request, progress, cancellationToken);
 
         if (!result.Succeeded && IsAlreadyInstalled(result))
         {
-            _logger.LogInformation("{PackageId} is already installed; treating install as successful", packageId);
+            logger.LogInformation("{PackageId} is already installed; treating install as successful", packageId);
 
             return PackageOperationResult.Success();
         }
 
         if (ShouldRetryUnconstrained(result, request))
         {
-            _logger.LogWarning("{PackageId} has no applicable installer under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
+            logger.LogWarning("{PackageId} has no applicable installer under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await _winGetClient.InstallAsync(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.InstallAsync(packageId, Unconstrained(request), progress, cancellationToken);
         }
 
         LogOutcome("Install", packageId, result);
@@ -118,21 +109,21 @@ public sealed class PackageManagementService : IPackageManagementService
         RequirePackageId(packageId);
         request ??= new InstallRequest();
 
-        _logger.LogInformation("Updating {PackageId}", packageId);
+        logger.LogInformation("Updating {PackageId}", packageId);
 
-        var result = await _winGetClient.UpgradeAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.UpgradeAsync(packageId, request, progress, cancellationToken);
 
         if (ShouldRetryUnconstrained(result, request))
         {
-            _logger.LogWarning("{PackageId} has no applicable upgrade under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
+            logger.LogWarning("{PackageId} has no applicable upgrade under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await _winGetClient.UpgradeAsync(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.UpgradeAsync(packageId, Unconstrained(request), progress, cancellationToken);
         }
         else if (!result.Succeeded && result.ExtendedErrorCode == WinGetErrorCodes.UpgradeVersionUnknown && !request.AllowUpgradeToUnknownVersion)
         {
-            _logger.LogWarning("{PackageId} reports an unknown installed version; retrying with AllowUpgradeToUnknownVersion", packageId);
+            logger.LogWarning("{PackageId} reports an unknown installed version; retrying with AllowUpgradeToUnknownVersion", packageId);
 
-            result = await _winGetClient.UpgradeAsync(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken);
+            result = await winGetClient.UpgradeAsync(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken);
         }
 
         LogOutcome("Update", packageId, result);
@@ -145,9 +136,9 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        _logger.LogInformation("Uninstalling {PackageId}", packageId);
+        logger.LogInformation("Uninstalling {PackageId}", packageId);
 
-        var result = await _winGetClient.UninstallAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.UninstallAsync(packageId, request, progress, cancellationToken);
 
         LogOutcome("Uninstall", packageId, result);
 
@@ -164,9 +155,9 @@ public sealed class PackageManagementService : IPackageManagementService
             throw new ArgumentException("A download directory is required.", nameof(request));
         }
 
-        _logger.LogInformation("Downloading {PackageId} to {Directory}", packageId, request.DownloadDirectory);
+        logger.LogInformation("Downloading {PackageId} to {Directory}", packageId, request.DownloadDirectory);
 
-        var result = await _winGetClient.DownloadAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.DownloadAsync(packageId, request, progress, cancellationToken);
 
         LogOutcome("Download", packageId, result);
 
@@ -178,9 +169,9 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        _logger.LogInformation("Repairing {PackageId}", packageId);
+        logger.LogInformation("Repairing {PackageId}", packageId);
 
-        var result = await _winGetClient.RepairAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.RepairAsync(packageId, request, progress, cancellationToken);
 
         LogOutcome("Repair", packageId, result);
 
@@ -190,7 +181,7 @@ public sealed class PackageManagementService : IPackageManagementService
     /// <inheritdoc />
     public Task<IReadOnlyList<PackagePin>> GetPinsAsync(CancellationToken cancellationToken = default)
     {
-        return _cliClient.GetPinsAsync(cancellationToken);
+        return cliClient.GetPinsAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -198,9 +189,9 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        _logger.LogInformation("Pinning {PackageId} (version: {Version}, blocking: {Blocking})", packageId, version ?? "any", blocking);
+        logger.LogInformation("Pinning {PackageId} (version: {Version}, blocking: {Blocking})", packageId, version ?? "any", blocking);
 
-        return _cliClient.AddPinAsync(packageId, version, blocking, pinInstalledVersion: false, cancellationToken);
+        return cliClient.AddPinAsync(packageId, version, blocking, pinInstalledVersion: false, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -208,9 +199,9 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         RequirePackageId(packageId);
 
-        _logger.LogInformation("Unpinning {PackageId}", packageId);
+        logger.LogInformation("Unpinning {PackageId}", packageId);
 
-        return _cliClient.RemovePinAsync(packageId, pinInstalledVersion: false, cancellationToken);
+        return cliClient.RemovePinAsync(packageId, pinInstalledVersion: false, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -221,9 +212,9 @@ public sealed class PackageManagementService : IPackageManagementService
             throw new ArgumentException("A file path is required.", nameof(filePath));
         }
 
-        _logger.LogInformation("Exporting installed packages to {FilePath}", filePath);
+        logger.LogInformation("Exporting installed packages to {FilePath}", filePath);
 
-        return _cliClient.ExportAsync(filePath, includeVersions, sourceName: null, cancellationToken);
+        return cliClient.ExportAsync(filePath, includeVersions, sourceName: null, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -234,9 +225,9 @@ public sealed class PackageManagementService : IPackageManagementService
             throw new ArgumentException("A file path is required.", nameof(filePath));
         }
 
-        _logger.LogInformation("Importing packages from {FilePath}", filePath);
+        logger.LogInformation("Importing packages from {FilePath}", filePath);
 
-        return _cliClient.ImportAsync(filePath, ignoreUnavailable, ignoreVersions, cancellationToken);
+        return cliClient.ImportAsync(filePath, ignoreUnavailable, ignoreVersions, cancellationToken);
     }
 
     private static void RequirePackageId(string packageId)
@@ -271,11 +262,11 @@ public sealed class PackageManagementService : IPackageManagementService
     {
         if (result.Succeeded)
         {
-            _logger.LogInformation("{Operation} succeeded for {PackageId} (reboot required: {RebootRequired})", operation, packageId, result.RebootRequired);
+            logger.LogInformation("{Operation} succeeded for {PackageId} (reboot required: {RebootRequired})", operation, packageId, result.RebootRequired);
         }
         else
         {
-            _logger.LogWarning("{Operation} failed for {PackageId}: {Status} {Error} (0x{ExtendedErrorCode:X8})", operation, packageId, result.Status, result.ErrorMessage, result.ExtendedErrorCode ?? 0);
+            logger.LogWarning("{Operation} failed for {PackageId}: {Status} {Error} (0x{ExtendedErrorCode:X8})", operation, packageId, result.Status, result.ErrorMessage, result.ExtendedErrorCode ?? 0);
         }
     }
 }
