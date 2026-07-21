@@ -42,15 +42,15 @@ jobs:
           dotnet tool install --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
-      - name: Test
-        # Restore and Compile run first automatically as Test's Nuke dependencies.
-        # A failing test fails this step and stops the job.
-        run: nuke Test --configuration Release
-
-      - name: Coverage report
-        # Renders the coverage summary produced by Test into markdown; the append below
-        # surfaces it on the workflow run's summary page (GITHUB_STEP_SUMMARY).
-        run: nuke Coverage --configuration Release
+      - name: Test and coverage
+        # One Nuke invocation for both targets. Nuke de-duplicates target execution only
+        # WITHIN a single invocation, so Test and Coverage must be requested together —
+        # separate `nuke Test` then `nuke Coverage` calls would re-run Test (and its
+        # Restore/Compile dependencies). Coverage depends on Test, so the plan runs
+        # Restore -> Compile -> Test -> Coverage exactly once; a failing test stops the
+        # job before Coverage's report generation. The append step below surfaces the
+        # generated markdown on the run's summary page (GITHUB_STEP_SUMMARY).
+        run: nuke Test Coverage --configuration Release
 
       - name: Append coverage summary
         run: Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY

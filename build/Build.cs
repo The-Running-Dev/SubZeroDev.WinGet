@@ -112,10 +112,9 @@ class Build : NukeBuild
             .SetTargetDirectory(CoverageDirectory)
             .SetReportTypes(ReportTypes.MarkdownSummaryGithub, ReportTypes.Cobertura)));
 
-    // Packs at the version pinned in SubZeroDev.WinGet.csproj - this is the path used by
-    // the regular build job (artifact upload + optional NuGet.org push). The GitHub
-    // Packages release path uses its own GitVersion-derived pack in PublishGitHubPackages
-    // instead, exactly as the two jobs were independent before this change.
+    // Packs at the version pinned in SubZeroDev.WinGet.csproj. Reached transitively by
+    // PublishNuGet (the manual NuGet.org release). The GitHub Packages release path does
+    // its own GitVersion-derived pack in PublishGitHubPackages instead.
     Target Pack => _ => _
         .DependsOn(Compile)
         .Executes(() => DotNetPack(s => s
