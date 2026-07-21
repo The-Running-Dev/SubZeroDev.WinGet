@@ -42,7 +42,12 @@ jobs:
 
       - name: Install Nuke
         run: |
-          dotnet tool install --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          # `update` (not `install`) so this is idempotent: it installs the tool when
+          # missing and is a no-op success when the pinned version is already present.
+          # `install --version X` instead errors if a *different* version is already on
+          # the host - which happens under `act` host mode (the host environment persists
+          # between runs) whenever NUKE_VERSION is bumped.
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
       - name: Test and coverage
@@ -93,7 +98,12 @@ jobs:
 
       - name: Install Nuke
         run: |
-          dotnet tool install --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          # `update` (not `install`) so this is idempotent: it installs the tool when
+          # missing and is a no-op success when the pinned version is already present.
+          # `install --version X` instead errors if a *different* version is already on
+          # the host - which happens under `act` host mode (the host environment persists
+          # between runs) whenever NUKE_VERSION is bumped.
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
       # Automatic release on every push to main. Version comes from GitVersion (resolved

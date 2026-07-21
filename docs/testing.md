@@ -12,8 +12,8 @@ CI (and, optionally, local development) runs through a [Nuke](https://nuke.build
 
 ```shell
 ./build.ps1 Test Pack                                    # no install needed
-# or, via the global tool:
-dotnet tool install --global Nuke.GlobalTool --version 10.1.0
+# or, via the global tool (`update` is idempotent — safe to re-run):
+dotnet tool update --global Nuke.GlobalTool --version 10.1.0
 nuke Test Pack       # any combination of targets in one command; shared dependencies run once
 ```
 
@@ -104,3 +104,5 @@ With [act](https://github.com/nektos/act) installed, the workflow runs directly 
 ```shell
 act push -P windows-latest=-self-hosted --artifact-server-path .act-artifacts
 ```
+
+Host mode reuses your real environment, so anything the workflow installs (the Nuke global tool) persists between runs. The workflow's `Install Nuke` step uses `dotnet tool update`, which is idempotent, so repeated `act` runs don't fail on the already-installed tool.
