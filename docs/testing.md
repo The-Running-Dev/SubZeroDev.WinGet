@@ -73,16 +73,13 @@ Current numbers (2026-07-21): unit-only **28.9% line / 50.2% method**; merged wi
 
 The GitHub Actions workflow ([build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml)) runs on `windows-latest` and has two jobs.
 
-The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and calls into `build/Build.cs`:
-
-1. `nuke Test` — Restore → Compile run first automatically; a failing test stops the job
-2. `nuke Coverage` — renders the coverage summary onto the run page, and uploads it as an artifact
+The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and calls into `build/Build.cs` with a single invocation — `nuke Test Coverage` — so the shared `Restore → Compile → Test` chain runs once (Nuke only de-duplicates targets within one invocation). A failing test stops the job, and the coverage summary is rendered onto the run page and uploaded as an artifact.
 
 That's all a pull request ever does — **no packing, no publishing**. It's also the required status check.
 
 The **`release`** job (`needs: build`) runs only on a push to `main` or a manual dispatch, and does the packing/publishing (below).
 
-`main` is protected: all changes land via pull request and the `build` check must pass before merge, so "a push to `main`" is always a merged PR. Both jobs check out full git history (`fetch-depth: 0`) so Nuke's eager `[GitVersion]` resolution doesn't warn.
+`main` is protected: all changes land via pull request and the `build` check must pass before merge, so "a push to `main`" is always a merged PR. Both jobs check out full git history (`fetch-depth: 0`), but for different reasons: the `release` job genuinely needs it (its publish target dereferences `[GitVersion]`, which is fatal on a shallow clone), while the `build` job uses it only to silence Nuke's harmless eager-injection warning — it never reads the value.
 
 ## Publishing
 

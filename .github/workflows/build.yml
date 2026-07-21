@@ -27,7 +27,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history so Nuke's eager [GitVersion] injection doesn't warn; harmless here.
+          # This job never publishes, so it does not strictly need full history — a shallow
+          # clone would only make Nuke's eager [GitVersion] injection emit a harmless warning
+          # (the value is never dereferenced here; only PublishGitHubPackages reads it).
+          # fetch-depth: 0 purely silences that warning and keeps both jobs' checkouts identical.
           fetch-depth: 0
 
       - name: Setup .NET
@@ -78,7 +81,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # GitVersion needs full history to derive the package version.
+          # This job DOES publish, so it genuinely needs full history: PublishGitHubPackages
+          # dereferences the [GitVersion] field to derive the package version, which is fatal
+          # (not just a warning) on a shallow clone.
           fetch-depth: 0
 
       - name: Setup .NET

@@ -45,11 +45,14 @@ class Build : NukeBuild
     [Parameter("Owner (org or user) of the GitHub Packages feed to publish to, e.g. 'The-Running-Dev'. Required by PublishGitHubPackages.")]
     readonly string GithubRepositoryOwner;
 
-    // Only PublishGitHubPackages uses this, but Nuke injects [GitVersion]-attributed fields
-    // eagerly at build startup regardless of which target is requested - GitVersion needs
-    // full git history to compute a version, and injection fails outright on a shallow
-    // clone even if the current run never touches this field. That is why BOTH CI jobs
-    // now check out with fetch-depth: 0, not just the one that calls PublishGitHubPackages.
+    // Only PublishGitHubPackages actually reads this (via GitVersion.SemVer). Nuke injects
+    // [GitVersion]-attributed fields eagerly at startup regardless of the requested target,
+    // and on a shallow clone that injection can't compute a version - but that is a
+    // *warning*, not a fatal error: Test/Compile/Pack run fine without it. It only becomes
+    // fatal when a target dereferences this field, i.e. PublishGitHubPackages. So full
+    // history is strictly required only by that target's job; the build job checks out
+    // fetch-depth: 0 as well purely to silence the harmless warning and keep both jobs'
+    // checkouts identical.
     [GitVersion] readonly GitVersion GitVersion;
 
     [Solution] readonly Solution Solution;
