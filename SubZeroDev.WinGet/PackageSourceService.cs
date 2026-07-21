@@ -6,22 +6,13 @@ using SubZeroDev.WinGet.Models;
 namespace SubZeroDev.WinGet;
 
 /// <inheritdoc />
-public sealed class PackageSourceService : IPackageSourceService
+public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogger<PackageSourceService> logger)
+    : IPackageSourceService
 {
-    private readonly IWinGetSourceClient _sourceClient;
-
-    private readonly ILogger<PackageSourceService> _logger;
-
-    public PackageSourceService(IWinGetSourceClient sourceClient, ILogger<PackageSourceService> logger)
-    {
-        _sourceClient = sourceClient;
-        _logger = logger;
-    }
-
     /// <inheritdoc />
     public Task<IReadOnlyList<PackageSource>> GetSourcesAsync(CancellationToken cancellationToken = default)
     {
-        return _sourceClient.GetSourcesAsync(cancellationToken);
+        return sourceClient.GetSourcesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -29,7 +20,7 @@ public sealed class PackageSourceService : IPackageSourceService
     {
         RequireName(name);
 
-        return _sourceClient.GetSourceAsync(name, cancellationToken);
+        return sourceClient.GetSourceAsync(name, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -42,9 +33,9 @@ public sealed class PackageSourceService : IPackageSourceService
             throw new ArgumentException("A source URI is required.", nameof(request));
         }
 
-        _logger.LogInformation("Adding WinGet source {Name} ({Uri})", request.Name, request.Uri);
+        logger.LogInformation("Adding WinGet source {Name} ({Uri})", request.Name, request.Uri);
 
-        var result = await _sourceClient.AddSourceAsync(request, progress, cancellationToken);
+        var result = await sourceClient.AddSourceAsync(request, progress, cancellationToken);
 
         LogOutcome("Add", request.Name, result);
 
@@ -56,9 +47,9 @@ public sealed class PackageSourceService : IPackageSourceService
     {
         RequireName(name);
 
-        _logger.LogInformation("Removing WinGet source {Name} (preserve data: {PreserveData})", name, preserveData);
+        logger.LogInformation("Removing WinGet source {Name} (preserve data: {PreserveData})", name, preserveData);
 
-        var result = await _sourceClient.RemoveSourceAsync(name, preserveData, progress, cancellationToken);
+        var result = await sourceClient.RemoveSourceAsync(name, preserveData, progress, cancellationToken);
 
         LogOutcome("Remove", name, result);
 
@@ -70,9 +61,9 @@ public sealed class PackageSourceService : IPackageSourceService
     {
         RequireName(name);
 
-        _logger.LogInformation("Refreshing WinGet source {Name}", name);
+        logger.LogInformation("Refreshing WinGet source {Name}", name);
 
-        var result = await _sourceClient.RefreshSourceAsync(name, progress, cancellationToken);
+        var result = await sourceClient.RefreshSourceAsync(name, progress, cancellationToken);
 
         LogOutcome("Refresh", name, result);
 
@@ -89,9 +80,9 @@ public sealed class PackageSourceService : IPackageSourceService
             throw new ArgumentException("At least one of isExplicit or priority must be provided.");
         }
 
-        _logger.LogInformation("Updating WinGet source {Name} (explicit: {Explicit}, priority: {Priority})", name, isExplicit, priority);
+        logger.LogInformation("Updating WinGet source {Name} (explicit: {Explicit}, priority: {Priority})", name, isExplicit, priority);
 
-        var result = await _sourceClient.UpdateSourceAsync(name, isExplicit, priority, cancellationToken);
+        var result = await sourceClient.UpdateSourceAsync(name, isExplicit, priority, cancellationToken);
 
         LogOutcome("Update", name, result);
 
@@ -110,11 +101,11 @@ public sealed class PackageSourceService : IPackageSourceService
     {
         if (result.Succeeded)
         {
-            _logger.LogInformation("{Operation} source succeeded for {Name}", operation, name);
+            logger.LogInformation("{Operation} source succeeded for {Name}", operation, name);
         }
         else
         {
-            _logger.LogWarning("{Operation} source failed for {Name}: {Error} (0x{ExtendedErrorCode:X8})", operation, name, result.ErrorMessage, result.ExtendedErrorCode ?? 0);
+            logger.LogWarning("{Operation} source failed for {Name}: {Error} (0x{ExtendedErrorCode:X8})", operation, name, result.ErrorMessage, result.ExtendedErrorCode ?? 0);
         }
     }
 }

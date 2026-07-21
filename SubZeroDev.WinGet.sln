@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubZeroDev.WinGet", "SubZer
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubZeroDev.WinGet.Tests", "SubZeroDev.WinGet.Tests\SubZeroDev.WinGet.Tests.csproj", "{A928675B-756F-49A1-8ED0-A2E6688D2DC4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubZeroDev.WinGet.Examples", "SubZeroDev.WinGet.Examples\SubZeroDev.WinGet.Examples.csproj", "{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{A928675B-756F-49A1-8ED0-A2E6688D2DC4}.Release|x64.Build.0 = Release|x64
 		{A928675B-756F-49A1-8ED0-A2E6688D2DC4}.Release|x86.ActiveCfg = Release|x64
 		{A928675B-756F-49A1-8ED0-A2E6688D2DC4}.Release|x86.Build.0 = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|Any CPU.Build.0 = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|x64.ActiveCfg = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|x64.Build.0 = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|x86.ActiveCfg = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Debug|x86.Build.0 = Debug|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|Any CPU.ActiveCfg = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|Any CPU.Build.0 = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|x64.ActiveCfg = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|x64.Build.0 = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|x86.ActiveCfg = Release|x64
+		{FB1746F7-0D6C-4DBF-8A01-816AA91ABFAD}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

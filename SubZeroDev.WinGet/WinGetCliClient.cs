@@ -33,6 +33,29 @@ public sealed class WinGetCliClient : IWinGetCliClient
     /// <inheritdoc />
     public Task<CliOperationResult> AddPinAsync(string packageId, string? version = null, bool blocking = false, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
     {
+        return RunAsync(BuildAddPinArguments(packageId, version, blocking, pinInstalledVersion), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<CliOperationResult> RemovePinAsync(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(BuildRemovePinArguments(packageId, pinInstalledVersion), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<CliOperationResult> ExportAsync(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(BuildExportArguments(filePath, includeVersions, sourceName), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<CliOperationResult> ImportAsync(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(BuildImportArguments(filePath, ignoreUnavailable, ignoreVersions), cancellationToken);
+    }
+
+    internal static List<string> BuildAddPinArguments(string packageId, string? version, bool blocking, bool pinInstalledVersion)
+    {
         var arguments = new List<string> { "pin", "add", "--id", packageId, "--exact", "--accept-source-agreements", "--disable-interactivity" };
 
         if (version is not null)
@@ -50,11 +73,10 @@ public sealed class WinGetCliClient : IWinGetCliClient
             arguments.Add("--installed");
         }
 
-        return RunAsync(arguments, cancellationToken);
+        return arguments;
     }
 
-    /// <inheritdoc />
-    public Task<CliOperationResult> RemovePinAsync(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+    internal static List<string> BuildRemovePinArguments(string packageId, bool pinInstalledVersion)
     {
         var arguments = new List<string> { "pin", "remove", "--id", packageId, "--exact", "--accept-source-agreements", "--disable-interactivity" };
 
@@ -63,11 +85,10 @@ public sealed class WinGetCliClient : IWinGetCliClient
             arguments.Add("--installed");
         }
 
-        return RunAsync(arguments, cancellationToken);
+        return arguments;
     }
 
-    /// <inheritdoc />
-    public Task<CliOperationResult> ExportAsync(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default)
+    internal static List<string> BuildExportArguments(string filePath, bool includeVersions, string? sourceName)
     {
         var arguments = new List<string> { "export", "--output", filePath, "--accept-source-agreements", "--disable-interactivity" };
 
@@ -81,11 +102,10 @@ public sealed class WinGetCliClient : IWinGetCliClient
             arguments.AddRange(["--source", sourceName]);
         }
 
-        return RunAsync(arguments, cancellationToken);
+        return arguments;
     }
 
-    /// <inheritdoc />
-    public Task<CliOperationResult> ImportAsync(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+    internal static List<string> BuildImportArguments(string filePath, bool ignoreUnavailable, bool ignoreVersions)
     {
         var arguments = new List<string> { "import", "--import-file", filePath, "--accept-source-agreements", "--accept-package-agreements", "--disable-interactivity" };
 
@@ -99,7 +119,7 @@ public sealed class WinGetCliClient : IWinGetCliClient
             arguments.Add("--ignore-versions");
         }
 
-        return RunAsync(arguments, cancellationToken);
+        return arguments;
     }
 
     private async Task<CliOperationResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
@@ -188,7 +208,10 @@ public sealed class WinGetCliClient : IWinGetCliClient
 
             var name = line[..idStart].Trim();
             var id = line[idStart..versionStart].Trim();
-            var version = sourceStart > versionStart ? line[versionStart..sourceStart].Trim() : line[versionStart..].Trim();
+            // The Version column ends where the next present column begins — Source when the
+            // table has one, otherwise Pin type (never end-of-line, which would swallow it).
+            var versionEnd = sourceStart > versionStart ? sourceStart : pinTypeStart;
+            var version = line[versionStart..versionEnd].Trim();
             var source = sourceStart > 0 && sourceStart < pinTypeStart ? line[sourceStart..pinTypeStart].Trim() : string.Empty;
             var kindText = line[pinTypeStart..].Trim();
 

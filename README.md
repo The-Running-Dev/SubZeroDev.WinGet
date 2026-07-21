@@ -61,6 +61,19 @@ var configured = await sources.GetSourcesAsync();
 
 Prefer raw, single-attempt behavior without the service layer's retry policy? Use `IWinGetClient` / `IWinGetSourceClient` / `IWinGetCliClient` directly — they are registered by `AddPackageManagement()` too.
 
+### Runnable examples
+
+[SubZeroDev.WinGet.Examples](SubZeroDev.WinGet.Examples) has a runnable example for **every** public API:
+
+```
+cd SubZeroDev.WinGet.Examples
+dotnet run                       # lists all examples
+dotnet run -- search terminal    # read-only examples run live
+dotnet run -- install <id>       # mutating examples require explicit arguments
+```
+
+Read-only examples (search, installed, upgrades, details, sources, pins, export, version) run safely against your machine; anything that would change it (install, uninstall, pin, source add/remove, import) refuses to run without explicit arguments.
+
 ## Requirements
 
 - Windows 10/11 with **WinGet (App Installer)** installed
@@ -79,7 +92,7 @@ Any project that **runs** code from this library needs a **direct** `PackageRefe
 
 ```
 dotnet build SubZeroDev.WinGet.sln
-dotnet test  SubZeroDev.WinGet.sln                                    # 44 mocked unit tests, no COM
+dotnet test  SubZeroDev.WinGet.sln                                    # 100 mocked unit tests, no COM
 dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"  # 12 live, read-only, needs WinGet
 ```
 

@@ -41,6 +41,10 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
             var catalogs = PackageManager.GetPackageCatalogs();
             var sources = new List<PackageSource>(catalogs.Count);
 
+            // Do NOT convert to foreach/LINQ: the CsWinRT-projected list's enumerator throws
+            // InvalidCastException ("No such interface supported") on interop 1.29.280.
+            // Only indexer access (.Count / [i]) is reliable. Verified by the live
+            // GetSourcesAsync integration test.
             for (var i = 0; i < catalogs.Count; i++)
             {
                 sources.Add(ToPackageSource(catalogs[i].Info));
