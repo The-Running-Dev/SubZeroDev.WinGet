@@ -10,13 +10,13 @@ namespace SubZeroDev.WinGet.Examples;
 /// </summary>
 public static class ExportImportExamples
 {
-    /// <summary>ExportAsync — snapshot installed packages to a "winget import"-compatible JSON file.</summary>
-    public static async Task ExportAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Export — snapshot installed packages to a "winget import"-compatible JSON file.</summary>
+    public static async Task Export(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var filePath = args.FirstOrDefault() ?? Path.Combine(Path.GetTempPath(), $"winget-export-{DateTime.Now:yyyyMMdd-HHmmss}.json");
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.ExportAsync(filePath, includeVersions: true, ct);
+        var result = await packages.Export(filePath, includeVersions: true, ct);
 
         if (result.Succeeded)
         {
@@ -30,8 +30,8 @@ public static class ExportImportExamples
         }
     }
 
-    /// <summary>ImportAsync — install everything a previously exported file lists.</summary>
-    public static async Task ImportAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Import — install everything a previously exported file lists.</summary>
+    public static async Task Import(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -42,7 +42,7 @@ public static class ExportImportExamples
 
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.ImportAsync(args[0], ignoreUnavailable: true, ignoreVersions: false, ct);
+        var result = await packages.Import(args[0], ignoreUnavailable: true, ignoreVersions: false, ct);
 
         Console.WriteLine(result.Succeeded ? "Import completed." : $"Import failed ({result.ExitCodeHex}): {result.Error}");
     }

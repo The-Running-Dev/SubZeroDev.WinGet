@@ -23,4 +23,4 @@ Console.CancelKeyPress += (_, e) =>
     Console.WriteLine("Cancelling...");
 };
 
-return await ExampleRunner.RunAsync(services, args, cts.Token);
+return await ExampleRunner.Run(services, args, cts.Token);

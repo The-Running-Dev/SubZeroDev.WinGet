@@ -35,10 +35,10 @@ var services = new ServiceCollection()
 var packages = services.GetRequiredService<IPackageManagementService>();
 
 // Search across all configured sources (installed state included in results)
-var results = await packages.SearchAsync("vscode");
+var results = await packages.Search("vscode");
 
 // Install with options
-var result = await packages.InstallAsync("Microsoft.VisualStudioCode", new InstallRequest
+var result = await packages.Install("Microsoft.VisualStudioCode", new InstallRequest
 {
     Scope = PackageScope.User,
     Mode = PackageOperationMode.Silent
@@ -52,11 +52,11 @@ if (!result.Succeeded)
 }
 
 // What can be upgraded?
-var upgrades = await packages.GetAvailableUpgradesAsync();
+var upgrades = await packages.GetAvailableUpgrades();
 
 // Sources
 var sources = services.GetRequiredService<IPackageSourceService>();
-var configured = await sources.GetSourcesAsync();
+var configured = await sources.GetSources();
 ```
 
 Prefer raw, single-attempt behavior without the service layer's retry policy? Use `IWinGetClient` / `IWinGetSourceClient` / `IWinGetCliClient` directly — they are registered by `AddPackageManagement()` too.
@@ -99,6 +99,10 @@ dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests
 The integration tests are `[Explicit]`, read-only by design, and run against the machine's real WinGet catalog.
 
 CI: [.github/workflows/build.yml](.github/workflows/build.yml) builds, tests, and packs on every push/PR — a failing test stops the build before packaging, and a code-coverage summary is rendered on each run's summary page. Publishing to NuGet.org is **off by default** — it only runs on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret.
+
+## Documentation
+
+Full documentation lives in [docs/](docs) as Docusaurus-ready Markdown: [introduction](docs/intro.md), [getting started](docs/getting-started.md), usage guides for [packages](docs/usage/packages.md), [sources](docs/usage/sources.md), and [pins/export/import](docs/usage/pins-export-import.md), the [examples guide](docs/examples.md), [building & testing](docs/testing.md), [architecture](docs/architecture.md), and [troubleshooting](docs/troubleshooting.md).
 
 ## Design Notes
 

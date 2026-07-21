@@ -28,13 +28,13 @@ public sealed class PackageManagementService(
     private const int DefaultSearchLimit = 50;
 
     /// <inheritdoc />
-    public Task<string?> GetWinGetVersionAsync(CancellationToken cancellationToken = default)
+    public Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default)
     {
-        return winGetClient.GetWinGetVersionAsync(cancellationToken);
+        return winGetClient.GetWinGetVersion(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, string? sourceName = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PackageInfo>> Search(string query, string? sourceName = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
@@ -43,46 +43,46 @@ public sealed class PackageManagementService(
 
         logger.LogDebug("Searching for packages matching {Query}", query);
 
-        return await winGetClient.SearchAsync(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken);
+        return await winGetClient.Search(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageInfo>> GetInstalled(CancellationToken cancellationToken = default)
     {
-        return winGetClient.GetInstalledPackagesAsync(cancellationToken);
+        return winGetClient.GetInstalledPackages(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgradesAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default)
     {
-        return winGetClient.GetAvailableUpgradesAsync(cancellationToken);
+        return winGetClient.GetAvailableUpgrades(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<PackageInfo?> GetPackageAsync(string packageId, CancellationToken cancellationToken = default)
-    {
-        RequirePackageId(packageId);
-
-        return winGetClient.GetPackageAsync(packageId, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task<PackageDetails?> GetDetailsAsync(string packageId, CancellationToken cancellationToken = default)
+    public Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
-        return winGetClient.GetPackageDetailsAsync(packageId, cancellationToken);
+        return winGetClient.GetPackage(packageId, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> InstallAsync(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageDetails?> GetDetails(string packageId, CancellationToken cancellationToken = default)
+    {
+        RequirePackageId(packageId);
+
+        return winGetClient.GetPackageDetails(packageId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
         request ??= new InstallRequest();
 
         logger.LogInformation("Installing {PackageId}", packageId);
 
-        var result = await winGetClient.InstallAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Install(packageId, request, progress, cancellationToken);
 
         if (!result.Succeeded && IsAlreadyInstalled(result))
         {
@@ -95,7 +95,7 @@ public sealed class PackageManagementService(
         {
             logger.LogWarning("{PackageId} has no applicable installer under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await winGetClient.InstallAsync(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.Install(packageId, Unconstrained(request), progress, cancellationToken);
         }
 
         LogOutcome("Install", packageId, result);
@@ -104,26 +104,26 @@ public sealed class PackageManagementService(
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> UpdateAsync(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<PackageOperationResult> Update(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
         request ??= new InstallRequest();
 
         logger.LogInformation("Updating {PackageId}", packageId);
 
-        var result = await winGetClient.UpgradeAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Upgrade(packageId, request, progress, cancellationToken);
 
         if (ShouldRetryUnconstrained(result, request))
         {
             logger.LogWarning("{PackageId} has no applicable upgrade under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await winGetClient.UpgradeAsync(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.Upgrade(packageId, Unconstrained(request), progress, cancellationToken);
         }
         else if (!result.Succeeded && result.ExtendedErrorCode == WinGetErrorCodes.UpgradeVersionUnknown && !request.AllowUpgradeToUnknownVersion)
         {
             logger.LogWarning("{PackageId} reports an unknown installed version; retrying with AllowUpgradeToUnknownVersion", packageId);
 
-            result = await winGetClient.UpgradeAsync(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken);
+            result = await winGetClient.Upgrade(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken);
         }
 
         LogOutcome("Update", packageId, result);
@@ -132,13 +132,13 @@ public sealed class PackageManagementService(
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> UninstallAsync(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
         logger.LogInformation("Uninstalling {PackageId}", packageId);
 
-        var result = await winGetClient.UninstallAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Uninstall(packageId, request, progress, cancellationToken);
 
         LogOutcome("Uninstall", packageId, result);
 
@@ -146,7 +146,7 @@ public sealed class PackageManagementService(
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> DownloadAsync(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
@@ -157,7 +157,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Downloading {PackageId} to {Directory}", packageId, request.DownloadDirectory);
 
-        var result = await winGetClient.DownloadAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Download(packageId, request, progress, cancellationToken);
 
         LogOutcome("Download", packageId, result);
 
@@ -165,13 +165,13 @@ public sealed class PackageManagementService(
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> RepairAsync(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
         logger.LogInformation("Repairing {PackageId}", packageId);
 
-        var result = await winGetClient.RepairAsync(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Repair(packageId, request, progress, cancellationToken);
 
         LogOutcome("Repair", packageId, result);
 
@@ -179,33 +179,33 @@ public sealed class PackageManagementService(
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<PackagePin>> GetPinsAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
     {
-        return cliClient.GetPinsAsync(cancellationToken);
+        return cliClient.GetPins(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> PinAsync(string packageId, string? version = null, bool blocking = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Pin(string packageId, string? version = null, bool blocking = false, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
         logger.LogInformation("Pinning {PackageId} (version: {Version}, blocking: {Blocking})", packageId, version ?? "any", blocking);
 
-        return cliClient.AddPinAsync(packageId, version, blocking, pinInstalledVersion: false, cancellationToken);
+        return cliClient.AddPin(packageId, version, blocking, pinInstalledVersion: false, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> UnpinAsync(string packageId, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Unpin(string packageId, CancellationToken cancellationToken = default)
     {
         RequirePackageId(packageId);
 
         logger.LogInformation("Unpinning {PackageId}", packageId);
 
-        return cliClient.RemovePinAsync(packageId, pinInstalledVersion: false, cancellationToken);
+        return cliClient.RemovePin(packageId, pinInstalledVersion: false, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> ExportAsync(string filePath, bool includeVersions = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Export(string filePath, bool includeVersions = false, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -214,11 +214,11 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Exporting installed packages to {FilePath}", filePath);
 
-        return cliClient.ExportAsync(filePath, includeVersions, sourceName: null, cancellationToken);
+        return cliClient.Export(filePath, includeVersions, sourceName: null, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> ImportAsync(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -227,7 +227,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Importing packages from {FilePath}", filePath);
 
-        return cliClient.ImportAsync(filePath, ignoreUnavailable, ignoreVersions, cancellationToken);
+        return cliClient.Import(filePath, ignoreUnavailable, ignoreVersions, cancellationToken);
     }
 
     private static void RequirePackageId(string packageId)

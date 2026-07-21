@@ -10,12 +10,12 @@ namespace SubZeroDev.WinGet.Examples;
 /// </summary>
 public static class PinExamples
 {
-    /// <summary>GetPinsAsync — the "winget pin list" equivalent.</summary>
-    public static async Task ListAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetPins — the "winget pin list" equivalent.</summary>
+    public static async Task List(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var pins = await packages.GetPinsAsync(ct);
+        var pins = await packages.GetPins(ct);
 
         Console.WriteLine($"{pins.Count} pin(s):");
 
@@ -26,10 +26,10 @@ public static class PinExamples
     }
 
     /// <summary>
-    /// PinAsync — three pin kinds: plain (skipped by "upgrade all"), gating (version pattern
+    /// Pin — three pin kinds: plain (skipped by "upgrade all"), gating (version pattern
     /// like 1.2.*), and blocking (cannot upgrade until unpinned).
     /// </summary>
-    public static async Task AddAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    public static async Task Add(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -42,13 +42,13 @@ public static class PinExamples
         var blocking = args.Contains("--blocking");
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.PinAsync(args[0], version, blocking, ct);
+        var result = await packages.Pin(args[0], version, blocking, ct);
 
         Console.WriteLine(result.Succeeded ? "Pinned." : $"Pin failed ({result.ExitCodeHex}): {result.Error}");
     }
 
-    /// <summary>UnpinAsync.</summary>
-    public static async Task RemoveAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Unpin.</summary>
+    public static async Task Remove(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -59,7 +59,7 @@ public static class PinExamples
 
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.UnpinAsync(args[0], ct);
+        var result = await packages.Unpin(args[0], ct);
 
         Console.WriteLine(result.Succeeded ? "Unpinned." : $"Unpin failed ({result.ExitCodeHex}): {result.Error}");
     }

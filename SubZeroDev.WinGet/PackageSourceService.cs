@@ -10,21 +10,21 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
     : IPackageSourceService
 {
     /// <inheritdoc />
-    public Task<IReadOnlyList<PackageSource>> GetSourcesAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default)
     {
-        return sourceClient.GetSourcesAsync(cancellationToken);
+        return sourceClient.GetSources(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<PackageSource?> GetSourceAsync(string name, CancellationToken cancellationToken = default)
+    public Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default)
     {
         RequireName(name);
 
-        return sourceClient.GetSourceAsync(name, cancellationToken);
+        return sourceClient.GetSource(name, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> AddSourceAsync(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         RequireName(request.Name);
 
@@ -35,7 +35,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Adding WinGet source {Name} ({Uri})", request.Name, request.Uri);
 
-        var result = await sourceClient.AddSourceAsync(request, progress, cancellationToken);
+        var result = await sourceClient.AddSource(request, progress, cancellationToken);
 
         LogOutcome("Add", request.Name, result);
 
@@ -43,13 +43,13 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> RemoveSourceAsync(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         RequireName(name);
 
         logger.LogInformation("Removing WinGet source {Name} (preserve data: {PreserveData})", name, preserveData);
 
-        var result = await sourceClient.RemoveSourceAsync(name, preserveData, progress, cancellationToken);
+        var result = await sourceClient.RemoveSource(name, preserveData, progress, cancellationToken);
 
         LogOutcome("Remove", name, result);
 
@@ -57,13 +57,13 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> RefreshSourceAsync(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         RequireName(name);
 
         logger.LogInformation("Refreshing WinGet source {Name}", name);
 
-        var result = await sourceClient.RefreshSourceAsync(name, progress, cancellationToken);
+        var result = await sourceClient.RefreshSource(name, progress, cancellationToken);
 
         LogOutcome("Refresh", name, result);
 
@@ -71,7 +71,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> UpdateSourceAsync(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
     {
         RequireName(name);
 
@@ -82,7 +82,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Updating WinGet source {Name} (explicit: {Explicit}, priority: {Priority})", name, isExplicit, priority);
 
-        var result = await sourceClient.UpdateSourceAsync(name, isExplicit, priority, cancellationToken);
+        var result = await sourceClient.UpdateSource(name, isExplicit, priority, cancellationToken);
 
         LogOutcome("Update", name, result);
 

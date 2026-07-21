@@ -25,61 +25,61 @@ public class PackageSourceServiceEdgeTests
     }
 
     [Test]
-    public async Task AddSourceAsync_ReturnsFailureUnchanged()
+    public async Task AddSource_ReturnsFailureUnchanged()
     {
         var failure = SourceOperationResult.Failure("AccessDenied", unchecked((int)0x80070005));
 
         _sourceClient
-            .Setup(c => c.AddSourceAsync(It.IsAny<AddPackageSourceRequest>(), null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.AddSource(It.IsAny<AddPackageSourceRequest>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failure);
 
-        var result = await _service.AddSourceAsync(new AddPackageSourceRequest("contoso", "https://contoso.example"));
+        var result = await _service.AddSource(new AddPackageSourceRequest("contoso", "https://contoso.example"));
 
         result.Should().Be(failure);
     }
 
     [Test]
-    public async Task RemoveSourceAsync_PassesPreserveDataThrough()
+    public async Task RemoveSource_PassesPreserveDataThrough()
     {
         _sourceClient
-            .Setup(c => c.RemoveSourceAsync("contoso", true, null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.RemoveSource("contoso", true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        (await _service.RemoveSourceAsync("contoso", preserveData: true)).Succeeded.Should().BeTrue();
+        (await _service.RemoveSource("contoso", preserveData: true)).Succeeded.Should().BeTrue();
 
         _sourceClient.VerifyAll();
     }
 
     [Test]
-    public async Task RefreshSourceAsync_ReturnsFailureUnchanged()
+    public async Task RefreshSource_ReturnsFailureUnchanged()
     {
         var failure = SourceOperationResult.Failure("CatalogError");
 
         _sourceClient
-            .Setup(c => c.RefreshSourceAsync("winget", null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.RefreshSource("winget", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failure);
 
-        (await _service.RefreshSourceAsync("winget")).Should().Be(failure);
+        (await _service.RefreshSource("winget")).Should().Be(failure);
     }
 
     [Test]
-    public async Task UpdateSourceAsync_WithExplicitOnly_Delegates()
+    public async Task UpdateSource_WithExplicitOnly_Delegates()
     {
         _sourceClient
-            .Setup(c => c.UpdateSourceAsync("winget", true, null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.UpdateSource("winget", true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        (await _service.UpdateSourceAsync("winget", isExplicit: true)).Succeeded.Should().BeTrue();
+        (await _service.UpdateSource("winget", isExplicit: true)).Succeeded.Should().BeTrue();
     }
 
     [Test]
-    public async Task UpdateSourceAsync_WithPriorityOnly_Delegates()
+    public async Task UpdateSource_WithPriorityOnly_Delegates()
     {
         _sourceClient
-            .Setup(c => c.UpdateSourceAsync("winget", null, 10, It.IsAny<CancellationToken>()))
+            .Setup(c => c.UpdateSource("winget", null, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        (await _service.UpdateSourceAsync("winget", priority: 10)).Succeeded.Should().BeTrue();
+        (await _service.UpdateSource("winget", priority: 10)).Succeeded.Should().BeTrue();
     }
 
     [TestCase("")]
@@ -89,9 +89,9 @@ public class PackageSourceServiceEdgeTests
     {
         var operations = new Func<Task>[]
         {
-            () => _service.RemoveSourceAsync(name!),
-            () => _service.RefreshSourceAsync(name!),
-            () => _service.UpdateSourceAsync(name!, isExplicit: true),
+            () => _service.RemoveSource(name!),
+            () => _service.RefreshSource(name!),
+            () => _service.UpdateSource(name!, isExplicit: true),
         };
 
         foreach (var operation in operations)

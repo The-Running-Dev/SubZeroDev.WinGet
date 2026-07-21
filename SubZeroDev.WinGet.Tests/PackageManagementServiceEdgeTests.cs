@@ -31,13 +31,13 @@ public class PackageManagementServiceEdgeTests
     }
 
     [Test]
-    public async Task GetWinGetVersionAsync_DelegatesToClient()
+    public async Task GetWinGetVersion_DelegatesToClient()
     {
         _winGetClient
-            .Setup(c => c.GetWinGetVersionAsync(It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetWinGetVersion(It.IsAny<CancellationToken>()))
             .ReturnsAsync("v1.29.280");
 
-        (await _service.GetWinGetVersionAsync()).Should().Be("v1.29.280");
+        (await _service.GetWinGetVersion()).Should().Be("v1.29.280");
     }
 
     // The four documented "actually fine" codes: package/version already present.
@@ -45,45 +45,45 @@ public class PackageManagementServiceEdgeTests
     [TestCase(WinGetErrorCodes.InstallAlreadyInstalled)]
     [TestCase(WinGetErrorCodes.InstallDowngrade)]
     [TestCase(WinGetErrorCodes.UpgradeVersionNotNewer)]
-    public async Task InstallAsync_WithAnyAlreadyInstalledCode_NormalizesToSuccess(int errorCode)
+    public async Task Install_WithAnyAlreadyInstalledCode_NormalizesToSuccess(int errorCode)
     {
         _winGetClient
-            .Setup(c => c.InstallAsync("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(PackageOperationResult.Failure(PackageOperationStatus.InstallError, "already installed", errorCode));
 
-        var result = await _service.InstallAsync("id");
+        var result = await _service.Install("id");
 
         result.Succeeded.Should().BeTrue();
     }
 
     [Test]
-    public async Task InstallAsync_WithOtherFailure_DoesNotNormalize()
+    public async Task Install_WithOtherFailure_DoesNotNormalize()
     {
         var failure = PackageOperationResult.Failure(PackageOperationStatus.DownloadError, "network", -1);
 
         _winGetClient
-            .Setup(c => c.InstallAsync("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failure);
 
-        var result = await _service.InstallAsync("id");
+        var result = await _service.Install("id");
 
         result.Should().Be(failure);
     }
 
     [Test]
-    public async Task UpdateAsync_WithNoApplicableUpgradeUnderConstraints_RetriesUnconstrained()
+    public async Task Update_WithNoApplicableUpgradeUnderConstraints_RetriesUnconstrained()
     {
         var constrained = new InstallRequest { Architecture = PackageArchitecture.X64, Scope = PackageScope.System };
         var sequence = new List<InstallRequest>();
 
         _winGetClient
-            .Setup(c => c.UpgradeAsync("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Upgrade("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
             .Callback<string, InstallRequest, IProgress<PackageOperationProgress>?, CancellationToken>((_, r, _, _) => sequence.Add(r))
             .ReturnsAsync(() => sequence.Count == 1
                 ? PackageOperationResult.Failure(PackageOperationStatus.NoApplicableUpgrade, "not applicable")
                 : PackageOperationResult.Success());
 
-        var result = await _service.UpdateAsync("id", constrained);
+        var result = await _service.Update("id", constrained);
 
         result.Succeeded.Should().BeTrue();
         sequence.Should().HaveCount(2);
@@ -93,19 +93,19 @@ public class PackageManagementServiceEdgeTests
     }
 
     [Test]
-    public async Task UpdateAsync_WhenUnknownVersionRetryIsAlreadyAllowed_DoesNotRetry()
+    public async Task Update_WhenUnknownVersionRetryIsAlreadyAllowed_DoesNotRetry()
     {
         var request = new InstallRequest { AllowUpgradeToUnknownVersion = true };
         var failure = PackageOperationResult.Failure(PackageOperationStatus.InstallError, "unknown version", WinGetErrorCodes.UpgradeVersionUnknown);
 
         _winGetClient
-            .Setup(c => c.UpgradeAsync("id", request, null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Upgrade("id", request, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failure);
 
-        var result = await _service.UpdateAsync("id", request);
+        var result = await _service.Update("id", request);
 
         result.Should().Be(failure);
-        _winGetClient.Verify(c => c.UpgradeAsync("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()), Times.Once);
+        _winGetClient.Verify(c => c.Upgrade("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestCase("")]
@@ -115,15 +115,15 @@ public class PackageManagementServiceEdgeTests
     {
         var operations = new Func<Task>[]
         {
-            () => _service.GetPackageAsync(packageId!),
-            () => _service.GetDetailsAsync(packageId!),
-            () => _service.InstallAsync(packageId!),
-            () => _service.UpdateAsync(packageId!),
-            () => _service.UninstallAsync(packageId!),
-            () => _service.DownloadAsync(packageId!, new DownloadRequest(@"C:\tmp")),
-            () => _service.RepairAsync(packageId!),
-            () => _service.PinAsync(packageId!),
-            () => _service.UnpinAsync(packageId!),
+            () => _service.GetPackage(packageId!),
+            () => _service.GetDetails(packageId!),
+            () => _service.Install(packageId!),
+            () => _service.Update(packageId!),
+            () => _service.Uninstall(packageId!),
+            () => _service.Download(packageId!, new DownloadRequest(@"C:\tmp")),
+            () => _service.Repair(packageId!),
+            () => _service.Pin(packageId!),
+            () => _service.Unpin(packageId!),
         };
 
         foreach (var operation in operations)
@@ -133,66 +133,66 @@ public class PackageManagementServiceEdgeTests
     }
 
     [Test]
-    public async Task RepairAsync_ReturnsFailureUnchanged()
+    public async Task Repair_ReturnsFailureUnchanged()
     {
         var failure = PackageOperationResult.Failure(PackageOperationStatus.NoApplicableRepairer, "no repairer");
 
         _winGetClient
-            .Setup(c => c.RepairAsync("id", It.IsAny<RepairRequest>(), null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Repair("id", It.IsAny<RepairRequest>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(failure);
 
-        (await _service.RepairAsync("id")).Should().Be(failure);
+        (await _service.Repair("id")).Should().Be(failure);
     }
 
     [Test]
-    public async Task GetPinsAsync_DelegatesToCliClient()
+    public async Task GetPins_DelegatesToCliClient()
     {
         var pins = new List<PackagePin> { new("Git.Git", "Git", "2.44.0", PackagePinKind.Pinning, "winget") };
 
         _cliClient
-            .Setup(c => c.GetPinsAsync(It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetPins(It.IsAny<CancellationToken>()))
             .ReturnsAsync(pins);
 
-        (await _service.GetPinsAsync()).Should().BeEquivalentTo(pins);
+        (await _service.GetPins()).Should().BeEquivalentTo(pins);
     }
 
     [Test]
-    public async Task UnpinAsync_DelegatesToCliClient()
+    public async Task Unpin_DelegatesToCliClient()
     {
         _cliClient
-            .Setup(c => c.RemovePinAsync("Git.Git", false, It.IsAny<CancellationToken>()))
+            .Setup(c => c.RemovePin("Git.Git", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CliOperationResult(true, 0, "", ""));
 
-        (await _service.UnpinAsync("Git.Git")).Succeeded.Should().BeTrue();
+        (await _service.Unpin("Git.Git")).Succeeded.Should().BeTrue();
     }
 
     [Test]
-    public async Task PinAsync_PassesVersionAndBlockingThrough()
+    public async Task Pin_PassesVersionAndBlockingThrough()
     {
         _cliClient
-            .Setup(c => c.AddPinAsync("Git.Git", "2.44.*", true, false, It.IsAny<CancellationToken>()))
+            .Setup(c => c.AddPin("Git.Git", "2.44.*", true, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CliOperationResult(true, 0, "", ""));
 
-        (await _service.PinAsync("Git.Git", "2.44.*", blocking: true)).Succeeded.Should().BeTrue();
+        (await _service.Pin("Git.Git", "2.44.*", blocking: true)).Succeeded.Should().BeTrue();
 
         _cliClient.VerifyAll();
     }
 
     [Test]
-    public async Task ImportAsync_DelegatesToCliClient()
+    public async Task Import_DelegatesToCliClient()
     {
         _cliClient
-            .Setup(c => c.ImportAsync(@"C:\pkgs.json", true, false, It.IsAny<CancellationToken>()))
+            .Setup(c => c.Import(@"C:\pkgs.json", true, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CliOperationResult(true, 0, "", ""));
 
-        (await _service.ImportAsync(@"C:\pkgs.json", ignoreUnavailable: true)).Succeeded.Should().BeTrue();
+        (await _service.Import(@"C:\pkgs.json", ignoreUnavailable: true)).Succeeded.Should().BeTrue();
     }
 
     [TestCase("")]
     [TestCase("   ")]
-    public void ImportAsync_WithNoPath_ThrowsArgumentException(string filePath)
+    public void Import_WithNoPath_ThrowsArgumentException(string filePath)
     {
-        var act = async () => await _service.ImportAsync(filePath);
+        var act = async () => await _service.Import(filePath);
 
         act.Should().ThrowAsync<ArgumentException>();
     }

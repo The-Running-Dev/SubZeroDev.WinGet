@@ -8,15 +8,15 @@ namespace SubZeroDev.WinGet.Abstractions;
 /// </summary>
 public interface IPackageSourceService
 {
-    Task<IReadOnlyList<PackageSource>> GetSourcesAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default);
 
-    Task<PackageSource?> GetSourceAsync(string name, CancellationToken cancellationToken = default);
+    Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default);
 
-    Task<SourceOperationResult> AddSourceAsync(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+    Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
 
-    Task<SourceOperationResult> RemoveSourceAsync(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+    Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
 
-    Task<SourceOperationResult> RefreshSourceAsync(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+    Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
 
-    Task<SourceOperationResult> UpdateSourceAsync(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default);
+    Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default);
 }

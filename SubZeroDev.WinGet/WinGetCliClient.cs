@@ -17,9 +17,9 @@ public sealed class WinGetCliClient : IWinGetCliClient
     private readonly Lazy<string> _wingetPath = new(ResolveWinGetPath);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PackagePin>> GetPinsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
     {
-        var result = await RunAsync(["pin", "list", "--accept-source-agreements", "--disable-interactivity"], cancellationToken);
+        var result = await Run(["pin", "list", "--accept-source-agreements", "--disable-interactivity"], cancellationToken);
 
         if (!result.Succeeded)
         {
@@ -31,27 +31,27 @@ public sealed class WinGetCliClient : IWinGetCliClient
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> AddPinAsync(string packageId, string? version = null, bool blocking = false, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> AddPin(string packageId, string? version = null, bool blocking = false, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
     {
-        return RunAsync(BuildAddPinArguments(packageId, version, blocking, pinInstalledVersion), cancellationToken);
+        return Run(BuildAddPinArguments(packageId, version, blocking, pinInstalledVersion), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> RemovePinAsync(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> RemovePin(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
     {
-        return RunAsync(BuildRemovePinArguments(packageId, pinInstalledVersion), cancellationToken);
+        return Run(BuildRemovePinArguments(packageId, pinInstalledVersion), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> ExportAsync(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Export(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default)
     {
-        return RunAsync(BuildExportArguments(filePath, includeVersions, sourceName), cancellationToken);
+        return Run(BuildExportArguments(filePath, includeVersions, sourceName), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<CliOperationResult> ImportAsync(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+    public Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
     {
-        return RunAsync(BuildImportArguments(filePath, ignoreUnavailable, ignoreVersions), cancellationToken);
+        return Run(BuildImportArguments(filePath, ignoreUnavailable, ignoreVersions), cancellationToken);
     }
 
     internal static List<string> BuildAddPinArguments(string packageId, string? version, bool blocking, bool pinInstalledVersion)
@@ -122,7 +122,7 @@ public sealed class WinGetCliClient : IWinGetCliClient
         return arguments;
     }
 
-    private async Task<CliOperationResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<CliOperationResult> Run(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         var startInfo = new ProcessStartInfo
         {

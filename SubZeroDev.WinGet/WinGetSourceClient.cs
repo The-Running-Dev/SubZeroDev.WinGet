@@ -32,7 +32,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     private PackageManager PackageManager => _packageManager.Value;
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<PackageSource>> GetSourcesAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -44,7 +44,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
             // Do NOT convert to foreach/LINQ: the CsWinRT-projected list's enumerator throws
             // InvalidCastException ("No such interface supported") on interop 1.29.280.
             // Only indexer access (.Count / [i]) is reliable. Verified by the live
-            // GetSourcesAsync integration test.
+            // GetSources integration test.
             for (var i = 0; i < catalogs.Count; i++)
             {
                 sources.Add(ToPackageSource(catalogs[i].Info));
@@ -55,7 +55,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     }
 
     /// <inheritdoc />
-    public Task<PackageSource?> GetSourceAsync(string name, CancellationToken cancellationToken = default)
+    public Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -68,7 +68,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> AddSourceAsync(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         var options = _factory.CreateAddPackageCatalogOptions();
         options.Name = request.Name;
@@ -102,7 +102,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> RemoveSourceAsync(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         var options = _factory.CreateRemovePackageCatalogOptions();
         options.Name = name;
@@ -125,7 +125,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     }
 
     /// <inheritdoc />
-    public async Task<SourceOperationResult> RefreshSourceAsync(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -153,7 +153,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient
     }
 
     /// <inheritdoc />
-    public Task<SourceOperationResult> UpdateSourceAsync(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
+    public Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
