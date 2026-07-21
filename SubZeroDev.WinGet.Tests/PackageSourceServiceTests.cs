@@ -27,29 +27,29 @@ public class PackageSourceServiceTests
         new("Microsoft.Winget.Source_8wekyb3d8bbwe", name, "Microsoft.PreIndexed.Package", "https://cdn.winget.microsoft.com/cache", DateTimeOffset.UtcNow, PackageSourceOrigin.Predefined, PackageSourceTrustLevel.Trusted, false, 0);
 
     [Test]
-    public async Task GetSourcesAsync_DelegatesToClient()
+    public async Task GetSources_DelegatesToClient()
     {
         var expected = new List<PackageSource> { MakeSource(), MakeSource("msstore") };
 
         _sourceClient
-            .Setup(c => c.GetSourcesAsync(It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSources(It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await _service.GetSourcesAsync();
+        var result = await _service.GetSources();
 
         result.Should().BeEquivalentTo(expected);
     }
 
     [Test]
-    public async Task GetSourceAsync_DelegatesToClient()
+    public async Task GetSource_DelegatesToClient()
     {
         var expected = MakeSource();
 
         _sourceClient
-            .Setup(c => c.GetSourceAsync("winget", It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSource("winget", It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await _service.GetSourceAsync("winget");
+        var result = await _service.GetSource("winget");
 
         result.Should().Be(expected);
     }
@@ -57,77 +57,77 @@ public class PackageSourceServiceTests
     [TestCase("")]
     [TestCase("   ")]
     [TestCase(null)]
-    public void GetSourceAsync_WithNoName_ThrowsArgumentException(string? name)
+    public void GetSource_WithNoName_ThrowsArgumentException(string? name)
     {
-        var act = async () => await _service.GetSourceAsync(name!);
+        var act = async () => await _service.GetSource(name!);
 
         act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Test]
-    public async Task AddSourceAsync_DelegatesToClient()
+    public async Task AddSource_DelegatesToClient()
     {
         var request = new AddPackageSourceRequest("contoso", "https://contoso.example/source");
 
         _sourceClient
-            .Setup(c => c.AddSourceAsync(request, null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.AddSource(request, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        var result = await _service.AddSourceAsync(request);
+        var result = await _service.AddSource(request);
 
         result.Succeeded.Should().BeTrue();
         _sourceClient.VerifyAll();
     }
 
     [Test]
-    public void AddSourceAsync_WithNoUri_ThrowsArgumentException()
+    public void AddSource_WithNoUri_ThrowsArgumentException()
     {
-        var act = async () => await _service.AddSourceAsync(new AddPackageSourceRequest("contoso", ""));
+        var act = async () => await _service.AddSource(new AddPackageSourceRequest("contoso", ""));
 
         act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Test]
-    public async Task RemoveSourceAsync_DelegatesToClient()
+    public async Task RemoveSource_DelegatesToClient()
     {
         _sourceClient
-            .Setup(c => c.RemoveSourceAsync("contoso", true, null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.RemoveSource("contoso", true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        var result = await _service.RemoveSourceAsync("contoso", preserveData: true);
+        var result = await _service.RemoveSource("contoso", preserveData: true);
 
         result.Succeeded.Should().BeTrue();
         _sourceClient.VerifyAll();
     }
 
     [Test]
-    public async Task RefreshSourceAsync_DelegatesToClient()
+    public async Task RefreshSource_DelegatesToClient()
     {
         _sourceClient
-            .Setup(c => c.RefreshSourceAsync("winget", null, It.IsAny<CancellationToken>()))
+            .Setup(c => c.RefreshSource("winget", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        var result = await _service.RefreshSourceAsync("winget");
+        var result = await _service.RefreshSource("winget");
 
         result.Succeeded.Should().BeTrue();
     }
 
     [Test]
-    public void UpdateSourceAsync_WithNothingToChange_ThrowsArgumentException()
+    public void UpdateSource_WithNothingToChange_ThrowsArgumentException()
     {
-        var act = async () => await _service.UpdateSourceAsync("winget");
+        var act = async () => await _service.UpdateSource("winget");
 
         act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Test]
-    public async Task UpdateSourceAsync_DelegatesToClient()
+    public async Task UpdateSource_DelegatesToClient()
     {
         _sourceClient
-            .Setup(c => c.UpdateSourceAsync("winget", true, 5, It.IsAny<CancellationToken>()))
+            .Setup(c => c.UpdateSource("winget", true, 5, It.IsAny<CancellationToken>()))
             .ReturnsAsync(SourceOperationResult.Success());
 
-        var result = await _service.UpdateSourceAsync("winget", isExplicit: true, priority: 5);
+        var result = await _service.UpdateSource("winget", isExplicit: true, priority: 5);
 
         result.Succeeded.Should().BeTrue();
         _sourceClient.VerifyAll();

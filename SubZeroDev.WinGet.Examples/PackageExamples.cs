@@ -10,26 +10,26 @@ public static class PackageExamples
 {
     private const string DefaultId = "Microsoft.VisualStudioCode";
 
-    /// <summary>GetWinGetVersionAsync — the version of WinGet the COM API is backed by.</summary>
-    public static async Task VersionAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetWinGetVersion — the version of WinGet the COM API is backed by.</summary>
+    public static async Task Version(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var version = await packages.GetWinGetVersionAsync(ct);
+        var version = await packages.GetWinGetVersion(ct);
 
         Console.WriteLine($"WinGet version: {version ?? "(unavailable — requires winget >= 1.6 / contract 13)"}");
     }
 
     /// <summary>
-    /// SearchAsync — one call searches name/id/moniker/tag across every configured source, with
+    /// Search — one call searches name/id/moniker/tag across every configured source, with
     /// installed state already correlated into each result (no second "list installed" call needed).
     /// </summary>
-    public static async Task SearchAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    public static async Task Search(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var query = args.FirstOrDefault() ?? "vscode";
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var results = await packages.SearchAsync(query, sourceName: null, ct);
+        var results = await packages.Search(query, sourceName: null, ct);
 
         Console.WriteLine($"{results.Count} result(s) for '{query}':");
 
@@ -43,24 +43,24 @@ public static class PackageExamples
         }
     }
 
-    /// <summary>SearchAsync with sourceName — restrict the search to a single configured source.</summary>
-    public static async Task SearchSingleSourceAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Search with sourceName — restrict the search to a single configured source.</summary>
+    public static async Task SearchSingleSource(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var query = args.ElementAtOrDefault(0) ?? "vscode";
         var source = args.ElementAtOrDefault(1) ?? "winget";
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var results = await packages.SearchAsync(query, source, ct);
+        var results = await packages.Search(query, source, ct);
 
         Console.WriteLine($"{results.Count} result(s) for '{query}' in source '{source}'.");
     }
 
-    /// <summary>GetInstalledAsync — everything installed on this machine, WinGet-managed or not.</summary>
-    public static async Task InstalledAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetInstalled — everything installed on this machine, WinGet-managed or not.</summary>
+    public static async Task Installed(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var installed = await packages.GetInstalledAsync(ct);
+        var installed = await packages.GetInstalled(ct);
 
         Console.WriteLine($"{installed.Count} installed package(s); showing first 25:");
 
@@ -74,12 +74,12 @@ public static class PackageExamples
         }
     }
 
-    /// <summary>GetAvailableUpgradesAsync — the "winget upgrade" list.</summary>
-    public static async Task UpgradesAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetAvailableUpgrades — the "winget upgrade" list.</summary>
+    public static async Task Upgrades(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var upgrades = await packages.GetAvailableUpgradesAsync(ct);
+        var upgrades = await packages.GetAvailableUpgrades(ct);
 
         Console.WriteLine($"{upgrades.Count} package(s) with an available upgrade:");
 
@@ -89,13 +89,13 @@ public static class PackageExamples
         }
     }
 
-    /// <summary>GetPackageAsync — exact-id lookup returning install/update state.</summary>
-    public static async Task GetAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetPackage — exact-id lookup returning install/update state.</summary>
+    public static async Task Get(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var id = args.FirstOrDefault() ?? DefaultId;
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var package = await packages.GetPackageAsync(id, ct);
+        var package = await packages.GetPackage(id, ct);
 
         Console.WriteLine(package is null
             ? $"'{id}' was not found in any source."
@@ -103,15 +103,15 @@ public static class PackageExamples
     }
 
     /// <summary>
-    /// GetDetailsAsync — the full catalog manifest: description, license, agreements,
+    /// GetDetails — the full catalog manifest: description, license, agreements,
     /// documentation links, icons, tags, and every available version.
     /// </summary>
-    public static async Task DetailsAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    public static async Task Details(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var id = args.FirstOrDefault() ?? DefaultId;
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var details = await packages.GetDetailsAsync(id, ct);
+        var details = await packages.GetDetails(id, ct);
 
         if (details is null)
         {
@@ -131,12 +131,12 @@ public static class PackageExamples
     }
 
     /// <summary>
-    /// InstallAsync — full options (version pin, scope, mode, architecture, installer type,
+    /// Install — full options (version pin, scope, mode, architecture, installer type,
     /// custom arguments) plus live progress. The service layer auto-retries the two documented
     /// recoverable cases (already-installed => success; no-applicable-installer under constraints
     /// => retry unconstrained).
     /// </summary>
-    public static async Task InstallAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    public static async Task Install(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -160,13 +160,13 @@ public static class PackageExamples
             AcceptPackageAgreements = true,
         };
 
-        var result = await packages.InstallAsync(args[0], request, Progress(), ct);
+        var result = await packages.Install(args[0], request, Progress(), ct);
 
         Report("Install", result);
     }
 
-    /// <summary>UpdateAsync — upgrade an installed package (auto-retries unknown-version upgrades).</summary>
-    public static async Task UpdateAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Update — upgrade an installed package (auto-retries unknown-version upgrades).</summary>
+    public static async Task Update(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -177,13 +177,13 @@ public static class PackageExamples
 
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.UpdateAsync(args[0], new InstallRequest(), Progress(), ct);
+        var result = await packages.Update(args[0], new InstallRequest(), Progress(), ct);
 
         Report("Update", result);
     }
 
-    /// <summary>UninstallAsync.</summary>
-    public static async Task UninstallAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Uninstall.</summary>
+    public static async Task Uninstall(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -194,13 +194,13 @@ public static class PackageExamples
 
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.UninstallAsync(args[0], new UninstallRequest { Mode = PackageOperationMode.Silent }, Progress(), ct);
+        var result = await packages.Uninstall(args[0], new UninstallRequest { Mode = PackageOperationMode.Silent }, Progress(), ct);
 
         Report("Uninstall", result);
     }
 
-    /// <summary>DownloadAsync — fetch the installer file without running it (winget download).</summary>
-    public static async Task DownloadAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Download — fetch the installer file without running it (winget download).</summary>
+    public static async Task Download(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -212,7 +212,7 @@ public static class PackageExamples
         var directory = args.ElementAtOrDefault(1) ?? Path.Combine(Path.GetTempPath(), "winget-downloads");
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.DownloadAsync(args[0], new DownloadRequest(directory), Progress(), ct);
+        var result = await packages.Download(args[0], new DownloadRequest(directory), Progress(), ct);
 
         Report("Download", result);
 
@@ -222,8 +222,8 @@ public static class PackageExamples
         }
     }
 
-    /// <summary>RepairAsync — winget repair; requires the installer technology to support it.</summary>
-    public static async Task RepairAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>Repair — winget repair; requires the installer technology to support it.</summary>
+    public static async Task Repair(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -234,7 +234,7 @@ public static class PackageExamples
 
         var packages = services.GetRequiredService<IPackageManagementService>();
 
-        var result = await packages.RepairAsync(args[0], new RepairRequest(), Progress(), ct);
+        var result = await packages.Repair(args[0], new RepairRequest(), Progress(), ct);
 
         Report("Repair", result);
     }
@@ -243,14 +243,14 @@ public static class PackageExamples
     /// The low-level path: IWinGetClient bypasses the service layer's validation/logging/retry
     /// policy — single attempt, raw normalized results. Same registration, one interface lower.
     /// </summary>
-    public static async Task LowLevelAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    public static async Task LowLevel(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var query = args.FirstOrDefault() ?? "vscode";
         var client = services.GetRequiredService<IWinGetClient>();
 
-        var results = await client.SearchAsync(query, limit: 5, sourceName: null, ct);
+        var results = await client.Search(query, limit: 5, sourceName: null, ct);
 
-        Console.WriteLine($"IWinGetClient.SearchAsync('{query}', limit 5): {results.Count} result(s), no retry policy applied.");
+        Console.WriteLine($"IWinGetClient.Search('{query}', limit 5): {results.Count} result(s), no retry policy applied.");
     }
 
     private static Progress<PackageOperationProgress> Progress() =>

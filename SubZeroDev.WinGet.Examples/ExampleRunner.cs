@@ -17,35 +17,35 @@ public static class ExampleRunner
     private static readonly Example[] Examples =
     [
         // Read-only — safe to run as-is.
-        new("version", "version", "Report the installed WinGet version", false, PackageExamples.VersionAsync),
-        new("search", "search [query]", "Search all sources (default query: vscode)", false, PackageExamples.SearchAsync),
-        new("search-source", "search-source [query] [source]", "Search one source only (defaults: vscode, winget)", false, PackageExamples.SearchSingleSourceAsync),
-        new("installed", "installed", "List installed packages with update state", false, PackageExamples.InstalledAsync),
-        new("upgrades", "upgrades", "List packages with an available upgrade", false, PackageExamples.UpgradesAsync),
-        new("get", "get [package-id]", "Get one package by exact id (default: Microsoft.VisualStudioCode)", false, PackageExamples.GetAsync),
-        new("details", "details [package-id]", "Full manifest metadata for a package (default: Microsoft.VisualStudioCode)", false, PackageExamples.DetailsAsync),
-        new("sources", "sources", "List configured sources", false, SourceExamples.ListAsync),
-        new("source-get", "source-get [name]", "Get one source by name (default: winget)", false, SourceExamples.GetAsync),
-        new("pins", "pins", "List package pins (CLI-backed; no COM equivalent)", false, PinExamples.ListAsync),
-        new("export", "export [file]", "Export installed packages to an importable JSON file (default: %TEMP%)", false, ExportImportExamples.ExportAsync),
-        new("low-level", "low-level [query]", "Use IWinGetClient directly, bypassing the service layer's retry policy", false, PackageExamples.LowLevelAsync),
+        new("version", "version", "Report the installed WinGet version", false, PackageExamples.Version),
+        new("search", "search [query]", "Search all sources (default query: vscode)", false, PackageExamples.Search),
+        new("search-source", "search-source [query] [source]", "Search one source only (defaults: vscode, winget)", false, PackageExamples.SearchSingleSource),
+        new("installed", "installed", "List installed packages with update state", false, PackageExamples.Installed),
+        new("upgrades", "upgrades", "List packages with an available upgrade", false, PackageExamples.Upgrades),
+        new("get", "get [package-id]", "Get one package by exact id (default: Microsoft.VisualStudioCode)", false, PackageExamples.Get),
+        new("details", "details [package-id]", "Full manifest metadata for a package (default: Microsoft.VisualStudioCode)", false, PackageExamples.Details),
+        new("sources", "sources", "List configured sources", false, SourceExamples.List),
+        new("source-get", "source-get [name]", "Get one source by name (default: winget)", false, SourceExamples.Get),
+        new("pins", "pins", "List package pins (CLI-backed; no COM equivalent)", false, PinExamples.List),
+        new("export", "export [file]", "Export installed packages to an importable JSON file (default: %TEMP%)", false, ExportImportExamples.Export),
+        new("low-level", "low-level [query]", "Use IWinGetClient directly, bypassing the service layer's retry policy", false, PackageExamples.LowLevel),
 
         // Mutating — require explicit arguments; nothing runs by accident.
-        new("install", "install <package-id> [version]", "Install a package (shows progress reporting and full options)", true, PackageExamples.InstallAsync),
-        new("update", "update <package-id>", "Upgrade an installed package", true, PackageExamples.UpdateAsync),
-        new("uninstall", "uninstall <package-id>", "Uninstall a package", true, PackageExamples.UninstallAsync),
-        new("download", "download <package-id> [directory]", "Download a package's installer without installing", true, PackageExamples.DownloadAsync),
-        new("repair", "repair <package-id>", "Repair an installed package (needs winget >= 1.7)", true, PackageExamples.RepairAsync),
-        new("pin", "pin <package-id> [version] [--blocking]", "Pin a package (optionally gate to a version, e.g. 1.2.*)", true, PinExamples.AddAsync),
-        new("unpin", "unpin <package-id>", "Remove a package pin", true, PinExamples.RemoveAsync),
-        new("import", "import <file>", "Install every package listed in an exported JSON file", true, ExportImportExamples.ImportAsync),
-        new("source-add", "source-add <name> <uri>", "Register a new source (requires elevation)", true, SourceExamples.AddAsync),
-        new("source-remove", "source-remove <name>", "Unregister a source (requires elevation)", true, SourceExamples.RemoveAsync),
-        new("source-refresh", "source-refresh <name>", "Force a source's catalog data to update", true, SourceExamples.RefreshAsync),
-        new("source-edit", "source-edit <name> <explicit|priority> <value>", "Edit a source's Explicit flag or Priority", true, SourceExamples.EditAsync),
+        new("install", "install <package-id> [version]", "Install a package (shows progress reporting and full options)", true, PackageExamples.Install),
+        new("update", "update <package-id>", "Upgrade an installed package", true, PackageExamples.Update),
+        new("uninstall", "uninstall <package-id>", "Uninstall a package", true, PackageExamples.Uninstall),
+        new("download", "download <package-id> [directory]", "Download a package's installer without installing", true, PackageExamples.Download),
+        new("repair", "repair <package-id>", "Repair an installed package (needs winget >= 1.7)", true, PackageExamples.Repair),
+        new("pin", "pin <package-id> [version] [--blocking]", "Pin a package (optionally gate to a version, e.g. 1.2.*)", true, PinExamples.Add),
+        new("unpin", "unpin <package-id>", "Remove a package pin", true, PinExamples.Remove),
+        new("import", "import <file>", "Install every package listed in an exported JSON file", true, ExportImportExamples.Import),
+        new("source-add", "source-add <name> <uri>", "Register a new source (requires elevation)", true, SourceExamples.Add),
+        new("source-remove", "source-remove <name>", "Unregister a source (requires elevation)", true, SourceExamples.Remove),
+        new("source-refresh", "source-refresh <name>", "Force a source's catalog data to update", true, SourceExamples.Refresh),
+        new("source-edit", "source-edit <name> <explicit|priority> <value>", "Edit a source's Explicit flag or Priority", true, SourceExamples.Edit),
     ];
 
-    public static async Task<int> RunAsync(IServiceProvider services, string[] args, CancellationToken cancellationToken)
+    public static async Task<int> Run(IServiceProvider services, string[] args, CancellationToken cancellationToken)
     {
         if (args.Length == 0)
         {

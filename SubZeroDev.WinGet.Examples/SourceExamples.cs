@@ -11,12 +11,12 @@ namespace SubZeroDev.WinGet.Examples;
 /// </summary>
 public static class SourceExamples
 {
-    /// <summary>GetSourcesAsync — every configured source with its metadata.</summary>
-    public static async Task ListAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetSources — every configured source with its metadata.</summary>
+    public static async Task List(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var sources = services.GetRequiredService<IPackageSourceService>();
 
-        var all = await sources.GetSourcesAsync(ct);
+        var all = await sources.GetSources(ct);
 
         Console.WriteLine($"{all.Count} configured source(s):");
 
@@ -26,19 +26,19 @@ public static class SourceExamples
         }
     }
 
-    /// <summary>GetSourceAsync — one source by name.</summary>
-    public static async Task GetAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>GetSource — one source by name.</summary>
+    public static async Task Get(IServiceProvider services, string[] args, CancellationToken ct)
     {
         var name = args.FirstOrDefault() ?? "winget";
         var sources = services.GetRequiredService<IPackageSourceService>();
 
-        var source = await sources.GetSourceAsync(name, ct);
+        var source = await sources.GetSource(name, ct);
 
         Console.WriteLine(source is null ? $"Source '{name}' is not configured." : $"{source.Name}: {source.Argument} ({source.Type})");
     }
 
-    /// <summary>AddSourceAsync — register a new source. Elevation required.</summary>
-    public static async Task AddAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>AddSource — register a new source. Elevation required.</summary>
+    public static async Task Add(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length < 2)
         {
@@ -58,13 +58,13 @@ public static class SourceExamples
         };
 
         // Source operations report percentage progress (0-100) rather than staged progress.
-        var result = await sources.AddSourceAsync(request, new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
+        var result = await sources.AddSource(request, new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
 
         Console.WriteLine(result.Succeeded ? "Source added." : $"Add failed: {result.ErrorMessage} (0x{result.ExtendedErrorCode ?? 0:X8})");
     }
 
-    /// <summary>RemoveSourceAsync — preserveData:false mirrors "winget source remove"; true mirrors "reset".</summary>
-    public static async Task RemoveAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>RemoveSource — preserveData:false mirrors "winget source remove"; true mirrors "reset".</summary>
+    public static async Task Remove(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -75,13 +75,13 @@ public static class SourceExamples
 
         var sources = services.GetRequiredService<IPackageSourceService>();
 
-        var result = await sources.RemoveSourceAsync(args[0], preserveData: false, new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
+        var result = await sources.RemoveSource(args[0], preserveData: false, new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
 
         Console.WriteLine(result.Succeeded ? "Source removed." : $"Remove failed: {result.ErrorMessage} (0x{result.ExtendedErrorCode ?? 0:X8})");
     }
 
-    /// <summary>RefreshSourceAsync — force the source's catalog data to update now.</summary>
-    public static async Task RefreshAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>RefreshSource — force the source's catalog data to update now.</summary>
+    public static async Task Refresh(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length == 0)
         {
@@ -92,13 +92,13 @@ public static class SourceExamples
 
         var sources = services.GetRequiredService<IPackageSourceService>();
 
-        var result = await sources.RefreshSourceAsync(args[0], new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
+        var result = await sources.RefreshSource(args[0], new Progress<double>(p => Console.WriteLine($"  {p:F0}%")), ct);
 
         Console.WriteLine(result.Succeeded ? "Source refreshed." : $"Refresh failed: {result.ErrorMessage} (0x{result.ExtendedErrorCode ?? 0:X8})");
     }
 
-    /// <summary>UpdateSourceAsync — edit the Explicit flag and/or Priority of a source.</summary>
-    public static async Task EditAsync(IServiceProvider services, string[] args, CancellationToken ct)
+    /// <summary>UpdateSource — edit the Explicit flag and/or Priority of a source.</summary>
+    public static async Task Edit(IServiceProvider services, string[] args, CancellationToken ct)
     {
         if (args.Length < 3 || (args[1] is not ("explicit" or "priority")))
         {
@@ -110,8 +110,8 @@ public static class SourceExamples
         var sources = services.GetRequiredService<IPackageSourceService>();
 
         var result = args[1] == "explicit"
-            ? await sources.UpdateSourceAsync(args[0], isExplicit: bool.Parse(args[2]), priority: null, ct)
-            : await sources.UpdateSourceAsync(args[0], isExplicit: null, priority: int.Parse(args[2]), ct);
+            ? await sources.UpdateSource(args[0], isExplicit: bool.Parse(args[2]), priority: null, ct)
+            : await sources.UpdateSource(args[0], isExplicit: null, priority: int.Parse(args[2]), ct);
 
         Console.WriteLine(result.Succeeded ? "Source updated." : $"Edit failed: {result.ErrorMessage} (0x{result.ExtendedErrorCode ?? 0:X8})");
     }

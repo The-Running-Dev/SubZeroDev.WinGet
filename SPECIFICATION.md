@@ -18,6 +18,8 @@ A C# client library over the **WinGet COM API** (`Microsoft.Management.Deploymen
 
 Design properties worth preserving:
 
+- **No `Async` method-name suffix.** All operations are async (`Task`-returning) — suffixing every method is noise, and it's a deliberate project convention (2026-07-21) not to. External calls (COM projection, BCL, Moq/FluentAssertions) keep their own names. Do not "fix" this back.
+
 - **The public surface never leaks a COM/WinRT type** — callers only see plain C# records, enums, and interfaces.
 - **No console output is parsed** for anything the COM API can do. The single, deliberate exception is `WinGetCliClient` (§4.4): pin management and export/import have **no COM equivalent at any contract version** (verified against the winget-cli IDL), so those two features — and only those — shell out to `winget.exe`, isolated behind their own interface.
 - **Composite catalogs everywhere.** Every lookup merges remote sources with local install state via `CreateCompositePackageCatalog` — the architecturally correct way (and what winget itself does) to correlate "installed" with "available".
@@ -30,8 +32,9 @@ Design properties worth preserving:
 | [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 100 mocked unit tests + 12 opt-in live integration tests. |
 | [SubZeroDev.WinGet.Examples](SubZeroDev.WinGet.Examples) | Console app with a runnable example per public API. Read-only examples run live by default; mutating ones require explicit arguments. Also demonstrates the direct-ComInterop-reference rule and Ctrl+C cancellation. |
 | [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing just these two projects. |
-| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to main (direct pushes to main are blocked by a repository ruleset — all changes land via PR). NuGet publish is **off by default**: manual `workflow_dispatch` with the `push_to_nuget` input, gated on a `NUGET_API_KEY` secret. |
+| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to main (direct pushes to main are blocked by a repository ruleset — all changes land via PR). **Publishing** has two targets: (1) **GitHub Packages** — automatic on GitHub Release, `needs: build`, version from GitVersion (`.NET tool`) reading the release tag, auth via the built-in `GITHUB_TOKEN`; (2) **NuGet.org** — off by default, manual `workflow_dispatch` with the `push_to_nuget` input gated on a `NUGET_API_KEY` secret, publishing the `.csproj`-pinned version (left unchanged). |
 | [README.md](README.md) | Consumer-facing readme; embedded in the NuGet package. |
+| [docs/](docs) | Docusaurus-ready Markdown documentation (frontmatter + `_category_.json`): intro, getting started, usage guides (packages/sources/pins-export-import), examples, testing, architecture, troubleshooting. Drop into a Docusaurus `docs/` folder as-is. |
 
 Reference clones used for research (`winget-cli/`, `UniGetUI/`, `Winget-AutoUpdate/`) sit in the working directory but are git-ignored — they are not part of the repo.
 
@@ -70,7 +73,7 @@ Note: the projection's default interfaces (`IPackageManager`, …) are `internal
 
 ### 4.2 `WinGetClient` — package operations
 
-Full package surface: `GetWinGetVersionAsync`, `SearchAsync` (optionally restricted to one source), `GetInstalledPackagesAsync`, `GetAvailableUpgradesAsync`, `GetPackageAsync`, `GetPackageDetailsAsync` (full manifest metadata: description, license, agreements, docs, icons, tags, all available versions), `InstallAsync`, `UpgradeAsync`, `UninstallAsync`, `DownloadAsync` (installer download without install), `RepairAsync`.
+Full package surface: `GetWinGetVersion`, `Search` (optionally restricted to one source), `GetInstalledPackages`, `GetAvailableUpgrades`, `GetPackage`, `GetPackageDetails` (full manifest metadata: description, license, agreements, docs, icons, tags, all available versions), `Install`, `Upgrade`, `Uninstall`, `Download` (installer download without install), `Repair`.
 
 Request records (`InstallRequest`, `UninstallRequest`, `DownloadRequest`, `RepairRequest`) expose the full option surface of the IDL: version pinning, scope, silent/interactive mode, architecture, installer type, install location, log path, `--override`/`--custom` argument equivalents, force, hash-mismatch, skip-dependencies, agreements, correlation data.
 
@@ -82,11 +85,11 @@ Catalog strategy per operation:
 
 ### 4.3 `WinGetSourceClient` — source management
 
-The `winget source` equivalent via COM (contract 12/28): `GetSourcesAsync`, `GetSourceAsync`, `AddSourceAsync`, `RemoveSourceAsync` (with `preserveData` = the "reset" behavior), `RefreshSourceAsync`, `UpdateSourceAsync` (Explicit/Priority editing). Add/remove require an elevated caller (WinGet returns `AccessDenied` otherwise).
+The `winget source` equivalent via COM (contract 12/28): `GetSources`, `GetSource`, `AddSource`, `RemoveSource` (with `preserveData` = the "reset" behavior), `RefreshSource`, `UpdateSource` (Explicit/Priority editing). Add/remove require an elevated caller (WinGet returns `AccessDenied` otherwise).
 
 ### 4.4 `WinGetCliClient` — the isolated CLI shim
 
-Pin management (`GetPinsAsync`, `AddPinAsync` with version-gating/blocking, `RemovePinAsync`) and `ExportAsync`/`ImportAsync`. These features are CLI-only in WinGet — the contract-29 IDL has no pinning or import/export surface at all.
+Pin management (`GetPins`, `AddPin` with version-gating/blocking, `RemovePin`) and `Export`/`Import`. These features are CLI-only in WinGet — the contract-29 IDL has no pinning or import/export surface at all.
 
 - winget.exe resolution: App Execution Alias first; for service/SYSTEM contexts (no alias), globs `Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*` and picks the highest version — the strategy Winget-AutoUpdate uses at scale.
 - Arguments passed via `ArgumentList` (no shell, no quoting bugs); `--disable-interactivity --accept-source-agreements` always set so nothing blocks waiting for console input.
@@ -180,4 +183,5 @@ Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live
 | 3 | Minimum supported WinGet/App Installer version and a compatibility matrix (interop pinned at 1.29.280; contract-13+ members like `PackageManager.Version` are guarded, most others are not). |
 | 4 | ARM64 declared but never built/run on hardware. |
 | 5 | Live mutating-operation coverage using a disposable test package. |
-| 6 | First actual NuGet publish: set the `NUGET_API_KEY` repository secret, confirm the MIT license choice and v0.1.0 as the initial version, then run the workflow with `push_to_nuget`. (Packaging metadata, README embedding, LICENSE, and the CI pack step are done.) |
+| 6 | **First GitHub Packages publish**: cut a GitHub Release with a version tag (e.g. `v0.1.0`) — the `publish-github-packages` job packs at the GitVersion-derived version and pushes automatically (no secret needed). Nothing published yet; the path is wired and the workflow YAML validated, but has not run against a real release. |
+| 7 | First **NuGet.org** publish (separate from GitHub Packages): set the `NUGET_API_KEY` secret and run the workflow with `push_to_nuget`. Publishes the `.csproj`-pinned version. |
