@@ -17,8 +17,8 @@ dotnet tool update --global Nuke.GlobalTool --version 10.1.0
 nuke Test Pack       # any combination of targets in one command; shared dependencies run once
 ```
 
-:::note Requires the .NET 10 SDK
-Everything targets .NET 10 — the library, tests, and examples as `net10.0-windows10.0.26100`, and `build/_build.csproj` as plain `net10.0` (Nuke.Common 10.x ships `lib/net10.0` only). The .NET 10 SDK is the only one needed, locally or in CI.
+:::note SDKs
+The product — library, tests, examples — targets `net8.0-windows10.0.26100`, so a plain `dotnet build`/`dotnet test` needs only the **.NET 8 SDK**. The Nuke build project (`build/_build.csproj`) targets `net10.0` because Nuke.Common 10.x ships `lib/net10.0` only, so driving the build **through Nuke** additionally needs the **.NET 10 SDK**. CI installs both (net8 builds/runs the product; net10 runs Nuke, which shells out to the net8 targets).
 
 The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
 :::
