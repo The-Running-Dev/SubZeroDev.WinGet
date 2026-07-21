@@ -109,6 +109,15 @@ dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests
 
 The integration tests are `[Explicit]`, read-only by design, and run against the machine's real WinGet catalog.
 
+CI runs the same steps through a generic [Nuke](https://nuke.build) build ([build/Build.cs](build/Build.cs)) instead of hand-written `dotnet` CLI steps. Equivalent locally:
+
+```
+dotnet tool install --global Nuke.GlobalTool --version 10.1.0
+nuke Test Pack   # any combination of targets in one command
+```
+
+See [docs/testing.md](docs/testing.md#build-orchestration-with-nuke) for the full target list.
+
 CI: [.github/workflows/build.yml](.github/workflows/build.yml) builds, tests, and packs on every push/PR — a failing test stops the build before packaging, and a code-coverage summary is rendered on each run's summary page.
 
 **Publishing:**

@@ -1,0 +1,160 @@
+// This is the generic build orchestration for SubZeroDev.WinGet, written with Nuke
+// (https://nuke.build). It replaces the dotnet-CLI steps that used to live directly in
+// .github/workflows/build.yml: everything here is invoked as `nuke <Target>` from CI
+// (see the workflow file) but works identically from a local shell once the Nuke.GlobalTool
+// is installed:
+//
+//     dotnet tool install --global Nuke.GlobalTool --version 10.1.0
+//     nuke Test Pack
+//
+// Targets are plain and composable - `nuke Test Coverage Pack` computes one execution
+// plan and runs each shared dependency (Restore, Compile) exactly once, so CI invokes
+// whichever combination of leaf targets a job needs in a single command instead of
+// re-running earlier steps per invocation.
+using Nuke.Common;
+using Nuke.Common.IO;
+using Nuke.Common.ProjectModel;
+using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Tools.ReportGenerator;
+using Nuke.Common.Utilities.Collections;
+using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
+
+class Build : NukeBuild
+{
+    /// Support plugins are available for:
+    ///   - JetBrains ReSharper        https://nuke.build/resharper
+    ///   - JetBrains Rider            https://nuke.build/rider
+    ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
+    ///   - Microsoft VSCode           https://nuke.build/vscode
+    public static int Main() => Execute<Build>(x => x.Compile);
+
+    [Parameter("Build configuration. Defaults to 'Debug' locally and 'Release' on any CI server.")]
+    readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+
+    [Parameter("NuGet.org API key. Required by PublishNuGet.")]
+    [Secret]
+    readonly string NugetApiKey;
+
+    [Parameter("Token used to authenticate against the GitHub Packages NuGet feed (the built-in GITHUB_TOKEN is sufficient). Required by PublishGitHubPackages.")]
+    [Secret]
+    readonly string GithubToken;
+
+    [Parameter("Owner (org or user) of the GitHub Packages feed to publish to, e.g. 'The-Running-Dev'. Required by PublishGitHubPackages.")]
+    readonly string GithubRepositoryOwner;
+
+    // Only PublishGitHubPackages uses this, but Nuke injects [GitVersion]-attributed fields
+    // eagerly at build startup regardless of which target is requested - GitVersion needs
+    // full git history to compute a version, and injection fails outright on a shallow
+    // clone even if the current run never touches this field. That is why BOTH CI jobs
+    // now check out with fetch-depth: 0, not just the one that calls PublishGitHubPackages.
+    [GitVersion] readonly GitVersion GitVersion;
+
+    [Solution] readonly Solution Solution;
+
+    AbsolutePath LibraryProject => RootDirectory / "SubZeroDev.WinGet" / "SubZeroDev.WinGet.csproj";
+    AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
+    AbsolutePath TestResultsDirectory => RootDirectory / "TestResults";
+    AbsolutePath CoverageDirectory => RootDirectory / "coverage";
+
+    // Local-dev convenience only - CI always starts from a fresh checkout, so this is
+    // never part of the target chains the workflow invokes.
+    Target Clean => _ => _
+        .Executes(() =>
+        {
+            ArtifactsDirectory.CreateOrCleanDirectory();
+            TestResultsDirectory.CreateOrCleanDirectory();
+            CoverageDirectory.CreateOrCleanDirectory();
+        });
+
+    Target Restore => _ => _
+        .Executes(() => DotNetRestore(s => s
+            .SetProjectFile(Solution)));
+
+    Target Compile => _ => _
+        .DependsOn(Restore)
+        .Executes(() => DotNetBuild(s => s
+            .SetProjectFile(Solution)
+            .SetConfiguration(Configuration)
+            .EnableNoRestore()));
+
+    // Mirrors the original CI "Test" step exactly: NUnit's [Explicit] attribute already
+    // excludes the 12 live integration tests from a plain test run, so no filter is needed.
+    Target Test => _ => _
+        .DependsOn(Compile)
+        .Executes(() => DotNetTest(s => s
+            .SetProjectFile(Solution)
+            .SetConfiguration(Configuration)
+            .EnableNoRestore()
+            .EnableNoBuild()
+            .SetLoggers("trx")
+            .SetResultsDirectory(TestResultsDirectory)
+            .SetProcessAdditionalArguments("--collect:\"XPlat Code Coverage\"")));
+
+    // Opt-in only, never part of the default CI target chain - mirrors the
+    // `--filter "FullyQualifiedName~IntegrationTests"` command documented in the README
+    // and docs/testing.md. Needs a real WinGet install on the machine that runs it.
+    Target IntegrationTest => _ => _
+        .DependsOn(Compile)
+        .Executes(() => DotNetTest(s => s
+            .SetProjectFile(Solution)
+            .SetConfiguration(Configuration)
+            .EnableNoRestore()
+            .EnableNoBuild()
+            .SetFilter("FullyQualifiedName~IntegrationTests")));
+
+    Target Coverage => _ => _
+        .DependsOn(Test)
+        .Executes(() => ReportGenerator(s => s
+            .SetReports(TestResultsDirectory / "**/coverage.cobertura.xml")
+            .SetTargetDirectory(CoverageDirectory)
+            .SetReportTypes(ReportTypes.MarkdownSummaryGithub, ReportTypes.Cobertura)));
+
+    // Packs at the version pinned in SubZeroDev.WinGet.csproj - this is the path used by
+    // the regular build job (artifact upload + optional NuGet.org push). The GitHub
+    // Packages release path uses its own GitVersion-derived pack in PublishGitHubPackages
+    // instead, exactly as the two jobs were independent before this change.
+    Target Pack => _ => _
+        .DependsOn(Compile)
+        .Executes(() => DotNetPack(s => s
+            .SetProject(LibraryProject)
+            .SetConfiguration(Configuration)
+            .EnableNoRestore()
+            .EnableNoBuild()
+            .SetOutputDirectory(ArtifactsDirectory)));
+
+    Target PublishNuGet => _ => _
+        .DependsOn(Pack)
+        .Requires(() => NugetApiKey)
+        .Executes(() => ArtifactsDirectory.GlobFiles("*.nupkg")
+            .ForEach(package => DotNetNuGetPush(s => s
+                .SetTargetPath(package)
+                .SetSource("https://api.nuget.org/v3/index.json")
+                .SetApiKey(NugetApiKey)
+                // Original workflow used the (invalid) plural "--skip-duplicates" here;
+                // this is the correct singular flag - see PR description.
+                .EnableSkipDuplicate())));
+
+    // Deliberately independent of Compile/Pack: like the original publish-github-packages
+    // job, this does its own from-scratch `dotnet pack` (implicit restore+build) at the
+    // GitVersion-computed version, since it runs as its own CI job/checkout.
+    Target PublishGitHubPackages => _ => _
+        .Requires(() => GithubToken)
+        .Requires(() => GithubRepositoryOwner)
+        .Executes(() =>
+        {
+            DotNetPack(s => s
+                .SetProject(LibraryProject)
+                .SetConfiguration(Configuration)
+                .SetVersion(GitVersion.SemVer)
+                .SetOutputDirectory(ArtifactsDirectory));
+
+            ArtifactsDirectory.GlobFiles("*.nupkg").ForEach(package => DotNetNuGetPush(s => s
+                .SetTargetPath(package)
+                .SetSource($"https://nuget.pkg.github.com/{GithubRepositoryOwner}/index.json")
+                .SetApiKey(GithubToken)
+                .EnableSkipDuplicate()));
+        });
+}

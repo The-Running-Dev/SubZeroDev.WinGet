@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Plain net8.0 - this project never touches the WinGet COM interop package,
+         so it does not need the windows10.0.26100 TFM or the x64 platform pin that
+         the library/tests/examples projects require. Deliberately NOT added to
+         SubZeroDev.WinGet.sln so it stays out of the main solution's build/platform
+         matrix; Nuke discovers the main solution independently via [Solution]. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace></RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Nullable disabled: Nuke's [Parameter]/[Solution]/[GitVersion]-attributed fields are
+         populated via reflection after construction, not compiler-visible initialization,
+         which would otherwise spam CS8618 across every field below. This is the convention
+         used by Nuke's own build project and the official templates. -->
+    <Nullable>disable</Nullable>
+    <NoWarn>CS0649</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuke.Common" Version="10.1.0" />
+  </ItemGroup>
+
+</Project>
