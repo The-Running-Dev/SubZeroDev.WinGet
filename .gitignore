@@ -16,6 +16,14 @@ obj/
 .act-artifacts/
 artifacts/
 
+## Nuke build outputs (dotnet test results / ReportGenerator output; the original
+## workflow wrote these under CI-only paths and never gitignored them - now that
+## `nuke Test`/`nuke Coverage` are easy to run locally too, ignore them for real)
+TestResults/
+coverage/
+## Nuke scratch dir (build.schema.json and parameters.json ARE tracked)
+.nuke/temp/
+
 ## Reference clones (research only, not part of this repo)
 /UniGetUI/
 /Winget-AutoUpdate/

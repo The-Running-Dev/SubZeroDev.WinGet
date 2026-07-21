@@ -2,6 +2,8 @@
 
 *Updated 2026-07-21 after the "complete COM wrapper" expansion. The library grew from a minimal 6-method client into a full wrapper of the WinGet COM API surface (contract 29), informed by studying three reference codebases: the official winget-cli source (the authoritative IDL and CLSIDs), UniGetUI (real-world COM usage patterns and elevation workarounds), and Winget-AutoUpdate (operational lessons from enterprise-scale winget automation).*
 
+*Updated again 2026-07-21 (same day, follow-up phase) to extract the workflow's dotnet-CLI steps into a generic [Nuke](https://nuke.build) build (§3, §11).*
+
 ## 1. Origin & Scope
 
 This library's lineage, briefly:
@@ -31,8 +33,9 @@ Design properties worth preserving:
 | [SubZeroDev.WinGet](SubZeroDev.WinGet) | The library. Packs as the `SubZeroDev.WinGet` NuGet package (v0.1.0, MIT). |
 | [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 100 mocked unit tests + 12 opt-in live integration tests. |
 | [SubZeroDev.WinGet.Examples](SubZeroDev.WinGet.Examples) | Console app with a runnable example per public API. Read-only examples run live by default; mutating ones require explicit arguments. Also demonstrates the direct-ComInterop-reference rule and Ctrl+C cancellation. |
-| [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing just these two projects. |
-| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to main (direct pushes to main are blocked by a repository ruleset — all changes land via PR). **Publishing** has two targets: (1) **GitHub Packages** — automatic on GitHub Release, `needs: build`, version from GitVersion (`.NET tool`) reading the release tag, auth via the built-in `GITHUB_TOKEN`; (2) **NuGet.org** — off by default, manual `workflow_dispatch` with the `push_to_nuget` input gated on a `NUGET_API_KEY` secret, publishing the `.csproj`-pinned version (left unchanged). |
+| [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing just these two projects (`SubZeroDev.WinGet.Examples` too — see below). **Deliberately excludes** `build/_build.csproj` (§9). |
+| [build/](build) | The Nuke build project (§9): `_build.csproj` (plain `net10.0`, not part of the main `.sln`) + `Build.cs` + `Configuration.cs`. Generic target-based replacement for the dotnet-CLI steps that used to live directly in the workflow YAML. |
+| [.github/workflows/build.yml](.github/workflows/build.yml) | CI: two jobs. The **`build`** job (installs `Nuke.GlobalTool`, then `nuke Test` → `nuke Coverage`; the required status check) runs on every push to main **and** every pull request — PRs run tests + coverage only, never pack or publish. The **`release`** job (`needs: build`) runs only on a push to main or a manual `workflow_dispatch`, and publishes: (1) **GitHub Packages** — automatic on every push to main, version from GitVersion (Nuke's GitVersion component), auth via the built-in `GITHUB_TOKEN`, `nuke PublishGitHubPackages`; (2) **NuGet.org** — manual only, `workflow_dispatch` with the `push_to_nuget` input gated on a `NUGET_API_KEY` secret, `.csproj`-pinned version, `nuke PublishNuGet`. Direct pushes to main are blocked by a repository ruleset — all changes land via PR, so "push to main" means "a merged PR". |
 | [README.md](README.md) | Consumer-facing readme; embedded in the NuGet package. |
 | [docs/](docs) | Docusaurus-ready Markdown documentation (frontmatter + `_category_.json`): intro, getting started, usage guides (packages/sources/pins-export-import), examples, testing, architecture, troubleshooting. Drop into a Docusaurus `docs/` folder as-is. |
 
@@ -122,7 +125,7 @@ Raw single-attempt behavior is always available by calling `IWinGetClient` direc
 
 ## 6. Build & Platform Requirements
 
-- **`net8.0-windows10.0.26100`** — the interop package requires this Windows-flavored TFM.
+- **`net10.0-windows10.0.26100`** — the interop package requires a Windows-flavored TFM (validated on .NET 10: all 12 live COM integration tests pass).
 - **Platform pinned to `x64` (or `ARM64`)** — `Microsoft.Management.Deployment.dll` is not `AnyCPU`; both `.csproj` files default `AnyCPU` → `x64` so plain `dotnet build`/`test` works. ARM64 declared but never built/tested on hardware.
 - **Consumers that *run* code from this library need a direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`**, not just a `ProjectReference`: the interop package's `.targets` copies the native activation-factory DLL only into the directly-referencing project's output. Verified by a real `COMException 0x80040154` until the test project took the direct reference. **The most important integration note for any consumer.**
 
@@ -168,13 +171,44 @@ Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live
 
 **Not covered**: mutating operations (install/upgrade/uninstall/repair/import, source add/remove/refresh, pin add/remove) against the real API — needs a disposable test package and (for sources) elevation.
 
-## 9. Deliberately Out of Scope
+## 9. Build Orchestration (Nuke)
+
+The workflow's `dotnet`-CLI steps (restore, build, test, coverage rendering, pack, both publish paths) were extracted from `.github/workflows/build.yml` into [build/Build.cs](build/Build.cs), a generic [Nuke](https://nuke.build) build. The workflow YAML is hand-authored (not generated from a `[GitHubActions]` attribute) — it installs `Nuke.GlobalTool` and calls `nuke <Target>` instead of raw `dotnet` commands. It has two jobs: **`build`** (tests + coverage; runs on every push to main and every PR; the required status check) and **`release`** (`needs: build`; runs only on a push to main or a manual dispatch). Pull requests therefore never pack or publish — only the `build` job runs for them.
+
+**Layout:** `build/_build.csproj` (plain `net10.0`, referencing `Nuke.Common` 10.1.0) + `build/Build.cs` + `build/Configuration.cs`, plus a `.nuke/` directory (`parameters.json` pointing at `SubZeroDev.WinGet.sln`) and the `build.ps1`/`build.sh` bootstrappers at the root. The build project is deliberately **not** added to `SubZeroDev.WinGet.sln` — it doesn't touch the WinGet COM interop package and has no reason to share the main solution's Windows-TFM/x64-platform pin. Nuke.Common 10.x ships `lib/net10.0` only, which forced the build project onto net10; the rest of the repo was then moved to .NET 10 as well (§3) so there is exactly one SDK to install, locally and in CI.
+
+**Install/invocation model:** the global tool (`dotnet tool update --global Nuke.GlobalTool --version 10.1.0` — `update`, not `install`, so it's idempotent across the persistent host `act` uses — then `nuke <Target>`). Note that the global tool locates a build by **searching for `build.ps1`/`build.sh`** — it does not find `build/_build.csproj` on its own, and without those files it drops into an interactive "do you want to set up a build?" prompt that hard-fails in CI. The bootstrappers are therefore required, not optional; they simply delegate to `dotnet run --project build/_build.csproj`, which also means `./build.ps1 <Target>` works without installing the global tool at all.
+
+**Targets:** `Restore`, `Compile`, `Test`, `IntegrationTest` (opt-in, mirrors the README's documented `--filter` command, never in the CI chain), `Coverage` (Nuke's `ReportGenerator` component), `Pack`, `PublishNuGet`, `PublishGitHubPackages` (Nuke's `[GitVersion]` component instead of manually installing GitVersion.Tool and JSON-parsing its output). `Pack` and `PublishGitHubPackages` remain independent pack paths exactly as the original two jobs were — the former uses the `.csproj`-pinned version, the latter overrides it with `GitVersion.SemVer` — since they run in genuinely separate CI jobs/checkouts.
+
+**Nuke resolves NuGet-backed tools from declared packages.** Both the `Coverage` target and `[GitVersion]` injection shell out to tools that Nuke expects to find via `PackageDownload` entries in `build/_build.csproj` (`ReportGenerator`, `GitVersion.Tool`). They are not implicit: without them `Coverage` fails at runtime with *"Missing package reference/download"*, and `[GitVersion]` injection degrades to a warning that only becomes fatal when `PublishGitHubPackages` dereferences `GitVersion.SemVer`.
+
+**On `fetch-depth: 0`:** `[GitVersion]` injection is eager (it runs regardless of which target was requested), but a failure to inject is a **warning**, not a hard startup failure — a shallow clone does not break `nuke Test`/`nuke Pack`. Full history is genuinely required only by `PublishGitHubPackages`. Both jobs currently fetch full history anyway, which is harmless and keeps the two checkouts identical.
+
+**A bug fixed in passing:** the original NuGet.org publish step passed `--skip-duplicates` (plural) to `dotnet nuget push`; the real flag is singular (`--skip-duplicate`). This was never caught because that path (§11, item 7) has never actually executed. The Nuke port uses the correct singular flag via `.EnableSkipDuplicate()`.
+
+**Validation status:** the Nuke build has been compiled and executed on a real Windows host and in GitHub Actions (2026-07-21). `nuke Test Coverage Pack --configuration Release` completes green through the global tool — the exact invocation path CI uses — producing `artifacts/SubZeroDev.WinGet.0.1.0.nupkg`, `coverage/Cobertura.xml`, and `coverage/SummaryGithub.md`, with `[GitVersion]` injecting cleanly. The publish targets themselves still have not run — they push packages, so they remain unexercised until a real release (§11, items 6–7).
+
+### 9.1 Defects found when the port was first executed
+
+The original port was authored without a Windows host or .NET SDK and had **never been compiled**. Four defects surfaced on first execution. Notably the `Build.cs` target code — written from Nuke's docs, the part its author flagged as most at risk — was entirely correct; every defect was environmental/packaging:
+
+1. **TFM mismatch.** `Nuke.Common` 10.x ships `lib/net10.0` only, but the build project targeted `net8.0` → 43 compile errors, no Nuke type resolvable. Resolved by moving the build project (and subsequently the whole repo, §3) to .NET 10.
+2. **`build/Configuration.cs` was missing.** `Build.cs` references the `Configuration` enumeration type that Nuke's templates normally generate alongside it.
+3. **Bootstrappers were missing.** The global tool locates a build by searching for `build.ps1`/`build.sh`; without them `nuke <Target>` opens an interactive "set up a build?" prompt that hard-fails in CI (`Failed to read input in non-interactive mode`). This **reversed the port's documented "global tool, no bootstrapper scripts" decision** — that combination cannot work. The legacy `.nuke` marker *file* was also converted to the modern `.nuke/` directory.
+4. **NuGet-backed tools weren't declared** — see the `PackageDownload` note above.
+
+A claim in the original port's own documentation was also corrected: `[GitVersion]` injection does *not* fail outright on a shallow clone (see the `fetch-depth` note above).
+
+**Known redundancy:** now that the bootstrappers exist, CI's `Install Nuke` step and the `NUKE_VERSION`/`Nuke.Common` version-sync requirement are unnecessary — the workflow could call `./build.ps1 <Target>` directly. Left as-is deliberately; the build system is expected to be replaced shortly.
+
+## 10. Deliberately Out of Scope
 
 - **`Microsoft.Management.Configuration`** (DSC-style declarative configuration) — a separate COM namespace and a separate concern; would be its own package if ever needed.
 - **`PackageManagerSettings`** (caller telemetry id, state separation) — in-proc-only COM surface; revisit if a host needs state isolation.
 - **Catalog TLS certificate pinning** (`ConnectionValidationHandler`, contract 29) — in-proc-only, niche; not exposed.
 
-## 10. Open Questions / Remaining Work
+## 11. Open Questions / Remaining Work
 
 | # | Item |
 |---|---|
@@ -183,5 +217,6 @@ Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live
 | 3 | Minimum supported WinGet/App Installer version and a compatibility matrix (interop pinned at 1.29.280; contract-13+ members like `PackageManager.Version` are guarded, most others are not). |
 | 4 | ARM64 declared but never built/run on hardware. |
 | 5 | Live mutating-operation coverage using a disposable test package. |
-| 6 | **First GitHub Packages publish**: cut a GitHub Release with a version tag (e.g. `v0.1.0`) — the `publish-github-packages` job packs at the GitVersion-derived version and pushes automatically (no secret needed). Nothing published yet; the path is wired and the workflow YAML validated, but has not run against a real release. |
+| 6 | **First GitHub Packages publish** happens automatically on the next push to main (the `release` job). Version is GitVersion-derived; on main without a version tag GitVersion yields the same `SemVer` across commits, so `--skip-duplicate` means a *new* package only appears when the version bumps (bump the `.csproj` version or tag a release). If a unique package per merge is wanted, switch GitVersion to continuous-deployment mode. |
 | 7 | First **NuGet.org** publish (separate from GitHub Packages): set the `NUGET_API_KEY` secret and run the workflow with `push_to_nuget`. Publishes the `.csproj`-pinned version. |
+| 8 | The Nuke build (§9) is validated locally **and** in GitHub Actions. Remaining: the two publish targets are still unexercised (items 6–7), and the build system is expected to be replaced shortly, at which point §9 and the `build/` project go with it. |

@@ -9,7 +9,7 @@ sidebar_position: 2
 ## Requirements
 
 - Windows 10/11 with **WinGet (App Installer)** installed
-- .NET 8, TFM `net8.0-windows10.0.26100`
+- .NET 10, TFM `net10.0-windows10.0.26100`
 - Platform **x64** (ARM64 is declared but not yet validated on hardware) — the WinGet interop assembly is not AnyCPU
 
 ## Installation
@@ -51,7 +51,7 @@ Your project must also pin the platform, since the interop assembly is not AnyCP
   <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</Platform>
   <Platforms>x64;ARM64</Platforms>
   <PlatformTarget>x64</PlatformTarget>
-  <TargetFramework>net8.0-windows10.0.26100</TargetFramework>
+  <TargetFramework>net10.0-windows10.0.26100</TargetFramework>
 </PropertyGroup>
 ```
 

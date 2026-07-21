@@ -5,52 +5,63 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  release:
-    # Publishing a GitHub Release (which creates/points at a tag) triggers the
-    # publish-github-packages job below. GitVersion derives the version from that tag.
-    types: [published]
   workflow_dispatch:
     inputs:
       push_to_nuget:
-        description: Push the built package to NuGet.org
+        description: Also publish the package to NuGet.org (in addition to the GitHub Packages release on main)
         type: boolean
         required: false
         default: false
 
+env:
+  # Pinned to match build/_build.csproj's Nuke.Common reference - keep these two in sync.
+  NUKE_VERSION: 10.1.0
+
 jobs:
+  # Runs on every push to main AND every pull request: tests + coverage only, never
+  # packs or publishes. This is the required status check for branch protection.
   build:
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # This job never publishes, so it does not strictly need full history — a shallow
+          # clone would only make Nuke's eager [GitVersion] injection emit a harmless warning
+          # (the value is never dereferenced here; only PublishGitHubPackages reads it).
+          # fetch-depth: 0 purely silences that warning and keeps both jobs' checkouts identical.
+          fetch-depth: 0
 
       - name: Setup .NET
         # Skipped under act host mode — the host machine already has a .NET SDK.
         if: ${{ !env.ACT }}
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
-      - name: Restore
-        run: dotnet restore SubZeroDev.WinGet.sln
-
-      - name: Build
-        run: dotnet build SubZeroDev.WinGet.sln --configuration Release --no-restore
-
-      - name: Test
-        # Integration tests are NUnit [Explicit] and are automatically excluded here;
-        # only the mocked unit tests run (no WinGet/COM needed on the runner).
-        # A failing test fails this step and stops the job — Pack/Push never run.
-        run: dotnet test SubZeroDev.WinGet.sln --configuration Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults
-
-      - name: Coverage report
-        # Renders the coverage summary onto the workflow run page (GITHUB_STEP_SUMMARY),
-        # which surfaces alongside the green/red check on the commit/PR.
+      - name: Install Nuke
         run: |
-          dotnet tool update --global dotnet-reportgenerator-globaltool
-          & "$env:USERPROFILE\.dotnet\tools\reportgenerator.exe" -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:coverage "-reporttypes:MarkdownSummaryGithub;Cobertura"
-          Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
+          # `update` (not `install`) so this is idempotent: it installs the tool when
+          # missing and is a no-op success when the pinned version is already present.
+          # `install --version X` instead errors if a *different* version is already on
+          # the host - which happens under `act` host mode (the host environment persists
+          # between runs) whenever NUKE_VERSION is bumped.
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Test and coverage
+        # One Nuke invocation for both targets. Nuke de-duplicates target execution only
+        # WITHIN a single invocation, so Test and Coverage must be requested together —
+        # separate `nuke Test` then `nuke Coverage` calls would re-run Test (and its
+        # Restore/Compile dependencies). Coverage depends on Test, so the plan runs
+        # Restore -> Compile -> Test -> Coverage exactly once; a failing test stops the
+        # job before Coverage's report generation. The append step below surfaces the
+        # generated markdown on the run's summary page (GITHUB_STEP_SUMMARY).
+        run: nuke Test Coverage --configuration Release
+
+      - name: Append coverage summary
+        run: Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -58,28 +69,13 @@ jobs:
           name: coverage-report
           path: coverage/Cobertura.xml
 
-      - name: Pack
-        run: dotnet pack SubZeroDev.WinGet/SubZeroDev.WinGet.csproj --configuration Release --no-build --output artifacts
-
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-package
-          path: artifacts/*.nupkg
-
-      - name: Push to NuGet.org
-        # Off by default: runs only on a manual workflow_dispatch with push_to_nuget checked.
-        # Requires the NUGET_API_KEY repository secret.
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true }}
-        run: dotnet nuget push artifacts/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicates
-
-  # Publishes to GitHub Packages (the repo's public NuGet feed) when a GitHub Release
-  # is published. Version comes from GitVersion (installed as a .NET tool) reading the
-  # release tag. Gated on the build job so a release only publishes if build + tests pass.
-  # Authentication uses the automatic GITHUB_TOKEN — no repository secret needed.
-  publish-github-packages:
+  # Builds and releases the package. Runs only on pushes to main (automatic GitHub
+  # Packages release), or a manual workflow_dispatch that opts into a NuGet.org release.
+  # Pull requests never reach this job, so they only ever run tests + coverage above.
+  # Gated on `build` so nothing publishes unless tests pass.
+  release:
     needs: build
-    if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true) }}
     runs-on: windows-latest
 
     permissions:
@@ -90,25 +86,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # GitVersion needs full history and tags to derive the version.
+          # This job DOES publish, so it genuinely needs full history: PublishGitHubPackages
+          # dereferences the [GitVersion] field to derive the package version, which is fatal
+          # (not just a warning) on a shallow clone.
           fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
-      - name: Compute version (GitVersion)
-        id: version
+      - name: Install Nuke
         run: |
-          dotnet tool install --global GitVersion.Tool --version 6.8.2
-          $gitversion = "$env:USERPROFILE\.dotnet\tools\dotnet-gitversion.exe"
-          $version = (& $gitversion . /output json | ConvertFrom-Json).SemVer
-          "version=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "GitVersion computed: $version"
+          # `update` (not `install`) so this is idempotent: it installs the tool when
+          # missing and is a no-op success when the pinned version is already present.
+          # `install --version X` instead errors if a *different* version is already on
+          # the host - which happens under `act` host mode (the host environment persists
+          # between runs) whenever NUKE_VERSION is bumped.
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
-      - name: Pack
-        run: dotnet pack SubZeroDev.WinGet/SubZeroDev.WinGet.csproj --configuration Release -p:Version=${{ steps.version.outputs.version }} --output artifacts
+      # Automatic release on every push to main. Version comes from GitVersion (resolved
+      # by Nuke's GitVersion component). Auth uses the built-in GITHUB_TOKEN — no secret
+      # needed — and --skip-duplicate makes re-pushing an unchanged version harmless.
+      - name: Release to GitHub Packages
+        if: ${{ github.event_name == 'push' }}
+        run: nuke PublishGitHubPackages --github-token "${{ secrets.GITHUB_TOKEN }}" --github-repository-owner "${{ github.repository_owner }}"
 
-      - name: Push to GitHub Packages
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.GITHUB_TOKEN }}" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
+      # Manual, opt-in release to NuGet.org. Requires the NUGET_API_KEY secret and
+      # publishes the version pinned in the .csproj.
+      - name: Release to NuGet.org
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg

@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Plain net10.0 - this project never touches the WinGet COM interop package,
+         so it does not need the windows10.0.26100 TFM or the x64 platform pin that
+         the library/tests/examples projects require. Deliberately NOT added to
+         SubZeroDev.WinGet.sln so it stays out of the main solution's build/platform
+         matrix; Nuke discovers the main solution independently via [Solution].
+         net10.0 is required by Nuke.Common 10.x, which ships lib/net10.0 only - the
+         build project's TFM is independent of the net8.0 libraries it builds. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace></RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Nullable disabled: Nuke's [Parameter]/[Solution]/[GitVersion]-attributed fields are
+         populated via reflection after construction, not compiler-visible initialization,
+         which would otherwise spam CS8618 across every field below. This is the convention
+         used by Nuke's own build project and the official templates. -->
+    <Nullable>disable</Nullable>
+    <NoWarn>CS0649</NoWarn>
+    <IsPackable>false</IsPackable>
+    <NukeTelemetryVersion>1</NukeTelemetryVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuke.Common" Version="10.1.0" />
+    <!-- Nuke resolves NuGet-backed tools (ReportGenerator, used by the Coverage target)
+         from a declared package rather than a global tool install. Without this the
+         Coverage target fails at runtime with "Missing package reference/download".
+         PackageDownload + exact-version syntax is Nuke's documented convention for tools. -->
+    <PackageDownload Include="ReportGenerator" Version="[5.5.10]" />
+    <!-- Same reason: the [GitVersion] field injection shells out to the GitVersion tool,
+         which Nuke resolves from this package. Without it injection silently degrades to
+         a warning and PublishGitHubPackages fails when it dereferences GitVersion.SemVer. -->
+    <PackageDownload Include="GitVersion.Tool" Version="[6.8.2]" />
+  </ItemGroup>
+
+</Project>
