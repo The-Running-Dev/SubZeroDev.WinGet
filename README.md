@@ -1,6 +1,6 @@
-# SubZeroDev.PackageManagement
+# SubZeroDev.WinGet
 
-[![Build](https://github.com/The-Running-Dev/SubZeroDev.PackageManagement/actions/workflows/build.yml/badge.svg)](https://github.com/The-Running-Dev/SubZeroDev.PackageManagement/actions/workflows/build.yml)
+[![Build](https://github.com/The-Running-Dev/SubZeroDev.WinGet/actions/workflows/build.yml/badge.svg)](https://github.com/The-Running-Dev/SubZeroDev.WinGet/actions/workflows/build.yml)
 
 A C# client library for the **WinGet COM API** (`Microsoft.Management.Deployment`) — the same in-process API `winget.exe` itself is built on. Search, install, upgrade, uninstall, download, and repair packages; manage sources; pin packages; export/import package sets.
 
@@ -23,9 +23,9 @@ Pin management and export/import have no COM equivalent in WinGet (verified agai
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using SubZeroDev.PackageManagement;
-using SubZeroDev.PackageManagement.Abstractions;
-using SubZeroDev.PackageManagement.Models;
+using SubZeroDev.WinGet;
+using SubZeroDev.WinGet.Abstractions;
+using SubZeroDev.WinGet.Models;
 
 var services = new ServiceCollection()
     .AddLogging()
@@ -78,9 +78,9 @@ Any project that **runs** code from this library needs a **direct** `PackageRefe
 ## Building & Testing
 
 ```
-dotnet build SubZeroDev.PackageManagement.sln
-dotnet test  SubZeroDev.PackageManagement.sln                                    # 44 mocked unit tests, no COM
-dotnet test  SubZeroDev.PackageManagement.sln --filter "FullyQualifiedName~IntegrationTests"  # 12 live, read-only, needs WinGet
+dotnet build SubZeroDev.WinGet.sln
+dotnet test  SubZeroDev.WinGet.sln                                    # 44 mocked unit tests, no COM
+dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"  # 12 live, read-only, needs WinGet
 ```
 
 The integration tests are `[Explicit]`, read-only by design, and run against the machine's real WinGet catalog.

@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Must match SubZeroDev.WinGet's platform-pinned Windows TFM to reference it. -->
+    <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</Platform>
+    <Platforms>x64;ARM64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <TargetFramework>net8.0-windows10.0.26100</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <!-- The native WinGet activation-factory DLL that Microsoft.WindowsPackageManager.ComInterop's
+         .targets copies to an output directory does not flow transitively across ProjectReference
+         (only the managed projection assembly does) — verified empirically: the integration tests
+         below failed with COMException 0x80040154 (REGDB_E_CLASSNOTREG) until this direct
+         PackageReference was added so the test host's own output directory gets the native DLL too. -->
+    <PackageReference Include="Microsoft.WindowsPackageManager.ComInterop" Version="1.29.280" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SubZeroDev.WinGet\SubZeroDev.WinGet.csproj" />
+  </ItemGroup>
+
+</Project>

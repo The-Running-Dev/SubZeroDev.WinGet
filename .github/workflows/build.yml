@@ -29,16 +29,16 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore SubZeroDev.PackageManagement.sln
+        run: dotnet restore SubZeroDev.WinGet.sln
 
       - name: Build
-        run: dotnet build SubZeroDev.PackageManagement.sln --configuration Release --no-restore
+        run: dotnet build SubZeroDev.WinGet.sln --configuration Release --no-restore
 
       - name: Test
         # Integration tests are NUnit [Explicit] and are automatically excluded here;
         # only the mocked unit tests run (no WinGet/COM needed on the runner).
         # A failing test fails this step and stops the job — Pack/Push never run.
-        run: dotnet test SubZeroDev.PackageManagement.sln --configuration Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults
+        run: dotnet test SubZeroDev.WinGet.sln --configuration Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults
 
       - name: Coverage report
         # Renders the coverage summary onto the workflow run page (GITHUB_STEP_SUMMARY),
@@ -55,7 +55,7 @@ jobs:
           path: coverage/Cobertura.xml
 
       - name: Pack
-        run: dotnet pack SubZeroDev.PackageManagement/SubZeroDev.PackageManagement.csproj --configuration Release --no-build --output artifacts
+        run: dotnet pack SubZeroDev.WinGet/SubZeroDev.WinGet.csproj --configuration Release --no-build --output artifacts
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4

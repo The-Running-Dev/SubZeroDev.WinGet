@@ -1,4 +1,4 @@
-# SubZeroDev.PackageManagement — WinGet Client Library Specification
+# SubZeroDev.WinGet — WinGet Client Library Specification
 
 *Updated 2026-07-21 after the "complete COM wrapper" expansion. The library grew from a minimal 6-method client into a full wrapper of the WinGet COM API surface (contract 29), informed by studying three reference codebases: the official winget-cli source (the authoritative IDL and CLSIDs), UniGetUI (real-world COM usage patterns and elevation workarounds), and Winget-AutoUpdate (operational lessons from enterprise-scale winget automation).*
 
@@ -26,9 +26,9 @@ Design properties worth preserving:
 
 | Project | Role |
 |---|---|
-| [SubZeroDev.PackageManagement](SubZeroDev.PackageManagement) | The library. Packs as the `SubZeroDev.PackageManagement` NuGet package (v0.1.0, MIT). |
-| [SubZeroDev.PackageManagement.Tests](SubZeroDev.PackageManagement.Tests) | NUnit tests: 44 mocked unit tests + 12 opt-in live integration tests. |
-| [SubZeroDev.PackageManagement.sln](SubZeroDev.PackageManagement.sln) | Solution containing just these two projects. |
+| [SubZeroDev.WinGet](SubZeroDev.WinGet) | The library. Packs as the `SubZeroDev.WinGet` NuGet package (v0.1.0, MIT). |
+| [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 44 mocked unit tests + 12 opt-in live integration tests. |
+| [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing just these two projects. |
 | [.github/workflows/build.yml](.github/workflows/build.yml) | CI: restore → build → unit test (failures stop the job before packaging) → coverage summary onto the run page via ReportGenerator → `dotnet pack` → artifact upload, on every push/PR to master. NuGet publish is **off by default**: manual `workflow_dispatch` with the `push_to_nuget` input, gated on a `NUGET_API_KEY` secret. |
 | [README.md](README.md) | Consumer-facing readme; embedded in the NuGet package. |
 
