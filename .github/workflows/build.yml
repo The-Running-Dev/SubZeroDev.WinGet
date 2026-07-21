@@ -40,12 +40,7 @@ jobs:
         if: ${{ !env.ACT }}
         uses: actions/setup-dotnet@v4
         with:
-          # 10.0.x: required by the Nuke global tool and build/_build.csproj
-          #         (Nuke.Common 10.x ships lib/net10.0 only).
-          # 8.0.x:  the runtime the net8.0-windows library and its tests run on.
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: 10.0.x
 
       - name: Install Nuke
         run: |
@@ -110,12 +105,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          # 10.0.x: required by the Nuke global tool and build/_build.csproj
-          #         (Nuke.Common 10.x ships lib/net10.0 only).
-          # 8.0.x:  the runtime the net8.0-windows library and its tests run on.
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: 10.0.x
 
       - name: Install Nuke
         run: |

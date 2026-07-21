@@ -18,7 +18,7 @@ nuke Test Pack       # any combination of targets in one command; shared depende
 ```
 
 :::note Requires the .NET 10 SDK
-`build/_build.csproj` targets `net10.0` because **Nuke.Common 10.x ships `lib/net10.0` only**. That's independent of the libraries it builds, which still target `net8.0-windows10.0.26100` — so a machine (or CI runner) needs **both** SDKs: 10.0.x to run Nuke, 8.0.x to run the tests.
+Everything targets .NET 10 — the library, tests, and examples as `net10.0-windows10.0.26100`, and `build/_build.csproj` as plain `net10.0` (Nuke.Common 10.x ships `lib/net10.0` only). The .NET 10 SDK is the only one needed, locally or in CI.
 
 The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
 :::
