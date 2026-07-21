@@ -88,6 +88,17 @@ Any project that **runs** code from this library needs a **direct** `PackageRefe
 <PackageReference Include="Microsoft.WindowsPackageManager.ComInterop" Version="1.29.280" />
 ```
 
+### Installing from GitHub Packages
+
+Released versions are published to this repo's public **GitHub Packages** NuGet feed. Add it as a source (once), then install:
+
+```
+dotnet nuget add source https://nuget.pkg.github.com/The-Running-Dev/index.json --name github-trd
+dotnet add package SubZeroDev.WinGet
+```
+
+GitHub requires authentication even for public-feed reads — use a personal access token with the `read:packages` scope as the source's password when prompted. (You still need the direct `Microsoft.WindowsPackageManager.ComInterop` reference described above.)
+
 ## Building & Testing
 
 ```
@@ -98,7 +109,11 @@ dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests
 
 The integration tests are `[Explicit]`, read-only by design, and run against the machine's real WinGet catalog.
 
-CI: [.github/workflows/build.yml](.github/workflows/build.yml) builds, tests, and packs on every push/PR — a failing test stops the build before packaging, and a code-coverage summary is rendered on each run's summary page. Publishing to NuGet.org is **off by default** — it only runs on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret.
+CI: [.github/workflows/build.yml](.github/workflows/build.yml) builds, tests, and packs on every push/PR — a failing test stops the build before packaging, and a code-coverage summary is rendered on each run's summary page.
+
+**Publishing:**
+- **GitHub Packages** — automatic when a **GitHub Release** is published. The build+test job must pass first; the package version is derived from the release tag by [GitVersion](https://gitversion.net/) (installed as a .NET tool). Uses the built-in `GITHUB_TOKEN`, so no secret setup is needed.
+- **NuGet.org** — **off by default**; runs only on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret. Publishes the version pinned in the `.csproj`.
 
 ## Documentation
 

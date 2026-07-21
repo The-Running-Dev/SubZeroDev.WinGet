@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    # Publishing a GitHub Release (which creates/points at a tag) triggers the
+    # publish-github-packages job below. GitVersion derives the version from that tag.
+    types: [published]
   workflow_dispatch:
     inputs:
       push_to_nuget:
@@ -68,3 +72,43 @@ jobs:
         # Requires the NUGET_API_KEY repository secret.
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true }}
         run: dotnet nuget push artifacts/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicates
+
+  # Publishes to GitHub Packages (the repo's public NuGet feed) when a GitHub Release
+  # is published. Version comes from GitVersion (installed as a .NET tool) reading the
+  # release tag. Gated on the build job so a release only publishes if build + tests pass.
+  # Authentication uses the automatic GITHUB_TOKEN — no repository secret needed.
+  publish-github-packages:
+    needs: build
+    if: ${{ github.event_name == 'release' }}
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # GitVersion needs full history and tags to derive the version.
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Compute version (GitVersion)
+        id: version
+        run: |
+          dotnet tool install --global GitVersion.Tool --version 6.8.2
+          $gitversion = "$env:USERPROFILE\.dotnet\tools\dotnet-gitversion.exe"
+          $version = (& $gitversion . /output json | ConvertFrom-Json).SemVer
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "GitVersion computed: $version"
+
+      - name: Pack
+        run: dotnet pack SubZeroDev.WinGet/SubZeroDev.WinGet.csproj --configuration Release -p:Version=${{ steps.version.outputs.version }} --output artifacts
+
+      - name: Push to GitHub Packages
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.GITHUB_TOKEN }}" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate

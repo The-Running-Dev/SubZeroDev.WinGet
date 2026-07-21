@@ -19,6 +19,19 @@ dotnet add package SubZeroDev.WinGet
 dotnet add package Microsoft.WindowsPackageManager.ComInterop --version 1.29.280
 ```
 
+### Installing from GitHub Packages
+
+Released versions are published to this repository's public **GitHub Packages** NuGet feed. Register the source once, then install:
+
+```shell
+dotnet nuget add source https://nuget.pkg.github.com/The-Running-Dev/index.json --name github-trd
+dotnet add package SubZeroDev.WinGet
+```
+
+:::note
+GitHub requires authentication even to read a public packages feed. Supply a personal access token with the `read:packages` scope as the source password (e.g. `--username <you> --password <token>` on `dotnet nuget add source`, or in your `nuget.config`).
+:::
+
 :::warning The one integration rule
 
 Any project that **runs** code from this library needs a **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop` — depending on SubZeroDev.WinGet alone is not enough.

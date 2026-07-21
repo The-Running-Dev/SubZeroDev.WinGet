@@ -50,9 +50,27 @@ Every push/PR to `main` runs the GitHub Actions workflow ([build.yml](https://gi
 2. **Test** — a failing test stops the job; nothing gets packed or published
 3. Coverage summary rendered onto the run page
 4. `dotnet pack` → NuGet package uploaded as a run artifact
-5. *(manual only)* Push to NuGet.org — requires a `workflow_dispatch` with the `push_to_nuget` input and the `NUGET_API_KEY` secret
 
 `main` is protected: all changes land via pull request, and the `build` check must pass before merge.
+
+## Publishing
+
+Two publish targets, both driven by the same workflow:
+
+### GitHub Packages (automatic, on release)
+
+Publishing a **GitHub Release** runs the `publish-github-packages` job. It depends on the `build` job, so a release only publishes if the build and tests pass. The package version is computed by **[GitVersion](https://gitversion.net/)** — installed as a .NET tool (`GitVersion.Tool`) and run against the release tag — then injected into `dotnet pack` via `-p:Version`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-runs harmless.
+
+To cut a release:
+
+1. Decide the version and create a GitHub Release with a matching tag (e.g. `v0.2.0` — GitVersion accepts the `v` prefix).
+2. Publish the release. The job packs at that version and pushes to `https://nuget.pkg.github.com/The-Running-Dev/index.json`.
+
+Consumers install from the feed as shown in [Getting Started](getting-started#installing-from-github-packages).
+
+### NuGet.org (manual)
+
+Off by default. Runs only on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret. Publishes the version pinned in the `.csproj` (not GitVersion) — this path is intentionally left unchanged.
 
 ## Running CI locally
 
