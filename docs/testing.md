@@ -71,32 +71,34 @@ Current numbers (2026-07-21): unit-only **28.9% line / 50.2% method**; merged wi
 
 ## Continuous integration
 
-Every push/PR to `main` runs the GitHub Actions workflow ([build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml)) on `windows-latest`. The workflow installs `Nuke.GlobalTool` and calls into `build/Build.cs`:
+The GitHub Actions workflow ([build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml)) runs on `windows-latest` and has two jobs.
 
-1. `nuke Test` — Restore → Compile run first automatically; a failing test stops the job, so nothing gets packed or published
-2. `nuke Coverage` — renders the coverage summary onto the run page
-3. `nuke Pack` → NuGet package uploaded as a run artifact
+The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and calls into `build/Build.cs`:
 
-`main` is protected: all changes land via pull request, and the `build` check must pass before merge. Both CI jobs check out full git history (`fetch-depth: 0`). Nuke resolves the `[GitVersion]` field eagerly at startup regardless of which target is requested, but a failed resolution is only a *warning* — full history is strictly required just by `PublishGitHubPackages`; keeping both checkouts identical is simply tidier.
+1. `nuke Test` — Restore → Compile run first automatically; a failing test stops the job
+2. `nuke Coverage` — renders the coverage summary onto the run page, and uploads it as an artifact
+
+That's all a pull request ever does — **no packing, no publishing**. It's also the required status check.
+
+The **`release`** job (`needs: build`) runs only on a push to `main` or a manual dispatch, and does the packing/publishing (below).
+
+`main` is protected: all changes land via pull request and the `build` check must pass before merge, so "a push to `main`" is always a merged PR. Both jobs check out full git history (`fetch-depth: 0`) so Nuke's eager `[GitVersion]` resolution doesn't warn.
 
 ## Publishing
 
-Two publish targets, both driven by the same workflow:
+Both publish paths live in the `release` job and only run after `build` passes.
 
-### GitHub Packages (automatic, on release)
+### GitHub Packages (automatic, on every push to main)
 
-Publishing a **GitHub Release** runs the `publish-github-packages` job, which calls `nuke PublishGitHubPackages`. It depends on the `build` job, so a release only publishes if the build and tests pass. The package version is computed by **[GitVersion](https://gitversion.net/)** — resolved automatically by Nuke's GitVersion component (no manual tool install step anymore) — then passed to `dotnet pack` via `-p:Version`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-runs harmless.
+Every push to `main` runs `nuke PublishGitHubPackages`. The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an unchanged version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started#installing-from-github-packages).
 
-To cut a release:
-
-1. Decide the version and create a GitHub Release with a matching tag (e.g. `v0.2.0` — GitVersion accepts the `v` prefix).
-2. Publish the release. The job packs at that version and pushes to `https://nuget.pkg.github.com/The-Running-Dev/index.json`.
-
-Consumers install from the feed as shown in [Getting Started](getting-started#installing-from-github-packages).
+:::note Version bumps
+On `main` without a version tag, GitVersion produces the same `SemVer` across commits, so `--skip-duplicate` means a **new** package only appears when the version actually changes — bump the `.csproj` version, or tag a release. If you want a distinct package on every merge instead, switch GitVersion to continuous-deployment mode.
+:::
 
 ### NuGet.org (manual)
 
-Off by default. Runs only on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret, passed to `nuke PublishNuGet`. Publishes the version pinned in the `.csproj` (not GitVersion) — this path is intentionally left unchanged. (The previous workflow passed the invalid `--skip-duplicates`, plural, to this specific push; it was never caught because this path has never actually run — see [SPECIFICATION.md](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/SPECIFICATION.md). Fixed to the correct singular flag as part of the Nuke port.)
+Off by default. Runs only on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret, passed to `nuke PublishNuGet`. Publishes the version pinned in the `.csproj` (not GitVersion).
 
 ## Running CI locally
 

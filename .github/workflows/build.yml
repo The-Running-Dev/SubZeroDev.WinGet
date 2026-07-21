@@ -5,14 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  release:
-    # Publishing a GitHub Release (which creates/points at a tag) triggers the
-    # publish-github-packages job below. GitVersion derives the version from that tag.
-    types: [published]
   workflow_dispatch:
     inputs:
       push_to_nuget:
-        description: Push the built package to NuGet.org
+        description: Also publish the package to NuGet.org (in addition to the GitHub Packages release on main)
         type: boolean
         required: false
         default: false
@@ -22,6 +18,8 @@ env:
   NUKE_VERSION: 10.1.0
 
 jobs:
+  # Runs on every push to main AND every pull request: tests + coverage only, never
+  # packs or publishes. This is the required status check for branch protection.
   build:
     runs-on: windows-latest
 
@@ -29,10 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Both jobs fetch full history now, not just publish-github-packages: Nuke
-          # injects the [GitVersion] field in build/Build.cs eagerly at startup regardless
-          # of which target is requested, and that injection fails outright on a shallow
-          # clone even though this job never calls the target that uses it.
+          # Full history so Nuke's eager [GitVersion] injection doesn't warn; harmless here.
           fetch-depth: 0
 
       - name: Setup .NET
@@ -49,7 +44,7 @@ jobs:
 
       - name: Test
         # Restore and Compile run first automatically as Test's Nuke dependencies.
-        # A failing test fails this step and stops the job — Coverage/Pack never run.
+        # A failing test fails this step and stops the job.
         run: nuke Test --configuration Release
 
       - name: Coverage report
@@ -66,29 +61,13 @@ jobs:
           name: coverage-report
           path: coverage/Cobertura.xml
 
-      - name: Pack
-        run: nuke Pack --configuration Release
-
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-package
-          path: artifacts/*.nupkg
-
-      - name: Push to NuGet.org
-        # Off by default: runs only on a manual workflow_dispatch with push_to_nuget checked.
-        # Requires the NUGET_API_KEY repository secret.
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true }}
-        run: nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}"
-
-  # Publishes to GitHub Packages (the repo's public NuGet feed) when a GitHub Release
-  # is published. Version comes from GitVersion (resolved automatically by Nuke's
-  # GitVersion component - no manual tool install needed). Gated on the build job so a
-  # release only publishes if build + tests pass. Authentication uses the automatic
-  # GITHUB_TOKEN — no repository secret needed.
-  publish-github-packages:
+  # Builds and releases the package. Runs only on pushes to main (automatic GitHub
+  # Packages release), or a manual workflow_dispatch that opts into a NuGet.org release.
+  # Pull requests never reach this job, so they only ever run tests + coverage above.
+  # Gated on `build` so nothing publishes unless tests pass.
+  release:
     needs: build
-    if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true) }}
     runs-on: windows-latest
 
     permissions:
@@ -99,7 +78,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # GitVersion needs full history and tags to derive the version.
+          # GitVersion needs full history to derive the package version.
           fetch-depth: 0
 
       - name: Setup .NET
@@ -112,5 +91,21 @@ jobs:
           dotnet tool install --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
-      - name: Pack and push to GitHub Packages
+      # Automatic release on every push to main. Version comes from GitVersion (resolved
+      # by Nuke's GitVersion component). Auth uses the built-in GITHUB_TOKEN — no secret
+      # needed — and --skip-duplicate makes re-pushing an unchanged version harmless.
+      - name: Release to GitHub Packages
+        if: ${{ github.event_name == 'push' }}
         run: nuke PublishGitHubPackages --github-token "${{ secrets.GITHUB_TOKEN }}" --github-repository-owner "${{ github.repository_owner }}"
+
+      # Manual, opt-in release to NuGet.org. Requires the NUGET_API_KEY secret and
+      # publishes the version pinned in the .csproj.
+      - name: Release to NuGet.org
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg

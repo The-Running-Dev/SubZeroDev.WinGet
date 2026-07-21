@@ -119,10 +119,10 @@ Everything — library, tests, examples, and the Nuke build project — targets 
 
 See [docs/testing.md](docs/testing.md#build-orchestration-with-nuke) for the full target list.
 
-CI: [.github/workflows/build.yml](.github/workflows/build.yml) builds, tests, and packs on every push/PR — a failing test stops the build before packaging, and a code-coverage summary is rendered on each run's summary page.
+CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every push to `main` and every pull request. **Pull requests run tests and coverage only** — they never pack or publish. A failing test stops the build, and a coverage summary is rendered on each run's summary page.
 
-**Publishing:**
-- **GitHub Packages** — automatic when a **GitHub Release** is published. The build+test job must pass first; the package version is derived from the release tag by [GitVersion](https://gitversion.net/) (installed as a .NET tool). Uses the built-in `GITHUB_TOKEN`, so no secret setup is needed.
+**Publishing** happens only after the build+test job passes:
+- **GitHub Packages** — **automatic on every push to `main`** (i.e. every merged PR). The version comes from [GitVersion](https://gitversion.net/) (resolved by Nuke's GitVersion component); auth uses the built-in `GITHUB_TOKEN`, so no secret setup is needed, and `--skip-duplicate` makes an unchanged version harmless.
 - **NuGet.org** — **off by default**; runs only on a manual `workflow_dispatch` with the `push_to_nuget` input checked, and requires a `NUGET_API_KEY` repository secret. Publishes the version pinned in the `.csproj`.
 
 ## Documentation
