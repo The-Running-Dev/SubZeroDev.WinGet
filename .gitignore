@@ -36,3 +36,12 @@ coverage/
 ## re-resolves when the file is MISSING, not when it is stale).
 graphify-out/.graphify_python
 graphify-out/.graphify_root
+
+## Same reason, found in review: these are keyed by (or embed) absolute
+## machine-local paths, so they are dead weight on any other checkout. Both are
+## cheap to rebuild — the AST pass is deterministic and needs no LLM, and
+## manifest.json already carries the ast_hash that drives incremental updates.
+## The expensive semantic cache IS tracked: it is repo-relative and cost ~171k
+## input tokens to produce.
+graphify-out/cache/stat-index.json
+graphify-out/cache/ast/
