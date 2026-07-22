@@ -87,27 +87,32 @@ The **`release`** job (`needs: build`) runs only on a push to `main` or a manual
 
 Both publish paths live in the `release` job and only run after `build` passes.
 
-### GitHub Packages (automatic, on every push to main)
+### GitHub Packages (automatic)
 
-Every push to `main` runs `nuke PublishGitHubPackages`. The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an unchanged version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started#installing-from-github-packages).
+Two triggers run `nuke PublishGitHubPackages`, and which one fired determines whether the published version is a prerelease or stable:
 
-:::note Version bumps
-GitVersion derives the version from **git history, not the `.csproj` `<Version>`**. [`GitVersion.yml`](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/GitVersion.yml) sets the base with `next-version`; without it GitVersion inferred `0.0.1` and published `0.0.1-<n>`.
-
-Verified behaviour (GitVersion 6.8.2):
-
-| Commit | Published version |
+| Trigger | Published version |
 |---|---|
-| Untagged commit on `main` | `0.1.0-<commits-since-source>` — a **prerelease**, distinct for every merge |
-| Commit tagged `v0.1.0` | `0.1.0` — **stable** |
+| Push to `main` (i.e. a merged PR) | `0.1.0-<commits-since-source>` — a **prerelease**, distinct for every merge |
+| Push of a `v*` tag | `0.1.0` — **stable** |
 
-So every push to main publishes its own prerelease, and a **stable release requires tagging** the commit:
+The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an existing version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started#installing-from-github-packages).
+
+Consumers need `--prerelease` to install the untagged prerelease builds; tagged releases install normally.
+
+### Cutting a stable release
 
 ```shell
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-Then bump `next-version` (and the `.csproj` `<Version>` used by the NuGet.org path) to the next version you're working toward. Note that consumers need `--prerelease` to install the untagged prerelease builds.
+The workflow's `push` trigger includes `tags: ['v*']` specifically so this works — with only `branches:` declared, GitHub does **not** run a workflow for tag pushes at all, and the tag would silently publish nothing.
+
+Afterwards, bump `next-version` in [`GitVersion.yml`](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/GitVersion.yml) (and the `.csproj` `<Version>` used by the NuGet.org path) to the next version you're working toward.
+
+:::note Where the version comes from
+GitVersion derives the version from **git history, not the `.csproj` `<Version>`**. `GitVersion.yml` sets the base with `next-version`; without it GitVersion inferred `0.0.1` and published `0.0.1-<n>`. Per-branch `deployment-mode` overrides were tested and make no difference — an untagged commit is always a prerelease, which is why a stable release needs a tag.
 :::
 
 ### NuGet.org (manual)
