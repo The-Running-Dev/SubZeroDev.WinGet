@@ -73,7 +73,7 @@ Small, self-contained edits that fix things that are currently wrong. Good first
   Present in both `Clsids` and `ProjectionActivators`
   ([WinGetFactory.cs:43,66](SubZeroDev.WinGet/Com/WinGetFactory.cs)) but no `Create*` method
   exposes it. Either delete both lines or complete it as part of
-  [Phase 6 — authenticated sources](#phase-6--new-capabilities).
+  [Phase 7 — authenticated sources](#phase-7--new-capabilities).
 
 - [ ] **`S` Don't abandon the stdout/stderr read tasks on cancellation.**
   [WinGetCliClient.cs:150-171](SubZeroDev.WinGet/WinGetCliClient.cs) — on the cancellation path
