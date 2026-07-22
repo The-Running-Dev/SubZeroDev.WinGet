@@ -28,3 +28,11 @@ coverage/
 /UniGetUI/
 /Winget-AutoUpdate/
 /winget-cli/
+
+## graphify knowledge graph (tracked so it travels between dev machines).
+## These two hold absolute, machine-local paths — the interpreter path and the
+## scan root — and are re-derived on first use. Tracking them would break
+## graphify on a machine whose paths differ (the interpreter guard only
+## re-resolves when the file is MISSING, not when it is stale).
+graphify-out/.graphify_python
+graphify-out/.graphify_root
