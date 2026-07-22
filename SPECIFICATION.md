@@ -4,6 +4,8 @@
 
 *Updated again 2026-07-21 (same day, follow-up phase) to extract the workflow's dotnet-CLI steps into a generic [Nuke](https://nuke.build) build (§3, §11).*
 
+*Updated 2026-07-22: the shipped product targets **.NET 8** (`net8.0-windows10.0.26100`) for the widest consumer reach — a net8 library is consumable by net8/net9/net10 apps. Only the Nuke build tooling in `build/` stays on net10, where Nuke.Common 10.x requires it (§2, §3, §9).*
+
 ## 1. Origin & Scope
 
 This library's lineage, briefly:
@@ -166,7 +168,9 @@ Success/failure comes from `.Status`; the numeric code, when present, is `.HResu
 | Unit (100 tests) | Services (validation, retry-policy edges, delegation), CLI argument-building contracts, `ParsePinList` variants, model defaults/records, DI registration, exception — all mocked, zero COM | `dotnet test` | 100/100 passing |
 | Integration (12 tests) | Real COM API + real winget.exe on the machine. `[Explicit]`, **deliberately read-only** (export writes only a temp file) | `dotnet test --filter "FullyQualifiedName~IntegrationTests"` | 12/12 passing |
 
-Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live integration run 54.9% line / 70.6% method. Everything unit-testable is at or near 100% (services 98.6–100%, models, DI, CLI argument builders, pin parsing); the remaining uncovered code is COM-operation internals reachable only by mutating operations (install/upgrade/uninstall/repair paths, source add/remove, factory fallback modes) — tracked by the "disposable test package" roadmap item.
+Coverage (measured 2026-07-22 on net8): unit-only **27.7% line** (290/1045); merged with the live integration run **54% line** (565/1045). Everything unit-testable is at or near 100% (`PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, models, CLI argument builders, pin parsing); the remaining uncovered code is COM-operation internals reachable only by mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50% — install/upgrade/uninstall/repair paths, source add/remove, activation fallback modes) — tracked by the "disposable test package" roadmap item.
+
+*Method coverage is no longer quoted: ReportGenerator 5.5.x gates that metric behind sponsorship, so it can't be reproduced from this repo's tooling.*
 | CI | GitHub Actions (`windows-latest`): restore, build, unit tests, pack, artifact. Integration tests are excluded automatically by `[Explicit]` — GitHub-hosted runners do have winget, but read-only live tests in CI are a deliberate non-goal for now. Verified locally with act in host mode (`-P windows-latest=-self-hosted`). | push/PR, or `act push -P windows-latest=-self-hosted` | passing |
 
 **Not covered**: mutating operations (install/upgrade/uninstall/repair/import, source add/remove/refresh, pin add/remove) against the real API — needs a disposable test package and (for sources) elevation.

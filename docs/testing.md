@@ -67,7 +67,9 @@ dotnet test SubZeroDev.WinGet.sln --collect:"XPlat Code Coverage"
 #                      declared in build/_build.csproj - no global tool install needed)
 ```
 
-Current numbers (2026-07-21): unit-only **28.9% line / 50.2% method**; merged with a live integration run **54.9% line / 70.6% method**. Everything unit-testable sits at or near 100% — the uncovered remainder is COM-operation internals that only execute during real mutating operations.
+Current numbers (measured 2026-07-22 on net8): unit-only **27.7% line** (290 of 1045); merged with a live integration run **54% line** (565 of 1045). Everything unit-testable sits at or near 100% — `PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, plus the models, CLI argument builders, and pin parsing. The uncovered remainder is COM-operation internals that only execute during real mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50%).
+
+Method coverage isn't quoted here: ReportGenerator 5.5.x gates that metric behind sponsorship, so this repo's tooling can't produce it.
 
 ## Continuous integration
 
