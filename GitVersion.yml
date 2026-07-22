@@ -1,0 +1,18 @@
+# Versioning for the package published to GitHub Packages (see docs/testing.md#publishing).
+#
+# GitVersion derives the version from git history, NOT from the .csproj <Version>.
+# Without `next-version` it inferred 0.0.1 and published 0.0.1-<n>, which is why this
+# file exists: it sets the base version GitVersion works toward.
+#
+# Resulting behaviour (verified against GitVersion 6.8.2):
+#
+#   untagged commit on main  ->  0.1.0-<commits-since-version-source>   (prerelease)
+#   commit tagged v0.1.0     ->  0.1.0                                  (stable)
+#
+# So every push to main publishes a distinct prerelease, and tagging a commit
+# publishes the stable version. Per-branch `deployment-mode` overrides were tried and
+# make no difference here — an untagged commit is always a prerelease.
+#
+# After cutting a stable release, bump next-version below (and the .csproj <Version>,
+# which the manual NuGet.org path uses) to the next version being worked toward.
+next-version: 0.1.0

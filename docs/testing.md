@@ -92,7 +92,22 @@ Both publish paths live in the `release` job and only run after `build` passes.
 Every push to `main` runs `nuke PublishGitHubPackages`. The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an unchanged version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started#installing-from-github-packages).
 
 :::note Version bumps
-On `main` without a version tag, GitVersion produces the same `SemVer` across commits, so `--skip-duplicate` means a **new** package only appears when the version actually changes — bump the `.csproj` version, or tag a release. If you want a distinct package on every merge instead, switch GitVersion to continuous-deployment mode.
+GitVersion derives the version from **git history, not the `.csproj` `<Version>`**. [`GitVersion.yml`](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/GitVersion.yml) sets the base with `next-version`; without it GitVersion inferred `0.0.1` and published `0.0.1-<n>`.
+
+Verified behaviour (GitVersion 6.8.2):
+
+| Commit | Published version |
+|---|---|
+| Untagged commit on `main` | `0.1.0-<commits-since-source>` — a **prerelease**, distinct for every merge |
+| Commit tagged `v0.1.0` | `0.1.0` — **stable** |
+
+So every push to main publishes its own prerelease, and a **stable release requires tagging** the commit:
+
+```shell
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+Then bump `next-version` (and the `.csproj` `<Version>` used by the NuGet.org path) to the next version you're working toward. Note that consumers need `--prerelease` to install the untagged prerelease builds.
 :::
 
 ### NuGet.org (manual)
