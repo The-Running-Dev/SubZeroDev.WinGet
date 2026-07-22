@@ -3,12 +3,17 @@ name: Build
 on:
   push:
     branches: [main]
+    # Tag pushes publish the STABLE version: GitVersion emits a clean version for a
+    # tagged commit, versus a prerelease for an untagged one. This filter is required —
+    # with only `branches:` specified, GitHub does not run the workflow for tag pushes
+    # at all, so `git push origin v0.1.0` would silently do nothing.
+    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
       push_to_nuget:
-        description: Also publish the package to NuGet.org (in addition to the GitHub Packages release on main)
+        description: Also publish the package to NuGet.org (in addition to the GitHub Packages release)
         type: boolean
         required: false
         default: false
@@ -74,10 +79,13 @@ jobs:
           name: coverage-report
           path: coverage/Cobertura.xml
 
-  # Builds and releases the package. Runs only on pushes to main (automatic GitHub
-  # Packages release), or a manual workflow_dispatch that opts into a NuGet.org release.
-  # Pull requests never reach this job, so they only ever run tests + coverage above.
-  # Gated on `build` so nothing publishes unless tests pass.
+  # Builds and releases the package. Three ways in, all gated on `build` so nothing
+  # publishes unless tests pass:
+  #   push to main   -> GitHub Packages, PRERELEASE version (0.1.0-<n>)
+  #   push tag v*    -> GitHub Packages, STABLE version (0.1.0)
+  #   workflow_dispatch with push_to_nuget -> NuGet.org
+  # A tag push is still a `push` event, so the event_name check below covers it.
+  # Pull requests never reach this job — they only run tests + coverage above.
   release:
     needs: build
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true) }}
