@@ -10,13 +10,10 @@ Regenerate with `/graphify .`; refresh incrementally with `/graphify . --update`
 
 | Path | Why it's tracked |
 |---|---|
-| `graph.json` | The graph itself — 801 nodes, 1,806 edges, 52 communities |
-| `graph.html` | Interactive viewer (see the caveat below) |
 | `GRAPH_REPORT.md` | Audit report: god nodes, community hubs, surprising connections |
 | `.graphify_labels.json` | Hand-written community labels — not reproducible by re-running |
 | `manifest.json` | Repo-relative per-file `ast_hash` / `semantic_hash`; drives `--update` |
 | `cache/semantic/` | **The expensive one.** ~171k input tokens of LLM extraction |
-| `cost.json` | Cumulative token spend across runs |
 
 ## What is deliberately *not* tracked
 
@@ -29,19 +26,22 @@ weight on any other checkout — and all of it is cheap to rebuild. See `.gitign
 | `.graphify_root` | Absolute scan root; re-derived on first use |
 | `cache/stat-index.json` | Keyed by absolute path (60/60 entries), and stores mtimes — which a fresh clone resets anyway, so it can never hit on another machine |
 | `cache/ast/` | Blobs embed the absolute source path. The AST pass is deterministic and needs no LLM, so re-extraction is seconds and costs nothing |
+| `graph.json`, `graph.html` | Derived. ~2.2 MB rewritten wholesale on every build, and both regenerate from the tracked semantic cache in seconds |
+| `cost.json` | Per-machine token tally; merges into noise across two machines |
 
 Dropping `cache/ast/` does not affect incremental updates: `manifest.json` carries the
 `ast_hash` per file, so unchanged files are still skipped without it.
 
-## Caveat: `graph.html` is not fully self-contained
+## On a fresh checkout
 
-It loads `vis-network` from a public CDN at runtime:
+`graph.json` and `graph.html` are not tracked, so run `/graphify .` once to build them. That
+run spends ~10s on AST extraction, hits the tracked semantic cache for every file, and costs
+no tokens.
 
-```
-https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js
-```
+Run it before `/graphify query` too: `.graphify_python` is untracked and only written by a
+full run, and the skill's guard re-resolves it only when the file is *missing*, never when
+it is stale.
 
-So it needs no local server, but it **does** need internet access, and will render blank
-behind a proxy that blocks unpkg.com. If that becomes a problem, vendor
-`vis-network.min.js` next to the HTML and repoint the `<script src>` at the local copy, or
-just open `graph.json` directly.
+Note that the generated `graph.html` loads `vis-network` from
+`https://unpkg.com/vis-network@9.1.6/...`, so the viewer needs internet access and renders
+blank behind a proxy that blocks unpkg.com. Vendor the script locally if that matters.
