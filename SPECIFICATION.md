@@ -4,6 +4,8 @@
 
 *Updated again 2026-07-21 (same day, follow-up phase) to extract the workflow's dotnet-CLI steps into a generic [Nuke](https://nuke.build) build (§3, §11).*
 
+*Updated 2026-07-22: the shipped product targets **.NET 8** (`net8.0-windows10.0.26100`) for the widest consumer reach — a net8 library is consumable by net8/net9/net10 apps. Only the Nuke build tooling in `build/` stays on net10, where Nuke.Common 10.x requires it (§2, §3, §9).*
+
 ## 1. Origin & Scope
 
 This library's lineage, briefly:
@@ -125,7 +127,7 @@ Raw single-attempt behavior is always available by calling `IWinGetClient` direc
 
 ## 6. Build & Platform Requirements
 
-- **`net10.0-windows10.0.26100`** — the interop package requires a Windows-flavored TFM (validated on .NET 10: all 12 live COM integration tests pass).
+- **`net8.0-windows10.0.26100`** — the interop package requires a Windows-flavored TFM (min SDK contract 10.0.26100). The product targets net8 for the widest reach (a net8 library is consumable by net8/net9/net10 apps via forward compatibility); validated on both the net8 and net10 runtimes — all 12 live COM integration tests pass on each.
 - **Platform pinned to `x64` (or `ARM64`)** — `Microsoft.Management.Deployment.dll` is not `AnyCPU`; both `.csproj` files default `AnyCPU` → `x64` so plain `dotnet build`/`test` works. ARM64 declared but never built/tested on hardware.
 - **Consumers that *run* code from this library need a direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`**, not just a `ProjectReference`: the interop package's `.targets` copies the native activation-factory DLL only into the directly-referencing project's output. Verified by a real `COMException 0x80040154` until the test project took the direct reference. **The most important integration note for any consumer.**
 
@@ -166,7 +168,9 @@ Success/failure comes from `.Status`; the numeric code, when present, is `.HResu
 | Unit (100 tests) | Services (validation, retry-policy edges, delegation), CLI argument-building contracts, `ParsePinList` variants, model defaults/records, DI registration, exception — all mocked, zero COM | `dotnet test` | 100/100 passing |
 | Integration (12 tests) | Real COM API + real winget.exe on the machine. `[Explicit]`, **deliberately read-only** (export writes only a temp file) | `dotnet test --filter "FullyQualifiedName~IntegrationTests"` | 12/12 passing |
 
-Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live integration run 54.9% line / 70.6% method. Everything unit-testable is at or near 100% (services 98.6–100%, models, DI, CLI argument builders, pin parsing); the remaining uncovered code is COM-operation internals reachable only by mutating operations (install/upgrade/uninstall/repair paths, source add/remove, factory fallback modes) — tracked by the "disposable test package" roadmap item.
+Coverage (measured 2026-07-22 on net8): unit-only **27.7% line** (290/1045); merged with the live integration run **54% line** (565/1045). Everything unit-testable is at or near 100% (`PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, models, CLI argument builders, pin parsing); the remaining uncovered code is COM-operation internals reachable only by mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50% — install/upgrade/uninstall/repair paths, source add/remove, activation fallback modes) — tracked by the "disposable test package" roadmap item.
+
+*Method coverage is no longer quoted: ReportGenerator 5.5.x gates that metric behind sponsorship, so it can't be reproduced from this repo's tooling.*
 | CI | GitHub Actions (`windows-latest`): restore, build, unit tests, pack, artifact. Integration tests are excluded automatically by `[Explicit]` — GitHub-hosted runners do have winget, but read-only live tests in CI are a deliberate non-goal for now. Verified locally with act in host mode (`-P windows-latest=-self-hosted`). | push/PR, or `act push -P windows-latest=-self-hosted` | passing |
 
 **Not covered**: mutating operations (install/upgrade/uninstall/repair/import, source add/remove/refresh, pin add/remove) against the real API — needs a disposable test package and (for sources) elevation.
@@ -175,7 +179,7 @@ Coverage (2026-07-21): unit-only 28.9% line / 50.2% method; merged with the live
 
 The workflow's `dotnet`-CLI steps (restore, build, test, coverage rendering, pack, both publish paths) were extracted from `.github/workflows/build.yml` into [build/Build.cs](build/Build.cs), a generic [Nuke](https://nuke.build) build. The workflow YAML is hand-authored (not generated from a `[GitHubActions]` attribute) — it installs `Nuke.GlobalTool` and calls `nuke <Target>` instead of raw `dotnet` commands. It has two jobs: **`build`** (tests + coverage; runs on every push to main and every PR; the required status check) and **`release`** (`needs: build`; runs only on a push to main or a manual dispatch). Pull requests therefore never pack or publish — only the `build` job runs for them.
 
-**Layout:** `build/_build.csproj` (plain `net10.0`, referencing `Nuke.Common` 10.1.0) + `build/Build.cs` + `build/Configuration.cs`, plus a `.nuke/` directory (`parameters.json` pointing at `SubZeroDev.WinGet.sln`) and the `build.ps1`/`build.sh` bootstrappers at the root. The build project is deliberately **not** added to `SubZeroDev.WinGet.sln` — it doesn't touch the WinGet COM interop package and has no reason to share the main solution's Windows-TFM/x64-platform pin. Nuke.Common 10.x ships `lib/net10.0` only, which forced the build project onto net10; the rest of the repo was then moved to .NET 10 as well (§3) so there is exactly one SDK to install, locally and in CI.
+**Layout:** `build/_build.csproj` (plain `net10.0`, referencing `Nuke.Common` 10.1.0) + `build/Build.cs` + `build/Configuration.cs`, plus a `.nuke/` directory (`parameters.json` pointing at `SubZeroDev.WinGet.sln`) and the `build.ps1`/`build.sh` bootstrappers at the root. The build project is deliberately **not** added to `SubZeroDev.WinGet.sln` — it doesn't touch the WinGet COM interop package and has no reason to share the main solution's Windows-TFM/x64-platform pin. Nuke.Common 10.x ships `lib/net10.0` only, which forces the build project onto net10; this net10 requirement is quarantined to `build/` so it never touches the shipped product. The product (library/tests/examples) targets **net8** for reach (§2). CI therefore installs both SDKs: net8 builds and runs the product, net10 runs Nuke (which shells out to the net8 targets).
 
 **Install/invocation model:** the global tool (`dotnet tool update --global Nuke.GlobalTool --version 10.1.0` — `update`, not `install`, so it's idempotent across the persistent host `act` uses — then `nuke <Target>`). Note that the global tool locates a build by **searching for `build.ps1`/`build.sh`** — it does not find `build/_build.csproj` on its own, and without those files it drops into an interactive "do you want to set up a build?" prompt that hard-fails in CI. The bootstrappers are therefore required, not optional; they simply delegate to `dotnet run --project build/_build.csproj`, which also means `./build.ps1 <Target>` works without installing the global tool at all.
 
@@ -193,7 +197,7 @@ The workflow's `dotnet`-CLI steps (restore, build, test, coverage rendering, pac
 
 The original port was authored without a Windows host or .NET SDK and had **never been compiled**. Four defects surfaced on first execution. Notably the `Build.cs` target code — written from Nuke's docs, the part its author flagged as most at risk — was entirely correct; every defect was environmental/packaging:
 
-1. **TFM mismatch.** `Nuke.Common` 10.x ships `lib/net10.0` only, but the build project targeted `net8.0` → 43 compile errors, no Nuke type resolvable. Resolved by moving the build project (and subsequently the whole repo, §3) to .NET 10.
+1. **TFM mismatch.** `Nuke.Common` 10.x ships `lib/net10.0` only, but the build project targeted `net8.0` → 43 compile errors, no Nuke type resolvable. Resolved by moving the build project to net10. (The whole repo was briefly moved to net10 too, then the product was moved back to net8 for reach — see §2/§3 — leaving only `build/` on net10.)
 2. **`build/Configuration.cs` was missing.** `Build.cs` references the `Configuration` enumeration type that Nuke's templates normally generate alongside it.
 3. **Bootstrappers were missing.** The global tool locates a build by searching for `build.ps1`/`build.sh`; without them `nuke <Target>` opens an interactive "set up a build?" prompt that hard-fails in CI (`Failed to read input in non-interactive mode`). This **reversed the port's documented "global tool, no bootstrapper scripts" decision** — that combination cannot work. The legacy `.nuke` marker *file* was also converted to the modern `.nuke/` directory.
 4. **NuGet-backed tools weren't declared** — see the `PackageDownload` note above.

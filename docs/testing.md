@@ -17,8 +17,8 @@ dotnet tool update --global Nuke.GlobalTool --version 10.1.0
 nuke Test Pack       # any combination of targets in one command; shared dependencies run once
 ```
 
-:::note Requires the .NET 10 SDK
-Everything targets .NET 10 — the library, tests, and examples as `net10.0-windows10.0.26100`, and `build/_build.csproj` as plain `net10.0` (Nuke.Common 10.x ships `lib/net10.0` only). The .NET 10 SDK is the only one needed, locally or in CI.
+:::note SDKs
+The product — library, tests, examples — targets `net8.0-windows10.0.26100`, so a plain `dotnet build`/`dotnet test` needs only the **.NET 8 SDK**. The Nuke build project (`build/_build.csproj`) targets `net10.0` because Nuke.Common 10.x ships `lib/net10.0` only, so driving the build **through Nuke** additionally needs the **.NET 10 SDK**. CI installs both (net8 builds/runs the product; net10 runs Nuke, which shells out to the net8 targets).
 
 The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
 :::
@@ -67,7 +67,9 @@ dotnet test SubZeroDev.WinGet.sln --collect:"XPlat Code Coverage"
 #                      declared in build/_build.csproj - no global tool install needed)
 ```
 
-Current numbers (2026-07-21): unit-only **28.9% line / 50.2% method**; merged with a live integration run **54.9% line / 70.6% method**. Everything unit-testable sits at or near 100% — the uncovered remainder is COM-operation internals that only execute during real mutating operations.
+Current numbers (measured 2026-07-22 on net8): unit-only **27.7% line** (290 of 1045); merged with a live integration run **54% line** (565 of 1045). Everything unit-testable sits at or near 100% — `PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, plus the models, CLI argument builders, and pin parsing. The uncovered remainder is COM-operation internals that only execute during real mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50%).
+
+Method coverage isn't quoted here: ReportGenerator 5.5.x gates that metric behind sponsorship, so this repo's tooling can't produce it.
 
 ## Continuous integration
 

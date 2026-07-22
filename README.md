@@ -77,7 +77,7 @@ Read-only examples (search, installed, upgrades, details, sources, pins, export,
 ## Requirements
 
 - Windows 10/11 with **WinGet (App Installer)** installed
-- .NET 10, TFM `net10.0-windows10.0.26100`
+- .NET 8 or newer — the package targets `net8.0-windows10.0.26100`, so it also runs on net9/net10 apps
 - Platform **x64** (or ARM64 — declared, not yet validated); the WinGet interop assembly is not AnyCPU
 
 ### ⚠️ The one integration rule
@@ -115,7 +115,7 @@ CI runs the same steps through a generic [Nuke](https://nuke.build) build ([buil
 ./build.ps1 Test Pack     # any combination of targets in one command
 ```
 
-Everything — library, tests, examples, and the Nuke build project — targets **.NET 10**, so the .NET 10 SDK is the only one required.
+The library, tests, and examples target **.NET 8** (`net8.0-windows10.0.26100`). The Nuke build *tooling* (`build/`) targets **.NET 10** because Nuke.Common 10.x is net10-only — it's isolated from the product and not in the solution. So building via Nuke needs both SDKs (net8 to build/run the product, net10 to run Nuke); a plain `dotnet build`/`dotnet test` needs only the .NET 8 SDK.
 
 See [docs/testing.md](docs/testing.md#build-orchestration-with-nuke) for the full target list.
 
