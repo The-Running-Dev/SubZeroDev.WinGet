@@ -24,19 +24,36 @@ coverage/
 ## Nuke scratch dir (build.schema.json and parameters.json ARE tracked)
 .nuke/temp/
 
-## Knowledge-graph output (/graphify). Ignore the derived and machine-local parts,
-## but TRACK cache/semantic + manifest.json so the LLM extraction is shared across
-## dev machines instead of being paid for again on each one. The semantic cache is
-## the only part that costs tokens; AST extraction and graph.json/graph.html are
-## deterministic and regenerate in seconds from the tracked cache.
+## Knowledge-graph output (/graphify). Whitelist: ignore everything, then re-include
+## only the parts that are portable AND not cheaply reproducible.
+##
+## TRACKED
+##   cache/semantic/        the only part that costs tokens; content-hash keyed under a
+##                          prompt-hash dir, so entries invalidate correctly. Repo-relative.
+##   manifest.json          relativized per-file hashes; drives incremental --update
+##   GRAPH_REPORT.md        small, human-readable
+##   .graphify_labels.json  hand-written community labels — NOT reproducible by re-running
+##   README.md              records this policy
+##
+## IGNORED
+##   graph.json, graph.html derived; rewritten wholesale every build (~2.2 MB of churn)
+##   cache/ast/             deterministic and free (~10s, no LLM); also embeds absolute paths
+##   cache/stat-index.json  keyed by absolute path, and stores mtimes a clone resets anyway
+##   .graphify_python       absolute interpreter path. Tracking it BREAKS graphify on another
+##                          machine: the guard re-resolves only when the file is missing,
+##                          never when it is stale. Run /graphify once on a fresh checkout.
+##   .graphify_root         absolute scan root; re-derived on first use
 graphify-out/*
 !graphify-out/cache/
 graphify-out/cache/*
 !graphify-out/cache/semantic/
 !graphify-out/manifest.json
 !graphify-out/GRAPH_REPORT.md
+!graphify-out/.graphify_labels.json
+!graphify-out/README.md
 
 ## Reference clones (research only, not part of this repo)
 /UniGetUI/
 /Winget-AutoUpdate/
 /winget-cli/
+
