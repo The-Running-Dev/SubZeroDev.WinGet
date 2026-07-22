@@ -24,7 +24,7 @@ If only three things get done, these are the three that matter most:
    written for Docusaurus; right now 11 of its internal links 404 on GitHub, which is the only
    place anyone can read it.
 
-[Phase 1](#phase-1--correctness-fixes) is a good warm-up batch regardless — seven small,
+[Phase 1](#phase-1--correctness-fixes) is a good warm-up batch regardless — six small,
 independent edits that each fix something that is currently wrong.
 
 ---
@@ -80,9 +80,6 @@ Small, self-contained edits that fix things that are currently wrong. Good first
   the process is killed and the exception rethrown without awaiting `outputTask`/`errorTask`,
   leaving two faulted unobserved tasks. Benign on modern .NET, but untidy. Await them in a
   `finally`, or swallow deliberately with a comment.
-
-- [ ] **`S` Add `graphify-out/` to `.gitignore`.**
-  Generated knowledge-graph output; not part of the repo.
 
 ---
 
