@@ -1,0 +1,302 @@
+{
+  ".nuke/build.schema.json": {
+    "mtime": 1784729119.2736669,
+    "ast_hash": "d7224538b67dd330d01df2a9efc72a2b",
+    "semantic_hash": "d7224538b67dd330d01df2a9efc72a2b"
+  },
+  ".nuke/parameters.json": {
+    "mtime": 1784729119.273801,
+    "ast_hash": "b96762c42d9ee0ef8f4d229c61e38bf5",
+    "semantic_hash": "b96762c42d9ee0ef8f4d229c61e38bf5"
+  },
+  "SubZeroDev.WinGet.Examples/ExampleRunner.cs": {
+    "mtime": 1784658445.4789991,
+    "ast_hash": "f951e250cac3a4fd2c81c29647b82d63",
+    "semantic_hash": "f951e250cac3a4fd2c81c29647b82d63"
+  },
+  "SubZeroDev.WinGet.Examples/ExportImportExamples.cs": {
+    "mtime": 1784658445.4791503,
+    "ast_hash": "9dff65051e935fca1776fd26ff75ef47",
+    "semantic_hash": "9dff65051e935fca1776fd26ff75ef47"
+  },
+  "SubZeroDev.WinGet.Examples/PackageExamples.cs": {
+    "mtime": 1784658445.479391,
+    "ast_hash": "104133bb1d192b3301bff7bc4351dc9d",
+    "semantic_hash": "104133bb1d192b3301bff7bc4351dc9d"
+  },
+  "SubZeroDev.WinGet.Examples/PinExamples.cs": {
+    "mtime": 1784658445.4795973,
+    "ast_hash": "c5f2ec9f989d412a54e55ff31cbe169a",
+    "semantic_hash": "c5f2ec9f989d412a54e55ff31cbe169a"
+  },
+  "SubZeroDev.WinGet.Examples/Program.cs": {
+    "mtime": 1784658445.4797661,
+    "ast_hash": "a3238ca4da51ae45be5f7e5cfa12037d",
+    "semantic_hash": "a3238ca4da51ae45be5f7e5cfa12037d"
+  },
+  "SubZeroDev.WinGet.Examples/SourceExamples.cs": {
+    "mtime": 1784658445.4799132,
+    "ast_hash": "b0e24093ee6195b901e4c24caa4c69f4",
+    "semantic_hash": "b0e24093ee6195b901e4c24caa4c69f4"
+  },
+  "SubZeroDev.WinGet.Examples/SubZeroDev.WinGet.Examples.csproj": {
+    "mtime": 1784658445.4800682,
+    "ast_hash": "b1eba2b9f171cc5f3e1f4e97cc18e9b1",
+    "semantic_hash": "b1eba2b9f171cc5f3e1f4e97cc18e9b1"
+  },
+  "SubZeroDev.WinGet.Tests/ModelTests.cs": {
+    "mtime": 1784658445.4802969,
+    "ast_hash": "75be0ae3011ca6842ac82991136573a0",
+    "semantic_hash": "75be0ae3011ca6842ac82991136573a0"
+  },
+  "SubZeroDev.WinGet.Tests/PackageManagementServiceEdgeTests.cs": {
+    "mtime": 1784658445.4804988,
+    "ast_hash": "b062a29f3e09620f24519a2110144d64",
+    "semantic_hash": "b062a29f3e09620f24519a2110144d64"
+  },
+  "SubZeroDev.WinGet.Tests/PackageManagementServiceTests.cs": {
+    "mtime": 1784658445.4806843,
+    "ast_hash": "1295284638370ce5d761f9fdc1c315e9",
+    "semantic_hash": "1295284638370ce5d761f9fdc1c315e9"
+  },
+  "SubZeroDev.WinGet.Tests/PackageOperationResultTests.cs": {
+    "mtime": 1784658445.4808195,
+    "ast_hash": "30129fb97f349aa82bee8f199b25097c",
+    "semantic_hash": "30129fb97f349aa82bee8f199b25097c"
+  },
+  "SubZeroDev.WinGet.Tests/PackageSourceServiceEdgeTests.cs": {
+    "mtime": 1784658445.4809732,
+    "ast_hash": "2467f9d49203575a40c0d928ca5f1c1c",
+    "semantic_hash": "2467f9d49203575a40c0d928ca5f1c1c"
+  },
+  "SubZeroDev.WinGet.Tests/PackageSourceServiceTests.cs": {
+    "mtime": 1784658445.4810948,
+    "ast_hash": "80c190a102069b0b3741156c6830aa0e",
+    "semantic_hash": "80c190a102069b0b3741156c6830aa0e"
+  },
+  "SubZeroDev.WinGet.Tests/ServiceCollectionExtensionsTests.cs": {
+    "mtime": 1784658445.481219,
+    "ast_hash": "af6506be589723f3cd42153b0c5a9d83",
+    "semantic_hash": "af6506be589723f3cd42153b0c5a9d83"
+  },
+  "SubZeroDev.WinGet.Tests/SubZeroDev.WinGet.Tests.csproj": {
+    "mtime": 1784658445.4813428,
+    "ast_hash": "7e1039bc107c65146afddf17a2bffe86",
+    "semantic_hash": "7e1039bc107c65146afddf17a2bffe86"
+  },
+  "SubZeroDev.WinGet.Tests/WinGetCliClientTests.cs": {
+    "mtime": 1784658445.4814916,
+    "ast_hash": "827fbadeea32c1f02d19fee686d07155",
+    "semantic_hash": "827fbadeea32c1f02d19fee686d07155"
+  },
+  "SubZeroDev.WinGet.Tests/WinGetClientIntegrationTests.cs": {
+    "mtime": 1784658445.4816487,
+    "ast_hash": "db7d54c32f5977e5b8089e35052c0b36",
+    "semantic_hash": "db7d54c32f5977e5b8089e35052c0b36"
+  },
+  "SubZeroDev.WinGet.Tests/WinGetUnavailableExceptionTests.cs": {
+    "mtime": 1784658445.4817812,
+    "ast_hash": "e9dc6bab84faf6ccebc76f08f99054b8",
+    "semantic_hash": "e9dc6bab84faf6ccebc76f08f99054b8"
+  },
+  "SubZeroDev.WinGet.sln": {
+    "mtime": 1784658445.4820325,
+    "ast_hash": "62932100cc04df3933262e6315b35859",
+    "semantic_hash": "62932100cc04df3933262e6315b35859"
+  },
+  "SubZeroDev.WinGet/Abstractions/IPackageManagementService.cs": {
+    "mtime": 1784658445.482338,
+    "ast_hash": "9ccd7d58eff9b40528baedf05d09b4da",
+    "semantic_hash": "9ccd7d58eff9b40528baedf05d09b4da"
+  },
+  "SubZeroDev.WinGet/Abstractions/IPackageSourceService.cs": {
+    "mtime": 1784658445.4825926,
+    "ast_hash": "4a6386a7cd9b3e28742b1d9661f24cb3",
+    "semantic_hash": "4a6386a7cd9b3e28742b1d9661f24cb3"
+  },
+  "SubZeroDev.WinGet/Abstractions/IWinGetCliClient.cs": {
+    "mtime": 1784658445.4828634,
+    "ast_hash": "df0524078cd15c98ef6a0e0a6e73307c",
+    "semantic_hash": "df0524078cd15c98ef6a0e0a6e73307c"
+  },
+  "SubZeroDev.WinGet/Abstractions/IWinGetClient.cs": {
+    "mtime": 1784658445.4830987,
+    "ast_hash": "2c3d946af31bedfa13469b4a0ba7ed8a",
+    "semantic_hash": "2c3d946af31bedfa13469b4a0ba7ed8a"
+  },
+  "SubZeroDev.WinGet/Abstractions/IWinGetSourceClient.cs": {
+    "mtime": 1784658445.4832428,
+    "ast_hash": "3e48453c734e4281075f377de1297bca",
+    "semantic_hash": "3e48453c734e4281075f377de1297bca"
+  },
+  "SubZeroDev.WinGet/Com/WinGetFactory.cs": {
+    "mtime": 1784658445.4834728,
+    "ast_hash": "2dd9d7299571929a2e62401eb97bb4d8",
+    "semantic_hash": "2dd9d7299571929a2e62401eb97bb4d8"
+  },
+  "SubZeroDev.WinGet/Models/OperationRequests.cs": {
+    "mtime": 1784658445.4836795,
+    "ast_hash": "89133d35d195d89888ac6f1ee62b2340",
+    "semantic_hash": "89133d35d195d89888ac6f1ee62b2340"
+  },
+  "SubZeroDev.WinGet/Models/PackageDetails.cs": {
+    "mtime": 1784658445.4838135,
+    "ast_hash": "934bee2d25cc7cba7065b354d75a428e",
+    "semantic_hash": "934bee2d25cc7cba7065b354d75a428e"
+  },
+  "SubZeroDev.WinGet/Models/PackageEnums.cs": {
+    "mtime": 1784658445.4839382,
+    "ast_hash": "dc088cd358e69749a6aa5a518c81dd8b",
+    "semantic_hash": "dc088cd358e69749a6aa5a518c81dd8b"
+  },
+  "SubZeroDev.WinGet/Models/PackageInfo.cs": {
+    "mtime": 1784658445.4840598,
+    "ast_hash": "dd48e22a180d5367421ba482268a84bf",
+    "semantic_hash": "dd48e22a180d5367421ba482268a84bf"
+  },
+  "SubZeroDev.WinGet/Models/PackageOperationProgress.cs": {
+    "mtime": 1784658445.484262,
+    "ast_hash": "f343bed74c2cd52a6b196158a69c13be",
+    "semantic_hash": "f343bed74c2cd52a6b196158a69c13be"
+  },
+  "SubZeroDev.WinGet/Models/PackageOperationResult.cs": {
+    "mtime": 1784658445.4844477,
+    "ast_hash": "dcb22f4348925089907f1dab1075ae81",
+    "semantic_hash": "dcb22f4348925089907f1dab1075ae81"
+  },
+  "SubZeroDev.WinGet/Models/PackagePin.cs": {
+    "mtime": 1784658445.484626,
+    "ast_hash": "fb753f1e6c23388c15c14eca392dcaa4",
+    "semantic_hash": "fb753f1e6c23388c15c14eca392dcaa4"
+  },
+  "SubZeroDev.WinGet/Models/PackageSource.cs": {
+    "mtime": 1784658445.4848077,
+    "ast_hash": "9e2d3d46732ab63b1f05991ad27e4299",
+    "semantic_hash": "9e2d3d46732ab63b1f05991ad27e4299"
+  },
+  "SubZeroDev.WinGet/PackageManagementService.cs": {
+    "mtime": 1784658445.4850452,
+    "ast_hash": "7d41793b1c2a71a713d72ea91f80376c",
+    "semantic_hash": "7d41793b1c2a71a713d72ea91f80376c"
+  },
+  "SubZeroDev.WinGet/PackageSourceService.cs": {
+    "mtime": 1784658445.4852152,
+    "ast_hash": "6451b3a3221a77381c6d31fe43f325b3",
+    "semantic_hash": "6451b3a3221a77381c6d31fe43f325b3"
+  },
+  "SubZeroDev.WinGet/ServiceCollectionExtensions.cs": {
+    "mtime": 1784658445.4853768,
+    "ast_hash": "0ffc7d7e4f869d09b8ac9bf35f8bff58",
+    "semantic_hash": "0ffc7d7e4f869d09b8ac9bf35f8bff58"
+  },
+  "SubZeroDev.WinGet/SubZeroDev.WinGet.csproj": {
+    "mtime": 1784658445.485521,
+    "ast_hash": "72f9b2cdc586af73f969487c56a49d80",
+    "semantic_hash": "72f9b2cdc586af73f969487c56a49d80"
+  },
+  "SubZeroDev.WinGet/WinGetCliClient.cs": {
+    "mtime": 1784658445.4856923,
+    "ast_hash": "155a29c0b6ae88349ef1818f257cbbbb",
+    "semantic_hash": "155a29c0b6ae88349ef1818f257cbbbb"
+  },
+  "SubZeroDev.WinGet/WinGetClient.cs": {
+    "mtime": 1784658445.4859216,
+    "ast_hash": "626e225753d5062f7389d53948c47b09",
+    "semantic_hash": "626e225753d5062f7389d53948c47b09"
+  },
+  "SubZeroDev.WinGet/WinGetErrorCodes.cs": {
+    "mtime": 1784658445.4860969,
+    "ast_hash": "9b825d1f9875bf509acd6803ce896961",
+    "semantic_hash": "9b825d1f9875bf509acd6803ce896961"
+  },
+  "SubZeroDev.WinGet/WinGetSourceClient.cs": {
+    "mtime": 1784658445.4862661,
+    "ast_hash": "39598aa0c392831830dd11466808b24d",
+    "semantic_hash": "39598aa0c392831830dd11466808b24d"
+  },
+  "SubZeroDev.WinGet/WinGetUnavailableException.cs": {
+    "mtime": 1784658445.4864075,
+    "ast_hash": "781fee2fba6e0d77221c3fe21913ee1c",
+    "semantic_hash": "781fee2fba6e0d77221c3fe21913ee1c"
+  },
+  "build.ps1": {
+    "mtime": 1784729119.2752285,
+    "ast_hash": "c26e3ece9f19322e67054e2e90f6132e",
+    "semantic_hash": "c26e3ece9f19322e67054e2e90f6132e"
+  },
+  "build.sh": {
+    "mtime": 1784729119.2753885,
+    "ast_hash": "b3753cb653d058f8ded95078ae0bd8b6",
+    "semantic_hash": "b3753cb653d058f8ded95078ae0bd8b6"
+  },
+  "docs/usage/_category_.json": {
+    "mtime": 1784658445.4875555,
+    "ast_hash": "6527064c456c6d152f82f617cb883bf0",
+    "semantic_hash": "6527064c456c6d152f82f617cb883bf0"
+  },
+  ".github/workflows/build.yml": {
+    "mtime": 1784729119.2731662,
+    "ast_hash": "b9c01f132063daf531f3afb72682f955",
+    "semantic_hash": "b9c01f132063daf531f3afb72682f955"
+  },
+  "GitVersion.yml": {
+    "mtime": 1784729119.2739444,
+    "ast_hash": "a0009f02edb88e69e5c575a319bd394f",
+    "semantic_hash": "a0009f02edb88e69e5c575a319bd394f"
+  },
+  "README.md": {
+    "mtime": 1784729119.2744431,
+    "ast_hash": "af3d61bf13de381545a0c9156db46830",
+    "semantic_hash": "af3d61bf13de381545a0c9156db46830"
+  },
+  "SPECIFICATION.md": {
+    "mtime": 1784729119.2749345,
+    "ast_hash": "66b5c008e141d074228784758d79bc74",
+    "semantic_hash": "66b5c008e141d074228784758d79bc74"
+  },
+  "docs/architecture.md": {
+    "mtime": 1784658445.486641,
+    "ast_hash": "8e2ca0ddc4f34cec2c7779795211746d",
+    "semantic_hash": "8e2ca0ddc4f34cec2c7779795211746d"
+  },
+  "docs/examples.md": {
+    "mtime": 1784658445.486792,
+    "ast_hash": "760a285c37d2a47dd82b0dd7a37802ab",
+    "semantic_hash": "760a285c37d2a47dd82b0dd7a37802ab"
+  },
+  "docs/getting-started.md": {
+    "mtime": 1784729119.2764628,
+    "ast_hash": "85174fb797d919ee9769772250a59c99",
+    "semantic_hash": "85174fb797d919ee9769772250a59c99"
+  },
+  "docs/intro.md": {
+    "mtime": 1784658445.487087,
+    "ast_hash": "37dffafe32e5babc46ce9ac41152f32b",
+    "semantic_hash": "37dffafe32e5babc46ce9ac41152f32b"
+  },
+  "docs/testing.md": {
+    "mtime": 1784729119.2767868,
+    "ast_hash": "78537a95259adc237e558262d977e3bd",
+    "semantic_hash": "78537a95259adc237e558262d977e3bd"
+  },
+  "docs/troubleshooting.md": {
+    "mtime": 1784658445.4873788,
+    "ast_hash": "26200db7c6ad11b7e36ff1bb7544405c",
+    "semantic_hash": "26200db7c6ad11b7e36ff1bb7544405c"
+  },
+  "docs/usage/packages.md": {
+    "mtime": 1784658445.487694,
+    "ast_hash": "1c757c0ee8e512e3e865717e6c0ca868",
+    "semantic_hash": "1c757c0ee8e512e3e865717e6c0ca868"
+  },
+  "docs/usage/pins-export-import.md": {
+    "mtime": 1784658445.4878304,
+    "ast_hash": "5ebb3cfd96768ba921260e9cb22f4970",
+    "semantic_hash": "5ebb3cfd96768ba921260e9cb22f4970"
+  },
+  "docs/usage/sources.md": {
+    "mtime": 1784658445.487953,
+    "ast_hash": "fc573b6b80c2ea362400e0ed04162cc7",
+    "semantic_hash": "fc573b6b80c2ea362400e0ed04162cc7"
+  }
+}
