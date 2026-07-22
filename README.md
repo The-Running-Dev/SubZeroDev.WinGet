@@ -133,6 +133,10 @@ Full documentation lives in [docs/](docs) as Docusaurus-ready Markdown: [introdu
 
 The full design document — including the verified COM API findings (OR'd selectors vs AND'd filters, the CsWinRT collection enumeration bug, activation quirks in elevated hosts) and the research summarized from winget-cli, UniGetUI, and Winget-AutoUpdate — lives in [SPECIFICATION.md](SPECIFICATION.md).
 
+## Roadmap
+
+Known gaps and planned work — correctness fixes, threading, packaging, API expansion, and new capabilities — are tracked as phases in [ROADMAP.md](ROADMAP.md).
+
 ## License
 
 MIT
