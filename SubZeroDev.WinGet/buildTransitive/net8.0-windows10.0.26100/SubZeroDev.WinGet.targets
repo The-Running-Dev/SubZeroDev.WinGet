@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Keep this import idempotent: buildTransitive assets can arrive through more
+    than one dependency path. A direct ComInterop reference remains authoritative
+    when present, which also prevents duplicate copy-local and WinMD items.
+  -->
+  <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsImported)' == ''">
+    <SubZeroDevWinGetConsumerAssetsImported>true</SubZeroDevWinGetConsumerAssetsImported>
+    <SubZeroDevWinGetConsumerAssetsEnabled Condition="'$(MicrosoftManagementDeployment-WinMDPath)' == ''">true</SubZeroDevWinGetConsumerAssetsEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(RuntimeIdentifier)' != ''">
+    <SubZeroDevWinGetArchitectureSource>RuntimeIdentifier '$(RuntimeIdentifier)'</SubZeroDevWinGetArchitectureSource>
+    <SubZeroDevWinGetArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x64'">x64</SubZeroDevWinGetArchitecture>
+    <SubZeroDevWinGetArchitecture Condition="'$(RuntimeIdentifier)' == 'win-arm64'">arm64</SubZeroDevWinGetArchitecture>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(RuntimeIdentifier)' == '' And '$(PlatformTarget)' != '' And '$(PlatformTarget)' != 'AnyCPU'">
+    <SubZeroDevWinGetArchitectureSource>PlatformTarget '$(PlatformTarget)'</SubZeroDevWinGetArchitectureSource>
+    <SubZeroDevWinGetArchitecture Condition="'$(PlatformTarget)' == 'x64'">x64</SubZeroDevWinGetArchitecture>
+    <SubZeroDevWinGetArchitecture Condition="'$(PlatformTarget)' == 'ARM64'">arm64</SubZeroDevWinGetArchitecture>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(RuntimeIdentifier)' == '' And ('$(PlatformTarget)' == '' Or '$(PlatformTarget)' == 'AnyCPU') And '$(Platform)' != '' And '$(Platform)' != 'AnyCPU'">
+    <SubZeroDevWinGetArchitectureSource>Platform '$(Platform)'</SubZeroDevWinGetArchitectureSource>
+    <SubZeroDevWinGetArchitecture Condition="'$(Platform)' == 'x64'">x64</SubZeroDevWinGetArchitecture>
+    <SubZeroDevWinGetArchitecture Condition="'$(Platform)' == 'ARM64'">arm64</SubZeroDevWinGetArchitecture>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true'">
+    <SubZeroDevWinGetWinMDPath>$(MSBuildThisFileDirectory)Microsoft.Management.Deployment.winmd</SubZeroDevWinGetWinMDPath>
+    <SubZeroDevWinGetNativePath Condition="'$(SubZeroDevWinGetArchitecture)' == 'x64'">$(MSBuildThisFileDirectory)native\win-x64\Microsoft.Management.Deployment.dll</SubZeroDevWinGetNativePath>
+    <SubZeroDevWinGetNativePath Condition="'$(SubZeroDevWinGetArchitecture)' == 'arm64'">$(MSBuildThisFileDirectory)native\win-arm64\Microsoft.Management.Deployment.dll</SubZeroDevWinGetNativePath>
+  </PropertyGroup>
+
+  <Target
+    Name="SubZeroDevWinGetValidateConsumerArchitecture"
+    BeforeTargets="PrepareForBuild">
+    <!-- Package .targets import ordering is not contractual. Re-check at target
+         execution time so a direct ComInterop import always wins, even when its
+         properties were evaluated after this file. -->
+    <PropertyGroup Condition="'$(MicrosoftManagementDeployment-WinMDPath)' != ''">
+      <SubZeroDevWinGetConsumerAssetsEnabled>false</SubZeroDevWinGetConsumerAssetsEnabled>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' != 'true'">
+      <ReferenceCopyLocalPaths Remove="$(SubZeroDevWinGetNativePath);$(SubZeroDevWinGetWinMDPath)" />
+      <WindowsMetadataReference Remove="$(SubZeroDevWinGetWinMDPath)" />
+    </ItemGroup>
+    <Error
+      Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(SubZeroDevWinGetArchitecture)' == '' And '$(SubZeroDevWinGetArchitectureSource)' == ''"
+      Text="SubZeroDev.WinGet could not select Microsoft.Management.Deployment.dll because the consumer architecture is unresolved. Specify RuntimeIdentifier 'win-x64' or 'win-arm64', or set PlatformTarget/Platform to 'x64' or 'ARM64'." />
+    <Error
+      Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(SubZeroDevWinGetArchitecture)' == '' And '$(SubZeroDevWinGetArchitectureSource)' != ''"
+      Text="SubZeroDev.WinGet does not support the architecture selected by $(SubZeroDevWinGetArchitectureSource). Supported values are RuntimeIdentifier 'win-x64' or 'win-arm64', and PlatformTarget/Platform 'x64' or 'ARM64'." />
+    <Error
+      Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(SubZeroDevWinGetArchitecture)' != '' And !Exists('$(SubZeroDevWinGetNativePath)')"
+      Text="SubZeroDev.WinGet could not find its packaged $(SubZeroDevWinGetArchitecture) Microsoft.Management.Deployment.dll at '$(SubZeroDevWinGetNativePath)'. Restore the package again or report a corrupt package." />
+    <Error
+      Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And !Exists('$(SubZeroDevWinGetWinMDPath)')"
+      Text="SubZeroDev.WinGet could not find its packaged Microsoft.Management.Deployment.winmd at '$(SubZeroDevWinGetWinMDPath)'. Restore the package again or report a corrupt package." />
+  </Target>
+
+  <ItemGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(SubZeroDevWinGetArchitecture)' != ''">
+    <ReferenceCopyLocalPaths Remove="$(SubZeroDevWinGetNativePath);$(SubZeroDevWinGetWinMDPath)" />
+    <ReferenceCopyLocalPaths Include="$(SubZeroDevWinGetNativePath)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <DestinationSubPath>Microsoft.Management.Deployment.dll</DestinationSubPath>
+    </ReferenceCopyLocalPaths>
+    <ReferenceCopyLocalPaths Include="$(SubZeroDevWinGetWinMDPath)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <DestinationSubPath>Microsoft.Management.Deployment.winmd</DestinationSubPath>
+    </ReferenceCopyLocalPaths>
+    <WindowsMetadataReference Remove="$(SubZeroDevWinGetWinMDPath)" />
+    <WindowsMetadataReference Include="$(SubZeroDevWinGetWinMDPath)">
+      <Implementation>Microsoft.Management.Deployment.dll</Implementation>
+    </WindowsMetadataReference>
+  </ItemGroup>
+
+  <!-- ReferenceCopyLocalPaths performs the copy; FileWrites makes the package-
+       added outputs participate in the SDK's normal Clean target. -->
+  <Target
+    Name="SubZeroDevWinGetTrackConsumerAssetWrites"
+    AfterTargets="CopyFilesToOutputDirectory"
+    Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true' And '$(SubZeroDevWinGetArchitecture)' != ''">
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)Microsoft.Management.Deployment.dll" />
+      <FileWrites Include="$(OutDir)Microsoft.Management.Deployment.winmd" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -14,12 +14,16 @@ namespace SubZeroDev.WinGet;
 /// </summary>
 public sealed class WinGetCliClient : IWinGetCliClient
 {
-    private readonly Lazy<string> _wingetPath = new(ResolveWinGetPath);
+    // PublicationOnly so a transient resolution failure isn't cached for the lifetime of this
+    // singleton: the default mode memoizes the thrown exception, which would keep throwing even
+    // after App Installer is repaired. Resolution is a pure filesystem lookup, so the mode's
+    // racing-threads caveat is harmless — a duplicate lookup just returns the same path.
+    private readonly Lazy<string> _wingetPath = new(ResolveWinGetPath, LazyThreadSafetyMode.PublicationOnly);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
     {
-        var result = await Run(["pin", "list", "--accept-source-agreements", "--disable-interactivity"], cancellationToken);
+        var result = await Run(["pin", "list", "--accept-source-agreements", "--disable-interactivity"], cancellationToken).ConfigureAwait(false);
 
         if (!result.Succeeded)
         {
@@ -152,7 +156,7 @@ public sealed class WinGetCliClient : IWinGetCliClient
 
         try
         {
-            await process.WaitForExitAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -168,7 +172,11 @@ public sealed class WinGetCliClient : IWinGetCliClient
             throw;
         }
 
-        return new CliOperationResult(process.ExitCode == 0, process.ExitCode, await outputTask, await errorTask);
+        return new CliOperationResult(
+            process.ExitCode == 0,
+            process.ExitCode,
+            await outputTask.ConfigureAwait(false),
+            await errorTask.ConfigureAwait(false));
     }
 
     /// <summary>

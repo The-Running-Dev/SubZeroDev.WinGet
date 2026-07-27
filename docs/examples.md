@@ -58,7 +58,7 @@ These **change the machine** and therefore require explicit arguments — run wi
 
 Beyond the individual calls, the Examples project is a working reference for:
 
-- The **direct `Microsoft.WindowsPackageManager.ComInterop` package reference** every consuming executable needs (see the comment in its `.csproj`).
+- The repository's **direct `Microsoft.WindowsPackageManager.ComInterop` reference** required by this ProjectReference-based executable. A packed `SubZeroDev.WinGet` consumer needs only the library package; its transitive target supplies the native DLL and WinMD.
 - **DI composition** via `AddPackageManagement()`.
 - **Progress reporting** (`IProgress<PackageOperationProgress>` for packages, `IProgress<double>` for sources).
 - **Ctrl+C cancellation** wired through `CancellationToken`.

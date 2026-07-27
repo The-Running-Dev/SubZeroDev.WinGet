@@ -24,11 +24,13 @@
     "ExecutableTarget": {
       "type": "string",
       "enum": [
+        "ArchitectureTest",
         "Clean",
         "Compile",
         "Coverage",
         "IntegrationTest",
         "Pack",
+        "PackageTest",
         "PublishGitHubPackages",
         "PublishNuGet",
         "Restore",

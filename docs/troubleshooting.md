@@ -6,9 +6,13 @@ sidebar_position: 7
 
 # Troubleshooting
 
-## `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` at runtime
+## Build error: consumer architecture is unresolved or unsupported
 
-The most common integration failure. Your executable project is missing the **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`. The native activation DLL only gets copied to the output directory of projects that reference the interop package directly — it does not flow through a project or package dependency. See [Getting Started](getting-started.md#installation).
+The package intentionally supports explicit x64 and ARM64 configurations only. Set `RuntimeIdentifier` to `win-x64`/`win-arm64`, or `PlatformTarget`/`Platform` to `x64`/`ARM64`. Do not use ambiguous `AnyCPU`; the build target refuses to guess which native WinGet DLL to copy. See [Getting Started](getting-started.md#installation).
+
+## `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` with a repository `ProjectReference`
+
+The packed NuGet package supplies its own native DLL and WinMD. A repository `ProjectReference` does not import those packaged `buildTransitive` assets, however. Add a direct `Microsoft.WindowsPackageManager.ComInterop` reference to the executable project, then build again. This caveat does not apply to normal package consumers.
 
 ## `WinGetUnavailableException`
 

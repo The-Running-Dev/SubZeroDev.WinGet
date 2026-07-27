@@ -10,13 +10,12 @@ sidebar_position: 2
 
 - Windows 10/11 with **WinGet (App Installer)** installed
 - .NET 8 or newer — the package targets `net8.0-windows10.0.26100`, so net8/net9/net10 apps can all consume it
-- Platform **x64** (ARM64 is declared but not yet validated on hardware) — the WinGet interop assembly is not AnyCPU
+- An explicit **x64** or **ARM64** consumer architecture. ARM64 payload selection is checked in CI, but ARM64 hardware execution has not yet been validated.
 
 ## Installation
 
 ```shell
 dotnet add package SubZeroDev.WinGet
-dotnet add package Microsoft.WindowsPackageManager.ComInterop --version 1.29.280
 ```
 
 ### Installing from GitHub Packages
@@ -32,28 +31,23 @@ dotnet add package SubZeroDev.WinGet
 GitHub requires authentication even to read a public packages feed. Supply a personal access token with the `read:packages` scope as the source password (e.g. `--username <you> --password <token>` on `dotnet nuget add source`, or in your `nuget.config`).
 :::
 
-:::warning The one integration rule
-
-Any project that **runs** code from this library needs a **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop` — depending on SubZeroDev.WinGet alone is not enough.
-
-The interop package's build targets copy a required *native* DLL (`Microsoft.Management.Deployment.dll`) only into the output directory of projects that reference it **directly**; it does not flow transitively. Without it, the first COM call fails at runtime with `COMException 0x80040154 (REGDB_E_CLASSNOTREG)`.
-
-```xml
-<PackageReference Include="Microsoft.WindowsPackageManager.ComInterop" Version="1.29.280" />
-```
-
-:::
-
-Your project must also pin the platform, since the interop assembly is not AnyCPU:
+The package provides its own transitive build target. For an explicitly supported consumer it selects and copies the matching x64/ARM64 native DLL plus WinMD into build and publish output; no direct ComInterop reference is needed. Set either a supported runtime identifier or platform:
 
 ```xml
 <PropertyGroup>
-  <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU'">x64</Platform>
-  <Platforms>x64;ARM64</Platforms>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <PlatformTarget>x64</PlatformTarget>
   <TargetFramework>net8.0-windows10.0.26100</TargetFramework>
 </PropertyGroup>
 ```
+
+Use `win-arm64` and `ARM64` for an ARM64 application. Do not leave the architecture as `AnyCPU`: the package fails that ambiguous configuration rather than selecting a mismatched native DLL. The managed library is AnyCPU provisionally; Windows x64 packed-consumer runtime validation is still pending, and ARM64 has not run on real ARM64 hardware.
+
+:::note Repository project references
+
+When an executable uses `ProjectReference` to the repository's `SubZeroDev.WinGet` project instead of the packed package, add a direct `Microsoft.WindowsPackageManager.ComInterop` reference to that executable. NuGet `buildTransitive` assets are package behavior and do not participate in a project-reference build.
+
+:::
 
 ## Registering with dependency injection
 

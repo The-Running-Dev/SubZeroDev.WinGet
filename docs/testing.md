@@ -11,10 +11,10 @@ sidebar_position: 6
 CI (and, optionally, local development) runs through a [Nuke](https://nuke.build) build defined in [build/Build.cs](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/build/Build.cs). It's a thin, generic layer over the same `dotnet` commands described below — call targets instead of raw CLI commands:
 
 ```shell
-./build.ps1 Test Pack                                    # no install needed
+./build.ps1 Test Coverage ArchitectureTest PackageTest   # no install needed
 # or, via the global tool (`update` is idempotent — safe to re-run):
 dotnet tool update --global Nuke.GlobalTool --version 10.1.0
-nuke Test Pack       # any combination of targets in one command; shared dependencies run once
+nuke Test Coverage ArchitectureTest PackageTest       # CI-equivalent targets; shared dependencies run once
 ```
 
 :::note SDKs
@@ -23,7 +23,7 @@ The product — library, tests, examples — targets `net8.0-windows10.0.26100`,
 The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
 :::
 
-Targets: `Restore`, `Compile`, `Test`, `IntegrationTest` (opt-in, see below), `Coverage`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus a local-only `Clean`. Every target also works standalone (`nuke Compile` restores and builds; `nuke Pack` restores, builds, and packs) since each declares its own dependency chain.
+Targets: `Restore`, `Compile`, `Test`, `IntegrationTest` (opt-in, see below), `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus a local-only `Clean`. `ArchitectureTest` verifies AnyCPU library and x64/ARM64 executable PE output. `PackageTest` inspects the packed assets and validates direct and two-hop package consumers through restore/build/publish without executing COM. Every target also works standalone.
 
 Using plain `dotnet` commands directly (below) still works fine for local development — Nuke doesn't replace them, it's what CI now calls instead of hand-written `dotnet` steps.
 
@@ -33,7 +33,7 @@ Using plain `dotnet` commands directly (below) still works fine for local develo
 dotnet build SubZeroDev.WinGet.sln
 ```
 
-The solution builds three projects: the library, the test suite, and the Examples console app. Platform is pinned to x64 automatically (see [Getting Started](getting-started.md)). The `build/_build.csproj` Nuke project is intentionally **not** part of this solution.
+The solution builds three projects: the library, the test suite, and the Examples console app. The library is IL-only AnyCPU while executable/test fixtures select x64 or ARM64 explicitly; this managed package layout is provisional pending Windows x64 runtime validation. The `build/_build.csproj` Nuke project is intentionally **not** part of this solution.
 
 ## Unit tests
 
@@ -42,7 +42,7 @@ dotnet test SubZeroDev.WinGet.sln
 # or: nuke Test
 ```
 
-100 mocked unit tests — zero COM dependency, run anywhere in ~200ms. They cover the service layer (validation, delegation, retry-policy edges), the CLI argument-building contracts, `winget pin list` output parsing variants, model defaults, DI registration, and the exception type.
+Mocked unit tests — zero COM dependency, run anywhere in ~200ms. They cover the service layer (validation, delegation, retry-policy edges), the CLI argument-building contracts, `winget pin list` output parsing variants, model defaults, DI registration, and the exception type.
 
 ## Live integration tests
 
@@ -75,9 +75,9 @@ Method coverage isn't quoted here: ReportGenerator 5.5.x gates that metric behin
 
 The GitHub Actions workflow ([build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml)) runs on `windows-latest` and has two jobs.
 
-The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and calls into `build/Build.cs` with a single invocation — `nuke Test Coverage` — so the shared `Restore → Compile → Test` chain runs once (Nuke only de-duplicates targets within one invocation). A failing test stops the job, and the coverage summary is rendered onto the run page and uploaded as an artifact.
+The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and invokes `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`; shared dependencies run once because Nuke de-duplicates targets within an invocation. `ArchitectureTest` cross-builds and checks PE headers; `PackageTest` packs and validates direct/two-hop consumer restore, build, and publish contracts without live COM activation. A failing check stops the build, and the coverage summary is rendered onto the run page and uploaded as an artifact.
 
-That's all a pull request ever does — **no packing, no publishing**. It's also the required status check.
+That's all a pull request ever does — **no release packaging or publishing**. `PackageTest` deliberately performs isolated contract packing; only the release job produces and publishes release artifacts. It is also the required status check.
 
 The **`release`** job (`needs: build`) runs only on a push to `main` or a manual dispatch, and does the packing/publishing (below).
 

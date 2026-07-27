@@ -36,7 +36,7 @@ Pin management and export/import have **no COM equivalent at any WinGet contract
 
 ## Where to go next
 
-- [Getting Started](getting-started.md) — install, requirements, and the one integration rule you must not skip.
+- [Getting Started](getting-started.md) — install, requirements, and explicit x64/ARM64 consumer configuration.
 - [Managing Packages](usage/packages.md) — search, install, upgrade, uninstall, download, repair.
 - [Managing Sources](usage/sources.md) — the `winget source` equivalent.
 - [Pins, Export & Import](usage/pins-export-import.md) — the CLI-backed features.

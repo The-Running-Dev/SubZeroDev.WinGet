@@ -18,57 +18,83 @@ namespace SubZeroDev.WinGet;
 /// which is how winget itself correlates "installed" with "available" — see the E2E interop
 /// tests in the winget-cli repo for the reference pattern.
 /// </summary>
-public sealed class WinGetClient : IWinGetClient
+/// <remarks>
+/// Ownership: the public constructor starts a dedicated MTA owner thread for the WinGet
+/// projection, so an instance built that way must be disposed or the thread leaks for the
+/// lifetime of the process. Instances resolved from <c>AddPackageManagement()</c> instead share
+/// a container-owned <c>WinGetComContext</c>; disposing those is a no-op, and the container
+/// stops the owner thread when the provider is disposed.
+/// </remarks>
+public sealed class WinGetClient : IWinGetClient, IDisposable
 {
-    private readonly WinGetFactory _factory;
+    private readonly WinGetComContext _context;
+    private readonly bool _ownsContext;
 
-    private readonly Lazy<PackageManager> _packageManager;
-
+    /// <summary>
+    /// Creates a client that owns its own COM context and MTA owner thread. Dispose it when
+    /// finished. Prefer <c>AddPackageManagement()</c>, which shares one context across all
+    /// clients and disposes it with the provider.
+    /// </summary>
     public WinGetClient()
-        : this(new WinGetFactory())
+        : this(new WinGetComContext(), ownsContext: true)
     {
     }
 
     internal WinGetClient(WinGetFactory factory)
+        : this(new WinGetComContext(factory), ownsContext: true)
     {
-        _factory = factory;
-        _packageManager = new Lazy<PackageManager>(factory.CreatePackageManager);
     }
 
-    private PackageManager PackageManager => _packageManager.Value;
+    internal WinGetClient(WinGetComContext context)
+        : this(context, ownsContext: false)
+    {
+    }
+
+    private WinGetClient(WinGetComContext context, bool ownsContext)
+    {
+        _context = context;
+        _ownsContext = ownsContext;
+    }
+
+    private WinGetFactory Factory => _context.Factory;
+
+    private PackageManager PackageManager => _context.PackageManager;
 
     /// <inheritdoc />
     public Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => GetWinGetVersionCore(cancellationToken), cancellationToken);
+
+    private string? GetWinGetVersionCore(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.Run(() =>
+        try
         {
-            try
-            {
-                return (string?)PackageManager.Version;
-            }
-            catch
-            {
-                // Version is contract 13; unavailable on very old WinGet runtimes.
-                return null;
-            }
-        }, cancellationToken);
+            return (string?)PackageManager.Version;
+        }
+        catch
+        {
+            // Version is contract 13; unavailable on very old WinGet runtimes.
+            return null;
+        }
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PackageInfo>> Search(string query, int limit, string? sourceName = null, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageInfo>> Search(string query, int limit, string? sourceName = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => SearchCore(query, limit, sourceName, cancellationToken), cancellationToken);
+
+    private async Task<IReadOnlyList<PackageInfo>> SearchCore(string query, int limit, string? sourceName, CancellationToken cancellationToken)
     {
         var catalog = await ConnectComposite(CompositeSearchBehavior.RemotePackagesFromAllCatalogs, sourceName, cancellationToken);
 
-        var options = _factory.CreateFindPackagesOptions();
+        var options = Factory.CreateFindPackagesOptions();
         options.ResultLimit = (uint)limit;
 
         // winget search matches on any of these fields. Selectors are OR'd by the COM API
         // (Filters are AND'd), so one call with four selectors reproduces the CLI behavior.
         foreach (var field in new[] { PackageMatchField.Id, PackageMatchField.Name, PackageMatchField.Moniker, PackageMatchField.Tag })
         {
-            var filter = _factory.CreatePackageMatchFilter();
+            var filter = Factory.CreatePackageMatchFilter();
             filter.Field = field;
             filter.Option = PackageFieldMatchOption.ContainsCaseInsensitive;
             filter.Value = query;
@@ -82,26 +108,35 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PackageInfo>> GetInstalledPackages(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageInfo>> GetInstalledPackages(CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => GetInstalledPackagesCore(cancellationToken), cancellationToken);
+
+    private async Task<IReadOnlyList<PackageInfo>> GetInstalledPackagesCore(CancellationToken cancellationToken)
     {
         var catalog = await ConnectComposite(CompositeSearchBehavior.LocalCatalogs, sourceName: null, cancellationToken);
 
         // No selectors and no filters selects the entire catalog.
-        var result = await FindPackagesAsync(catalog, _factory.CreateFindPackagesOptions(), cancellationToken);
+        var result = await FindPackagesAsync(catalog, Factory.CreateFindPackagesOptions(), cancellationToken);
 
         return ToPackages(result.Matches);
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => GetAvailableUpgradesCore(cancellationToken), cancellationToken);
+
+    private async Task<IReadOnlyList<PackageInfo>> GetAvailableUpgradesCore(CancellationToken cancellationToken)
     {
-        var installed = await GetInstalledPackages(cancellationToken);
+        var installed = await GetInstalledPackagesCore(cancellationToken);
 
         return installed.Where(p => p.IsUpdateAvailable).ToList();
     }
 
     /// <inheritdoc />
-    public async Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default)
+    public Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => GetPackageCore(packageId, cancellationToken), cancellationToken);
+
+    private async Task<PackageInfo?> GetPackageCore(string packageId, CancellationToken cancellationToken)
     {
         var package = await FindById(packageId, cancellationToken);
 
@@ -109,7 +144,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageDetails?> GetPackageDetails(string packageId, CancellationToken cancellationToken = default)
+    public Task<PackageDetails?> GetPackageDetails(string packageId, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => GetPackageDetailsCore(packageId, cancellationToken), cancellationToken);
+
+    private async Task<PackageDetails?> GetPackageDetailsCore(string packageId, CancellationToken cancellationToken)
     {
         var package = await FindById(packageId, cancellationToken);
 
@@ -117,7 +155,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => InstallCore(packageId, request, progress, cancellationToken), cancellationToken);
+
+    private async Task<PackageOperationResult> InstallCore(string packageId, InstallRequest? request, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken)
     {
         request ??= new InstallRequest();
 
@@ -145,7 +186,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> Upgrade(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageOperationResult> Upgrade(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => UpgradeCore(packageId, request, progress, cancellationToken), cancellationToken);
+
+    private async Task<PackageOperationResult> UpgradeCore(string packageId, InstallRequest? request, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken)
     {
         request ??= new InstallRequest();
 
@@ -173,7 +217,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => UninstallCore(packageId, request, progress, cancellationToken), cancellationToken);
+
+    private async Task<PackageOperationResult> UninstallCore(string packageId, UninstallRequest? request, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken)
     {
         request ??= new UninstallRequest();
 
@@ -184,7 +231,7 @@ public sealed class WinGetClient : IWinGetClient
             return NotFound(packageId);
         }
 
-        var options = _factory.CreateUninstallOptions();
+        var options = Factory.CreateUninstallOptions();
         options.PackageUninstallMode = MapUninstallMode(request.Mode);
         options.PackageUninstallScope = MapUninstallScope(request.Scope);
         options.Force = request.Force;
@@ -209,7 +256,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => DownloadCore(packageId, request, progress, cancellationToken), cancellationToken);
+
+    private async Task<PackageOperationResult> DownloadCore(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken)
     {
         var package = await FindById(packageId, cancellationToken);
 
@@ -218,7 +268,7 @@ public sealed class WinGetClient : IWinGetClient
             return NotFound(packageId);
         }
 
-        var options = _factory.CreateDownloadOptions();
+        var options = Factory.CreateDownloadOptions();
         options.DownloadDirectory = request.DownloadDirectory;
         options.Scope = MapScope(request.Scope);
         options.AllowHashMismatch = request.AllowHashMismatch;
@@ -268,7 +318,10 @@ public sealed class WinGetClient : IWinGetClient
     }
 
     /// <inheritdoc />
-    public async Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        => _context.InvokeAsync(() => RepairCore(packageId, request, progress, cancellationToken), cancellationToken);
+
+    private async Task<PackageOperationResult> RepairCore(string packageId, RepairRequest? request, IProgress<PackageOperationProgress>? progress, CancellationToken cancellationToken)
     {
         request ??= new RepairRequest();
 
@@ -279,7 +332,7 @@ public sealed class WinGetClient : IWinGetClient
             return NotFound(packageId);
         }
 
-        var options = _factory.CreateRepairOptions();
+        var options = Factory.CreateRepairOptions();
         options.PackageRepairMode = MapRepairMode(request.Mode);
         options.PackageRepairScope = MapRepairScope(request.Scope);
         options.Force = request.Force;
@@ -312,10 +365,10 @@ public sealed class WinGetClient : IWinGetClient
         // required for upgrade/uninstall/repair to resolve correctly.
         var catalog = await ConnectComposite(CompositeSearchBehavior.AllCatalogs, sourceName: null, cancellationToken);
 
-        var options = _factory.CreateFindPackagesOptions();
+        var options = Factory.CreateFindPackagesOptions();
         options.ResultLimit = 1;
 
-        var filter = _factory.CreatePackageMatchFilter();
+        var filter = Factory.CreatePackageMatchFilter();
         filter.Field = PackageMatchField.Id;
         filter.Option = PackageFieldMatchOption.EqualsCaseInsensitive;
         filter.Value = packageId;
@@ -329,7 +382,7 @@ public sealed class WinGetClient : IWinGetClient
 
     private (InstallOptions Options, PackageOperationResult? Error) BuildInstallOptions(CatalogPackage package, InstallRequest request)
     {
-        var options = _factory.CreateInstallOptions();
+        var options = Factory.CreateInstallOptions();
         options.PackageInstallScope = MapScope(request.Scope);
         options.PackageInstallMode = MapInstallMode(request.Mode);
         options.Force = request.Force;
@@ -395,7 +448,9 @@ public sealed class WinGetClient : IWinGetClient
 
         var references = GetRemoteCatalogReferences(sourceName);
 
-        var connectResult = await CreateComposite(references, behavior).ConnectAsync();
+        var operation = CreateComposite(references, behavior).ConnectAsync();
+        using var registration = _context.RegisterCancellation(cancellationToken, operation.Cancel);
+        var connectResult = await operation.AsTask();
 
         // A single unreachable source fails the whole composite connect. Probe each source
         // individually and rebuild from the reachable subset before giving up (the same
@@ -423,7 +478,9 @@ public sealed class WinGetClient : IWinGetClient
 
             if (reachable.Count > 0)
             {
-                connectResult = await CreateComposite(reachable, behavior).ConnectAsync();
+                operation = CreateComposite(reachable, behavior).ConnectAsync();
+                using var retryRegistration = _context.RegisterCancellation(cancellationToken, operation.Cancel);
+                connectResult = await operation.AsTask();
             }
         }
 
@@ -458,7 +515,7 @@ public sealed class WinGetClient : IWinGetClient
 
     private PackageCatalogReference CreateComposite(IReadOnlyList<PackageCatalogReference> references, CompositeSearchBehavior behavior)
     {
-        var options = _factory.CreateCompositeCatalogOptions();
+        var options = Factory.CreateCompositeCatalogOptions();
         options.CompositeSearchBehavior = behavior;
 
         for (var i = 0; i < references.Count; i++)
@@ -469,11 +526,13 @@ public sealed class WinGetClient : IWinGetClient
         return PackageManager.CreateCompositePackageCatalog(options);
     }
 
-    private static async Task<FindPackagesResult> FindPackagesAsync(PackageCatalog catalog, FindPackagesOptions options, CancellationToken cancellationToken)
+    private async Task<FindPackagesResult> FindPackagesAsync(PackageCatalog catalog, FindPackagesOptions options, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await catalog.FindPackagesAsync(options);
+        var operation = catalog.FindPackagesAsync(options);
+        using var registration = _context.RegisterCancellation(cancellationToken, operation.Cancel);
+        var result = await operation.AsTask();
 
         if (result.Status != FindPackagesResultStatus.Ok)
         {
@@ -871,12 +930,20 @@ public sealed class WinGetClient : IWinGetClient
         return list;
     }
 
-    private static async Task<TResult> AwaitOperation<TResult, TProgress>(
+    private async Task<TResult> AwaitOperation<TResult, TProgress>(
         IAsyncOperationWithProgress<TResult, TProgress> operation,
         CancellationToken cancellationToken)
     {
-        await using var registration = cancellationToken.Register(() => operation.Cancel());
+        using var registration = _context.RegisterCancellation(cancellationToken, operation.Cancel);
 
-        return await operation;
+        return await operation.AsTask();
+    }
+
+    public void Dispose()
+    {
+        if (_ownsContext)
+        {
+            _context.Dispose();
+        }
     }
 }

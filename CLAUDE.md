@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```shell
 dotnet build SubZeroDev.WinGet.sln
-dotnet test  SubZeroDev.WinGet.sln                    # 100 mocked unit tests, no COM, ~200ms
+dotnet test  SubZeroDev.WinGet.sln                    # mocked unit tests, no COM, ~200ms
 dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"   # 12 live tests
 dotnet test  SubZeroDev.WinGet.sln --filter "Name=Install_WithAnyAlreadyInstalledCode_NormalizesToSuccess"
 ```
@@ -16,10 +16,10 @@ Integration tests are NUnit `[Explicit]`, so a plain `dotnet test` already exclu
 CI drives everything through Nuke ([build/Build.cs](build/Build.cs)). Same targets locally:
 
 ```shell
-./build.ps1 Test Pack     # bootstrapper — no tool install needed
+./build.ps1 Test Coverage ArchitectureTest PackageTest     # bootstrapper — no tool install needed
 ```
 
-Targets: `Restore`, `Compile`, `Test`, `IntegrationTest`, `Coverage`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus local-only `Clean`. Request multiple targets in **one** invocation (`nuke Test Coverage`) — Nuke de-duplicates shared dependencies only within a single invocation, so two separate calls re-run `Restore`/`Compile`/`Test`.
+Targets: `Restore`, `Compile`, `Test`, `IntegrationTest`, `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus local-only `Clean`. PR CI invokes `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`. Request multiple targets in **one** invocation — Nuke de-duplicates shared dependencies only within a single invocation.
 
 Examples console app, one runnable example per public API:
 
@@ -40,9 +40,9 @@ Three layers over `Microsoft.Management.Deployment` (the WinGet COM/WinRT API, c
 
 - **Service layer** — `PackageManagementService`, `PackageSourceService`. Validation, `ILogger<T>` logging, result normalization, and the auto-retry policy. What consumers should normally use.
 - **Client layer** — `WinGetClient` (packages), `WinGetSourceClient` (sources), `WinGetCliClient` (the CLI shim). Thin, **single-attempt** translations to/from COM. No retry logic lives here.
-- **Activation layer** — `Com/WinGetFactory.cs`, internal. Every COM object is created through a three-step fallback chain: WinRT projection activation → `CoCreateInstance` with `CLSCTX_LOCAL_SERVER` → `CoCreateInstance` with `CLSCTX_ALLOW_LOWER_TRUST_REGISTRATION` (the mitigation for elevated hosts). The first mode that succeeds is cached so all objects share one activation context; if all three fail, `WinGetUnavailableException` is thrown.
+- **COM owner/activation layer** — `Com/WinGetComContext.cs` owns the WinGet projection on one MTA thread; `Com/WinGetFactory.cs` activates it through WinRT projection → `CoCreateInstance` with `CLSCTX_LOCAL_SERVER` → `CoCreateInstance` with `CLSCTX_ALLOW_LOWER_TRUST_REGISTRATION`. Do not let projected objects escape the owner thread or use arbitrary `Task.Run` around them: agility is not assumed.
 
-`services.AddPackageManagement()` registers all five interfaces as singletons over one shared factory.
+`services.AddPackageManagement()` registers all five interfaces as singletons over one shared COM owner context. Service and CLI awaits use `ConfigureAwait(false)`; COM-client flows intentionally retain the owner context.
 
 Every lookup goes through a **composite catalog** (`CreateCompositePackageCatalog`) merging remote sources with local install state — that's what makes `IsUpdateAvailable` meaningful and what makes upgrade/uninstall/repair resolve to the `CatalogPackage` WinGet associates with the installed app. If the composite fails to connect, sources are probed individually and the composite is rebuilt from the reachable subset.
 
@@ -60,9 +60,9 @@ Every lookup goes through a **composite catalog** (`CreateCompositePackageCatalo
 
 **`ExtendedErrorCode` is an `Exception`, not an `int`** — the HRESULT comes from `.HResult` on it. `FindPackagesOptions.Selectors` are OR'd while `Filters` are AND'd, which is why multi-field search is one call with several Selectors. Install and uninstall have *different* WinRT progress structs, hence separate progress mappers.
 
-**Any project that runs this library's code needs a direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`** — a `ProjectReference` is not enough. The interop package's targets copy the native `Microsoft.Management.Deployment.dll` only into the directly-referencing project's output. Without it: `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` at runtime.
+**A packaged consumer needs only `SubZeroDev.WinGet`, with an explicit x64 or ARM64 architecture.** Its `buildTransitive` target supplies the matching native `Microsoft.Management.Deployment.dll` and WinMD. A repository `ProjectReference` consumer remains different: retain a direct ComInterop reference on its executable/test host because package build assets do not apply.
 
-**Platform is pinned to x64.** The interop DLL is not AnyCPU; both `.csproj` files map `AnyCPU` → `x64` so plain `dotnet build`/`test` works.
+**Platform contract:** the managed library is IL-only AnyCPU, while executable/test hosts explicitly select x64 or ARM64. The package target rejects unresolved AnyCPU consumers. This shape is provisional until a Windows x64 packed-consumer runtime smoke test; ARM64 hardware execution remains unvalidated.
 
 **Two SDKs, on purpose.** Library, tests, and examples target `net8.0-windows10.0.26100`. `build/_build.csproj` targets `net10.0` because Nuke.Common 10.x ships `lib/net10.0` only. `build/_build.csproj` is deliberately **not** in the solution. Plain `dotnet build`/`test` needs only .NET 8; driving the build through Nuke needs both.
 
@@ -86,7 +86,7 @@ Well-known HRESULTs are published as `int` constants in `WinGetErrorCodes` (alre
 
 `main` is protected — all changes land via PR, so "a push to main" always means a merged PR. Do not add AI attribution (`Co-Authored-By`, generated-with footers) to commits or PR bodies in this repo.
 
-The `build` job (tests + coverage, one `nuke Test Coverage` invocation) runs on every push to `main` and every PR and is the required status check. **PRs never pack or publish.** The `release` job (`needs: build`) handles publishing:
+The `build` job (`nuke Test Coverage ArchitectureTest PackageTest --configuration Release`) runs on every push to `main` and every PR and is the required status check. It includes package-contract packing but never publishes. The `release` job (`needs: build`) handles publishing:
 
 - **GitHub Packages** — automatic. Push to `main` publishes a prerelease `0.1.0-<n>`; pushing a `v*` tag publishes stable `0.1.0`. Auth via the built-in `GITHUB_TOKEN`.
 - **NuGet.org** — manual `workflow_dispatch` with `push_to_nuget` checked, requires the `NUGET_API_KEY` secret. Publishes the `.csproj`-pinned `<Version>`.
@@ -95,4 +95,4 @@ The `build` job (tests + coverage, one `nuke Test Coverage` invocation) runs on 
 
 ## Known gaps
 
-Elevation behavior for mutating operations is untested, and Windows Service / SYSTEM hosting is unverified — the activation fallback chain and the WindowsApps `winget.exe` glob exist for those cases but nothing has run under `LocalSystem`. ARM64 is declared but never built on hardware. Live coverage of mutating operations is pending a disposable test package. Interop is pinned at 1.29.280 with no compatibility matrix. See `SPECIFICATION.md` §11.
+Elevation behavior for mutating operations is untested, and Windows Service / SYSTEM hosting is unverified. Owner-context unit tests do not replace read-only Windows x64 integration or UI responsiveness validation, and ARM64 has not run on hardware. Live coverage of mutating operations is pending a disposable test package. Interop is pinned at 1.29.280 with no compatibility matrix. See `SPECIFICATION.md` §11 and its dated amendment.

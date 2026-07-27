@@ -12,18 +12,18 @@ complete and working. These are the edges.
 
 ## Where to start
 
-The docs site ([Phase 5](#phase-5--documentation)) is done — see
-<https://winget.subzerodev.com/>. Of what's left, these two matter most:
+The package-consumer target, architecture checks, and COM owner-context work are implemented.
+PR CI now runs `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`; it
+checks architecture and package layout/consumer contracts without live COM execution. The next
+highest-value validation is read-only Windows x64 runtime/UI coverage, followed by ARM64 hardware
+execution.
 
-1. **Ship the `build/*.targets` file** ([Phase 3](#phase-3--packaging-and-distribution)) so the
-   direct `Microsoft.WindowsPackageManager.ComInterop` reference stops being required. It's the
-   first thing every new user trips over.
-2. **Fix the threading** ([Phase 2](#phase-2--threading-and-reliability)) — move the blocking COM
-   work off the caller's thread and add `ConfigureAwait(false)`. This is the class of bug that
-   produces reports you can't reproduce locally.
+[Phase 1](#phase-1--correctness-fixes) contains the remaining small, independent
+correctness fixes.
 
-[Phase 1](#phase-1--correctness-fixes) is a good warm-up batch regardless — six small,
-independent edits that each fix something that is currently wrong.
+The coordinated execution order for ARM64 correctness, package consumer targets, and
+threading is tracked in
+[HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md).
 
 ---
 
@@ -31,16 +31,10 @@ independent edits that each fix something that is currently wrong.
 
 Small, self-contained edits that fix things that are currently wrong. Good first batch.
 
-- [ ] **`S` Fix ARM64 builds emitting x64 assemblies.**
-  `<PlatformTarget>x64</PlatformTarget>` is unconditional in all three product projects
-  ([SubZeroDev.WinGet.csproj:8](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj),
-  [SubZeroDev.WinGet.Tests.csproj:7](SubZeroDev.WinGet.Tests/SubZeroDev.WinGet.Tests.csproj),
-  [SubZeroDev.WinGet.Examples.csproj:8](SubZeroDev.WinGet.Examples/SubZeroDev.WinGet.Examples.csproj))
-  while `<Platforms>` advertises `x64;ARM64`. Building `-p:Platform=ARM64` still produces an
-  x64-marked assembly that won't load in an ARM64 process — so the declared ARM64 support
-  cannot work as written. Change to `<PlatformTarget>$(Platform)</PlatformTarget>`.
-  Once fixed, validate on real ARM64 hardware before dropping the README's "declared, not
-  yet validated" caveat.
+- [x] **`S` Fix architecture output and package layout.** Executable/test projects now use
+  `<PlatformTarget>$(Platform)</PlatformTarget>` and `ArchitectureTest` checks x64/ARM64 PE
+  output. The library is IL-only AnyCPU and the package selects x64/ARM64 native assets through
+  its consumer target. This is a package-contract result, not ARM64 hardware validation.
 
 - [ ] **`S` Resolve the unreachable `PackageOperationStatus.Cancelled`.**
   Declared at [PackageOperationResult.cs:25](SubZeroDev.WinGet/Models/PackageOperationResult.cs)
@@ -86,33 +80,27 @@ Small, self-contained edits that fix things that are currently wrong. Good first
 The failure mode this phase addresses is the one most likely to produce bug reports that
 can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 
-- [ ] **`M` Move blocking COM work off the caller's thread in `WinGetClient`.**
-  [WinGetClient.cs:392](SubZeroDev.WinGet/WinGetClient.cs) — `ConnectComposite` calls
-  `GetRemoteCatalogReferences` (which calls `PackageManager.GetPackageCatalogs()`) and
-  `CreateComposite` synchronously *before* the first `await`. Both are cross-apartment COM
-  calls. `WinGetSourceClient` already wraps equivalent work in `Task.Run`
-  ([WinGetSourceClient.cs:38](SubZeroDev.WinGet/WinGetSourceClient.cs)); `WinGetClient` does
-  not. A WPF/WinForms app calling `await packages.Search(...)` from the UI thread freezes for
-  the duration of catalog enumeration.
+- [x] **`M` Isolate WinGet COM work on its owned MTA context.**
+  `WinGetComContext` now owns projection activation, projected objects, synchronous catalog
+  work, and COM continuations on one dedicated MTA thread. Public client calls dispatch complete
+  COM flows there, so callers do not run catalog enumeration or projected-object access on their
+  own synchronization context. This is structurally tested; read-only Windows UI responsiveness
+  validation remains open.
 
-  The same applies after the await: `ToPackageInfo` reads COM properties per package, and
-  `ToPackageDetails` calls `GetCatalogPackageMetadata()`, which hits the network — both run
-  synchronously on the continuation.
+- [x] **`S` Apply the owned-context await design.** Service and CLI awaits use
+  `ConfigureAwait(false)`; COM-client flows intentionally remain on the dedicated MTA owner
+  context so projected objects do not cross threads. Windows UI responsiveness validation remains open.
 
-- [ ] **`S` Add `ConfigureAwait(false)` throughout the library.**
-  Currently absent from every `await` in `SubZeroDev.WinGet/`. Every continuation posts back
-  to the caller's `SynchronizationContext`; combined with the blocking COM work above, that is
-  the classic UI-freeze / deadlock setup. Consider enforcing with an analyzer
-  (`CA2007`) once [Phase 4](#phase-4--build--ci-hygiene) turns analyzers on.
-
-- [ ] **`M` Stop `Lazy<T>` caching activation failures forever.**
-  [WinGetClient.cs:35](SubZeroDev.WinGet/WinGetClient.cs) and
-  [WinGetCliClient.cs:17](SubZeroDev.WinGet/WinGetCliClient.cs) use the default
-  `LazyThreadSafetyMode.ExecutionAndPublication`, which caches the *exception* as well as the
-  value. Because these types are registered as singletons, a single transient COM activation
-  failure (or a transient `winget.exe` resolution failure) poisons the instance for the whole
-  process lifetime — it never recovers even after WinGet is repaired. Use
-  `LazyThreadSafetyMode.PublicationOnly`, or hand-roll caching that only memoizes success.
+- [x] **`M` Stop `Lazy<T>` caching activation failures forever.** ✅ Done.
+  The default `LazyThreadSafetyMode.ExecutionAndPublication` caches the *exception* as well as
+  the value, so on singleton-registered types one transient COM activation failure (or
+  `winget.exe` resolution failure) poisoned the instance for the whole process lifetime, with no
+  recovery even after WinGet was repaired. Both sites now use
+  `LazyThreadSafetyMode.PublicationOnly`, which re-runs the factory after a failure:
+  `PackageManager` in [Com/WinGetComContext.cs](SubZeroDev.WinGet/Com/WinGetComContext.cs) (safe
+  because it is only touched from the single owner thread) and `_wingetPath` in
+  [WinGetCliClient.cs](SubZeroDev.WinGet/WinGetCliClient.cs) (safe because resolution is a pure
+  filesystem lookup, so a raced duplicate returns the same path).
 
 - [ ] **`M` Make `ParsePinList` locale-independent.**
   [WinGetCliClient.cs:192-195](SubZeroDev.WinGet/WinGetCliClient.cs) derives column offsets
@@ -126,19 +114,11 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 
 ## Phase 3 — Packaging and distribution
 
-- [ ] **`M` Ship build targets so consumers don't need the direct `ComInterop` reference.**
-  **Highest-value single change in this document.** Today every consuming project must add a
-  direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop` because the interop
-  package's targets copy `Microsoft.Management.Deployment.dll` only into the output of the
-  *directly* referencing project. Every new user hits `COMException 0x80040154`
-  (`REGDB_E_CLASSNOTREG`) once before finding the README note.
-
-  NuGet auto-imports `build/*.targets` from a *direct* package reference — which
-  SubZeroDev.WinGet is. Ship a `build/SubZeroDev.WinGet.targets` in the package that copies the
-  native DLL to the consumer's output directory.
-
-  Needs real end-to-end validation against a clean consumer project before it can be trusted.
-  If it works, the README's "⚠️ The one integration rule" section can be reduced to a footnote.
+- [x] **`M` Ship transitive build targets so packaged consumers need only `SubZeroDev.WinGet`.**
+  `PackageTest` validates the exact nupkg entries, managed AnyCPU layout, x64/ARM64 native DLLs,
+  WinMD, direct and two-hop consumers, precedence/diagnostics, and build/publish copies. A
+  repository `ProjectReference` executable still needs a direct ComInterop reference. Windows
+  x64 runtime smoke and ARM64 hardware execution remain open.
 
 - [ ] **`S` Collapse the two sources of truth for version.**
   `<Version>0.1.0</Version>` in [SubZeroDev.WinGet.csproj:22](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj)
@@ -273,7 +253,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   `MapStatus` (×4), `MapScope`, `MapInstallMode`, `MapUninstallMode`, `MapUninstallScope`,
   `MapRepairMode`, `MapRepairScope`, `MapArchitecture`, `MapInstallerType`, `ToPackageInfo`,
   `ToPackageDetails` — roughly 200 lines of pure, deterministic, private static logic locked
-  inside the COM-requiring `WinGetClient`, and therefore covered by **zero** of the 100 unit
+  inside the COM-requiring `WinGetClient`, and therefore covered by **zero** of the mocked unit
   tests. Move to an `internal static WinGetMappings`; `InternalsVisibleTo` is already set on
   the library. Cheapest large coverage win available.
 

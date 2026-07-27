@@ -43,7 +43,7 @@ public sealed class PackageManagementService(
 
         logger.LogDebug("Searching for packages matching {Query}", query);
 
-        return await winGetClient.Search(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken);
+        return await winGetClient.Search(query.Trim(), DefaultSearchLimit, sourceName, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -82,7 +82,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Installing {PackageId}", packageId);
 
-        var result = await winGetClient.Install(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Install(packageId, request, progress, cancellationToken).ConfigureAwait(false);
 
         if (!result.Succeeded && IsAlreadyInstalled(result))
         {
@@ -93,9 +93,10 @@ public sealed class PackageManagementService(
 
         if (ShouldRetryUnconstrained(result, request))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning("{PackageId} has no applicable installer under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await winGetClient.Install(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.Install(packageId, Unconstrained(request), progress, cancellationToken).ConfigureAwait(false);
         }
 
         LogOutcome("Install", packageId, result);
@@ -111,19 +112,21 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Updating {PackageId}", packageId);
 
-        var result = await winGetClient.Upgrade(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Upgrade(packageId, request, progress, cancellationToken).ConfigureAwait(false);
 
         if (ShouldRetryUnconstrained(result, request))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning("{PackageId} has no applicable upgrade under the requested constraints; retrying without architecture/installer-type/scope constraints", packageId);
 
-            result = await winGetClient.Upgrade(packageId, Unconstrained(request), progress, cancellationToken);
+            result = await winGetClient.Upgrade(packageId, Unconstrained(request), progress, cancellationToken).ConfigureAwait(false);
         }
         else if (!result.Succeeded && result.ExtendedErrorCode == WinGetErrorCodes.UpgradeVersionUnknown && !request.AllowUpgradeToUnknownVersion)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning("{PackageId} reports an unknown installed version; retrying with AllowUpgradeToUnknownVersion", packageId);
 
-            result = await winGetClient.Upgrade(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken);
+            result = await winGetClient.Upgrade(packageId, request with { AllowUpgradeToUnknownVersion = true }, progress, cancellationToken).ConfigureAwait(false);
         }
 
         LogOutcome("Update", packageId, result);
@@ -138,7 +141,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Uninstalling {PackageId}", packageId);
 
-        var result = await winGetClient.Uninstall(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Uninstall(packageId, request, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Uninstall", packageId, result);
 
@@ -157,7 +160,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Downloading {PackageId} to {Directory}", packageId, request.DownloadDirectory);
 
-        var result = await winGetClient.Download(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Download(packageId, request, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Download", packageId, result);
 
@@ -171,7 +174,7 @@ public sealed class PackageManagementService(
 
         logger.LogInformation("Repairing {PackageId}", packageId);
 
-        var result = await winGetClient.Repair(packageId, request, progress, cancellationToken);
+        var result = await winGetClient.Repair(packageId, request, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Repair", packageId, result);
 

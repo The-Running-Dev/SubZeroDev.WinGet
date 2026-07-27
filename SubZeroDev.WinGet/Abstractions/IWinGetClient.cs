@@ -8,6 +8,14 @@ namespace SubZeroDev.WinGet.Abstractions;
 /// layer. Methods are single-attempt translations of the COM calls; retry policy lives in the
 /// service layer.
 /// </summary>
+/// <remarks>
+/// This interface is deliberately not <see cref="IDisposable"/>: resolved from
+/// <c>AddPackageManagement()</c>, the container owns the instance and the COM owner thread
+/// behind it, so consumers must not dispose an injected <see cref="IWinGetClient"/>.
+/// Constructing <see cref="WinGetClient"/> directly is the case that owns a disposable
+/// resource, and that constructor hands back the concrete type, which does implement
+/// <see cref="IDisposable"/> — see its remarks.
+/// </remarks>
 public interface IWinGetClient
 {
     /// <summary>The version of the WinGet backend servicing this client, if available.</summary>

@@ -78,15 +78,15 @@ Read-only examples (search, installed, upgrades, details, sources, pins, export,
 
 - Windows 10/11 with **WinGet (App Installer)** installed
 - .NET 8 or newer — the package targets `net8.0-windows10.0.26100`, so it also runs on net9/net10 apps
-- Platform **x64** (or ARM64 — declared, not yet validated); the WinGet interop assembly is not AnyCPU
+- An explicit supported architecture: **x64** or **ARM64**. The package supplies the matching native WinGet DLL and WinMD; ARM64 hardware execution has not yet been validated.
 
-### ⚠️ The one integration rule
+### Architecture configuration
 
-Any project that **runs** code from this library needs a **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop` — a `ProjectReference`/package dependency alone is not enough. The interop package's build targets copy a required native DLL (`Microsoft.Management.Deployment.dll`) only into the directly-referencing project's output directory. Without it you get `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` at runtime.
+A package consumer needs only `SubZeroDev.WinGet`. Its transitive build target supplies the matching x64 or ARM64 `Microsoft.Management.Deployment.dll` and WinMD to build and publish output. Select the architecture explicitly with `RuntimeIdentifier` (`win-x64` or `win-arm64`) or `PlatformTarget`/`Platform` (`x64` or `ARM64`); ambiguous `AnyCPU` and unsupported platforms fail at build time.
 
-```xml
-<PackageReference Include="Microsoft.WindowsPackageManager.ComInterop" Version="1.29.280" />
-```
+The library's managed assembly is IL-only AnyCPU, but that package shape remains provisional until a Windows x64 packed-consumer runtime smoke test passes. ARM64 payload selection is contract-tested, but ARM64 hardware runtime validation remains open.
+
+If you consume the repository project through a `ProjectReference` instead of the packed NuGet package, retain a direct `Microsoft.WindowsPackageManager.ComInterop` reference on the executable project. Its build assets do not flow through `ProjectReference`.
 
 ### Installing from GitHub Packages
 
@@ -97,13 +97,13 @@ dotnet nuget add source https://nuget.pkg.github.com/The-Running-Dev/index.json 
 dotnet add package SubZeroDev.WinGet
 ```
 
-GitHub requires authentication even for public-feed reads — use a personal access token with the `read:packages` scope as the source's password when prompted. (You still need the direct `Microsoft.WindowsPackageManager.ComInterop` reference described above.)
+GitHub requires authentication even for public-feed reads — use a personal access token with the `read:packages` scope as the source's password when prompted.
 
 ## Building & Testing
 
 ```
 dotnet build SubZeroDev.WinGet.sln
-dotnet test  SubZeroDev.WinGet.sln                                    # 100 mocked unit tests, no COM
+dotnet test  SubZeroDev.WinGet.sln                                    # mocked unit tests, no COM
 dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"  # 12 live, read-only, needs WinGet
 ```
 
@@ -112,14 +112,14 @@ The integration tests are `[Explicit]`, read-only by design, and run against the
 CI runs the same steps through a generic [Nuke](https://nuke.build) build ([build/Build.cs](build/Build.cs)) instead of hand-written `dotnet` CLI steps. Equivalent locally:
 
 ```
-./build.ps1 Test Pack     # any combination of targets in one command
+./build.ps1 Test Coverage ArchitectureTest PackageTest
 ```
 
 The library, tests, and examples target **.NET 8** (`net8.0-windows10.0.26100`). The Nuke build *tooling* (`build/`) targets **.NET 10** because Nuke.Common 10.x is net10-only — it's isolated from the product and not in the solution. So building via Nuke needs both SDKs (net8 to build/run the product, net10 to run Nuke); a plain `dotnet build`/`dotnet test` needs only the .NET 8 SDK.
 
 See [docs/testing.md](docs/testing.md#build-orchestration-with-nuke) for the full target list.
 
-CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every push to `main` and every pull request. **Pull requests run tests and coverage only** — they never pack or publish. A failing test stops the build, and a coverage summary is rendered on each run's summary page.
+CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every push to `main` and every pull request. It runs `Test Coverage ArchitectureTest PackageTest` before release: architecture checks verify the managed/executable PE shapes, and package checks build/publish direct and two-hop consumers without live COM activation. Pull requests never publish.
 
 **Publishing** happens only after the build+test job passes:
 - **GitHub Packages** — automatic, on two triggers. A **push to `main`** (every merged PR) publishes a distinct **prerelease** `0.1.0-<n>`; pushing a **`v*` tag** (`git push origin v0.1.0`) publishes the **stable** `0.1.0`. The version comes from [GitVersion](https://gitversion.net/) via [GitVersion.yml](GitVersion.yml), which derives it from git history rather than the `.csproj`. Auth uses the built-in `GITHUB_TOKEN`, so no secret setup is needed.
@@ -132,7 +132,7 @@ CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every pus
 | Topic | Site | GitHub |
 |---|---|---|
 | Introduction — why this library, feature overview, the one deliberate CLI exception | [Read](https://winget.subzerodev.com/) | [docs/intro.md](docs/intro.md) |
-| Getting Started — install, requirements, the one integration rule | [Read](https://winget.subzerodev.com/getting-started) | [docs/getting-started.md](docs/getting-started.md) |
+| Getting Started — install, requirements, and explicit architecture configuration | [Read](https://winget.subzerodev.com/getting-started) | [docs/getting-started.md](docs/getting-started.md) |
 | Managing Packages — search, install, upgrade, uninstall, download, repair, the retry policy | [Read](https://winget.subzerodev.com/usage/packages) | [docs/usage/packages.md](docs/usage/packages.md) |
 | Managing Sources — the `winget source` equivalent | [Read](https://winget.subzerodev.com/usage/sources) | [docs/usage/sources.md](docs/usage/sources.md) |
 | Pins, Export & Import — the CLI-backed features | [Read](https://winget.subzerodev.com/usage/pins-export-import) | [docs/usage/pins-export-import.md](docs/usage/pins-export-import.md) |
