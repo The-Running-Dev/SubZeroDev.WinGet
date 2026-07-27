@@ -139,6 +139,8 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 
   Needs real end-to-end validation against a clean consumer project before it can be trusted.
   If it works, the README's "⚠️ The one integration rule" section can be reduced to a footnote.
+  See [PACKAGING-TARGETS-PLAN.md](PACKAGING-TARGETS-PLAN.md) for the phased implementation and
+  verification checklist.
 
 - [ ] **`S` Collapse the two sources of truth for version.**
   `<Version>0.1.0</Version>` in [SubZeroDev.WinGet.csproj:22](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj)
