@@ -205,4 +205,74 @@ public class WinGetComContextTests
         await awaitWork.Should().ThrowAsync<OperationCanceledException>();
         context.Dispose();
     }
+
+    // Dispose now releases the owned queue/events/CTS. These pin the hazards that creates:
+    // a second Dispose must not wait on or join against primitives the first one released,
+    // and work submitted afterwards must still fault rather than throw synchronously.
+
+    [Test]
+    public void Dispose_IsIdempotent()
+    {
+        var context = new WinGetComContext();
+
+        var act = () =>
+        {
+            context.Dispose();
+            context.Dispose();
+            context.Dispose();
+        };
+
+        act.Should().NotThrow();
+    }
+
+    [Test]
+    public void Dispose_ConcurrentDisposers_DoNotObserveReleasedPrimitives()
+    {
+        var context = new WinGetComContext();
+
+        var act = () => Parallel.For(0, 8, _ => context.Dispose());
+
+        act.Should().NotThrow();
+    }
+
+    [Test]
+    public void Dispose_RepeatedContextLifetimes_DoNotThrow()
+    {
+        // The leak this guards is not directly observable, so exercise the create/dispose cycle
+        // that provoked it — a directly constructed client owns a context per instance.
+        var act = () =>
+        {
+            for (var i = 0; i < 25; i++)
+            {
+                new WinGetComContext().Dispose();
+            }
+        };
+
+        act.Should().NotThrow();
+    }
+
+    [Test]
+    public async Task InvokeAsync_AfterDispose_FaultsWithObjectDisposed()
+    {
+        var context = new WinGetComContext();
+        context.Dispose();
+
+        Func<Task> act = async () => await context.InvokeAsync(() => 1);
+
+        await act.Should().ThrowAsync<ObjectDisposedException>();
+    }
+
+    [Test]
+    public void RegisterCancellation_AfterDispose_ReturnsADisposableNoOp()
+    {
+        var context = new WinGetComContext();
+        context.Dispose();
+
+        var act = () =>
+        {
+            using var registration = context.RegisterCancellation(CancellationToken.None, () => { });
+        };
+
+        act.Should().NotThrow();
+    }
 }
