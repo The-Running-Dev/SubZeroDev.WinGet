@@ -28,8 +28,8 @@ cross-workstream execution plan and source of truth for ordering.
 - [x] Preserve the upstream ComInterop behavior: RID-first architecture
   selection, static native payload, WinMD copy, and
   `WindowsMetadataReference`.
-- [x] Use `ConfigureAwait(false)` on production-library awaits so library
-  continuations do not depend on a caller synchronization context; use the
+- [x] Use `ConfigureAwait(false)` only outside COM-owner flows, and keep
+  projected-object continuations on their dedicated owner context; use the
   [.NET synchronization-context documentation](https://learn.microsoft.com/dotnet/standard/asynchronous-programming-patterns/executioncontext-synchronizationcontext)
   as rationale and verify behavior with non-pumping-context tests.
 - [x] Use `Task.Run` only for coherent synchronous COM segments and remember
@@ -136,18 +136,20 @@ as the evidence-favored implementation.
 
 ### Implementation
 
-- [ ] Add `ConfigureAwait(false)` to every await in `SubZeroDev.WinGet/`.
-- [ ] Preserve caller-controlled `IProgress<T>` delivery semantics.
-- [ ] Keep cancellation explicit for WinRT operations; do not assume
+- [x] Add `ConfigureAwait(false)` to service and CLI awaits; COM-client awaits
+  intentionally capture the dedicated owner context.
+- [x] Forward caller-provided `IProgress<T>` instances unchanged.
+- [x] Pass cancellation into WinRT task adapters or retain an explicit
+  cancellation registration; do not assume
   `Task.Run` can interrupt synchronous COM calls.
 
 ### Verification
 
-- [ ] Add a non-pumping `SynchronizationContext` test using delayed fake
+- [x] Add a non-pumping `SynchronizationContext` test using delayed fake
   clients.
-- [ ] Cover package search, a retrying package operation, and every async
+- [x] Cover package search, a retrying package operation, and every async
   package-source service path.
-- [ ] Verify the library has no unreviewed raw awaits.
+- [x] Verify the library has no unreviewed raw awaits.
 
 ## Phase 4 — Move synchronous COM work off caller contexts
 
@@ -157,22 +159,22 @@ as the evidence-favored implementation.
   for every projected type that would cross threads on Windows; if it is not
   proven, introduce a dedicated COM dispatcher that owns PackageManager
   activation and all synchronous projected-object access.
-- [ ] Do not retain a caller-created or arbitrary-worker-created shared
+- [x] Do not retain a caller-created or arbitrary-worker-created shared
   `Lazy<PackageManager>` while dispatching its use to unrelated pool threads.
-- [ ] Introduce the smallest testable dispatcher/offload seam that enforces the
+- [x] Introduce the smallest testable dispatcher/offload seam that enforces the
   selected ownership model.
-- [ ] Move package-manager activation, catalog enumeration/options setup, and
+- [x] Move package-manager activation, catalog enumeration/options setup, and
   synchronous result materialization off the caller thread within that model.
-- [ ] Apply the same rule to source add/remove/refresh setup and result
+- [x] Apply the same rule to source add/remove/refresh setup and result
   materialization where currently caller-bound.
-- [ ] Keep WinRT async operations asynchronous; do not block pool threads with
+- [x] Keep WinRT async operations asynchronous; do not block pool threads with
   `.GetAwaiter().GetResult()`.
 
 ### Verification
 
-- [ ] Unit-test the offload seam for thread change, cancellation-before-start,
+- [x] Unit-test the offload seam for thread change, cancellation-before-start,
   result propagation, and exception propagation.
-- [ ] Test repeated and concurrent calls so ownership is not proved only for a
+- [x] Test repeated and concurrent calls so ownership is not proved only for a
   single invocation.
 - [ ] Run read-only Windows x64 integration tests.
 - [ ] Run a single-thread synchronization-context/UI responsiveness harness

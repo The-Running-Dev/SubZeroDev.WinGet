@@ -35,7 +35,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Adding WinGet source {Name} ({Uri})", request.Name, request.Uri);
 
-        var result = await sourceClient.AddSource(request, progress, cancellationToken);
+        var result = await sourceClient.AddSource(request, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Add", request.Name, result);
 
@@ -49,7 +49,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Removing WinGet source {Name} (preserve data: {PreserveData})", name, preserveData);
 
-        var result = await sourceClient.RemoveSource(name, preserveData, progress, cancellationToken);
+        var result = await sourceClient.RemoveSource(name, preserveData, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Remove", name, result);
 
@@ -63,7 +63,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Refreshing WinGet source {Name}", name);
 
-        var result = await sourceClient.RefreshSource(name, progress, cancellationToken);
+        var result = await sourceClient.RefreshSource(name, progress, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Refresh", name, result);
 
@@ -82,7 +82,7 @@ public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogg
 
         logger.LogInformation("Updating WinGet source {Name} (explicit: {Explicit}, priority: {Priority})", name, isExplicit, priority);
 
-        var result = await sourceClient.UpdateSource(name, isExplicit, priority, cancellationToken);
+        var result = await sourceClient.UpdateSource(name, isExplicit, priority, cancellationToken).ConfigureAwait(false);
 
         LogOutcome("Update", name, result);
 

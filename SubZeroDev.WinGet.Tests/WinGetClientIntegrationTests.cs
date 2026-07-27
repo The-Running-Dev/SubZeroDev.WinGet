@@ -23,6 +23,9 @@ public class WinGetClientIntegrationTests
         _client = new WinGetClient();
     }
 
+    [TearDown]
+    public void TearDown() => _client.Dispose();
+
     [Test]
     public async Task GetWinGetVersion_ReturnsAVersion()
     {
@@ -117,6 +120,9 @@ public class WinGetSourceClientIntegrationTests
     {
         _client = new WinGetSourceClient();
     }
+
+    [TearDown]
+    public void TearDown() => _client.Dispose();
 
     [Test]
     public async Task GetSources_ReturnsTheConfiguredSources()
