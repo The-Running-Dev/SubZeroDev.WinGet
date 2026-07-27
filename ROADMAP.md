@@ -40,7 +40,8 @@ Small, self-contained edits that fix things that are currently wrong. Good first
   x64-marked assembly that won't load in an ARM64 process — so the declared ARM64 support
   cannot work as written. Change to `<PlatformTarget>$(Platform)</PlatformTarget>`.
   Once fixed, validate on real ARM64 hardware before dropping the README's "declared, not
-  yet validated" caveat.
+  yet validated" caveat. This also **blocks the ARM64 half of the packaging targets work**
+  in [Phase 3](#phase-3--packaging-and-distribution) — do it first if ARM64 is in scope there.
 
 - [ ] **`S` Resolve the unreachable `PackageOperationStatus.Cancelled`.**
   Declared at [PackageOperationResult.cs:25](SubZeroDev.WinGet/Models/PackageOperationResult.cs)
@@ -141,6 +142,11 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   If it works, the README's "⚠️ The one integration rule" section can be reduced to a footnote.
   See [PACKAGING-TARGETS-PLAN.md](PACKAGING-TARGETS-PLAN.md) for the phased implementation and
   verification checklist.
+
+  The x64 half is unblocked. The **ARM64 half depends on the `PlatformTarget` fix** in
+  [Phase 1](#phase-1--correctness-fixes) — the packaged assembly is x64-marked today
+  (PE machine `0x8664`), so copying the ARM64 native DLL next to it still yields an app
+  an ARM64 process cannot load.
 
 - [ ] **`S` Collapse the two sources of truth for version.**
   `<Version>0.1.0</Version>` in [SubZeroDev.WinGet.csproj:22](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj)

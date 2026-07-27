@@ -9,6 +9,34 @@ This plan implements the highest-value open item in
 [ROADMAP.md](ROADMAP.md#phase-3--packaging-and-distribution). It is intentionally
 checkbox-driven so each phase can be executed and reviewed independently.
 
+## Prerequisite — the ARM64 half of this plan is blocked
+
+Every ARM64 acceptance criterion below depends on a fix that lives outside this
+plan: **`S` Fix ARM64 builds emitting x64 assemblies** in
+[ROADMAP.md](ROADMAP.md#phase-1--correctness-fixes) Phase 1.
+
+`<PlatformTarget>x64</PlatformTarget>` is unconditional in
+[SubZeroDev.WinGet.csproj](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj), so the
+assembly inside the current package is x64-marked (verified: PE machine type
+`0x8664` in `lib/net8.0-windows10.0.26100/SubZeroDev.WinGet.dll` of a locally
+packed `0.1.0`). An ARM64 consumer cannot load that assembly no matter which
+native DLL these targets copy next to it — so ARM64 support cannot be claimed,
+tested end to end, or documented until `PlatformTarget` becomes
+`$(Platform)` and the package is rebuilt.
+
+- [ ] Land the roadmap Phase 1 `PlatformTarget` fix before starting Phase 2 here,
+  or explicitly reduce this plan's scope to x64 and strike every ARM64 checkbox.
+
+The x64 work is unblocked and can proceed independently.
+
+## Where each phase can run
+
+Package *layout* work does not require Windows. `dotnet build` fails on macOS
+with `NETSDK1100`, but `dotnet pack -p:EnableWindowsTargeting=true` succeeds and
+produces an inspectable `.nupkg`, which covers Phase 0's package discovery and
+Phase 2's layout assertions. Phase 1's clean-consumer build, Phase 3's
+regression harness, and every runtime smoke test in Phase 6 require Windows.
+
 ## Phase 0 — Documentation and package discovery
 
 ### Allowed mechanisms
@@ -29,12 +57,45 @@ checkbox-driven so each phase can be executed and reviewed independently.
 - [ ] Treat `win-x64` and `win-arm64` as opaque portable RIDs from the
   [.NET RID catalog](https://learn.microsoft.com/dotnet/core/rid-catalog);
   do not construct or parse RIDs.
-- [ ] Inspect the pinned
+- [x] Inspect the pinned
   `Microsoft.WindowsPackageManager.ComInterop` 1.29.280 package and record its
-  exact target and payload paths in the implementation PR.
+  exact target and payload paths in the implementation PR. **Done** — layout
+  recorded under "Verified upstream layout" below.
 - [ ] Confirm from `obj/project.assets.json` and generated
   `obj/*.nuget.g.targets` that the upstream package's `build/` target does not
-  flow transitively to a clean consumer.
+  flow transitively to a clean consumer. **Partly answered** — the mechanism is
+  confirmed (no `buildTransitive/` folder upstream; our own packed nuspec
+  excludes build assets, see below). Still worth capturing the generated files
+  from a real clean consumer as PR evidence.
+
+### Verified upstream layout (1.29.280)
+
+| Path | Contents |
+|---|---|
+| `build/Microsoft.WindowsPackageManager.ComInterop.common.targets` | Linkage default, WinMD reference, `ReferenceCopyLocalPaths` items, the two error targets |
+| `build/net8.0-windows10.0.26100.0/…ComInterop.targets` | Architecture selection, then imports the common targets |
+| `build/native/…ComInterop.targets` | Same for native consumers |
+| `bin/win-{x86,x64,arm64}/native/{static,dynamic}/Microsoft.Management.Deployment.dll` | The native payloads |
+| `lib/net8.0-windows10.0.26100.0/Microsoft.Management.Deployment.CsWinRTProjection.dll` | Managed projection — this *does* flow transitively |
+| `lib/uap10.0/Microsoft.Management.Deployment.winmd` | WinMD, added via `ReferenceCopyLocalPaths` by the targets |
+
+There is **no `buildTransitive/` folder** — that single fact is the whole root
+cause. NuGet auto-imports `build/` only for a direct reference.
+
+### Our own packaged dependency metadata excludes build assets
+
+`dotnet pack` emits the ComInterop dependency as:
+
+```xml
+<dependency id="Microsoft.WindowsPackageManager.ComInterop" version="1.29.280" exclude="Build,Analyzers" />
+```
+
+That is NuGet's default `PrivateAssets` (`contentfiles;analyzers;build`) for a
+`PackageReference`, and `buildTransitive` belongs to the `build` asset group. So
+build assets from that dependency are suppressed for our consumers *even if
+Microsoft shipped a `buildTransitive/` folder tomorrow*. Any strategy that
+relies on upstream MSBuild logic reaching the consumer must also set
+`PrivateAssets="analyzers;contentfiles"` on our reference.
 
 Current upstream behavior to preserve:
 
@@ -54,8 +115,12 @@ Current upstream behavior to preserve:
   property exists unless the clean consumer's generated restore files prove it.
 - [ ] Do not hardcode the default global-packages directory.
 - [ ] Do not silently select x64 for AnyCPU or ARM64 builds.
-- [ ] Do not redistribute Microsoft binaries until their license permits it and
-  the package layout has been reviewed.
+- [x] Do not redistribute Microsoft binaries until their license permits it and
+  the package layout has been reviewed. **License resolved** — the upstream
+  nuspec declares `<license type="expression">MIT</license>`, so redistribution
+  is permitted with attribution. Redistribution therefore still needs a layout
+  review and an attribution decision (the upstream package ships a `NOTICE.txt`
+  for its own third-party components), but it is no longer legally blocked.
 
 ### Phase verification
 
@@ -70,11 +135,25 @@ Compare these strategies in a disposable clean consumer before changing public
 documentation:
 
 - [ ] **A — Self-contained payload:** package the supported native DLLs inside
-  `SubZeroDev.WinGet` and select the correct package-owned file.
+  `SubZeroDev.WinGet` and select the correct package-owned file. The Phase 0
+  evidence favors this one: MIT permits redistribution, and it depends on
+  neither the upstream package's location on disk nor its asset flow. Cost is
+  duplicating the native payload and pinning the interop version into our
+  package — record that trade-off rather than assuming it away.
 - [ ] **B — Dependency payload:** locate the restored ComInterop dependency and
-  add its selected DLL to `ReferenceCopyLocalPaths`.
+  add its selected DLL to `ReferenceCopyLocalPaths`. Note that
+  `$(Pkg…)` path properties are generated only for *direct* references with
+  `GeneratePathProperty="true"`, so a consumer's transitive ComInterop has no
+  such property; deriving the package root from an already-resolved item (the
+  managed projection assembly does flow) is more reliable than composing a path
+  from `$(NuGetPackageRoot)`.
 - [ ] **C — Upstream import:** import or reuse the upstream target without
-  duplicating projection, WinMD, or copy behavior.
+  duplicating projection, WinMD, or copy behavior. **Requires a second change:**
+  our packed nuspec currently carries `exclude="Build,Analyzers"` on the
+  ComInterop dependency, so upstream build assets never reach the consumer until
+  our `PackageReference` sets `PrivateAssets="analyzers;contentfiles"`. Even
+  then, upstream ships no `buildTransitive/`, so importing its targets means
+  reaching into the restored package directory by path anyway.
 
 Use the upstream ComInterop `.targets` files as the behavioral reference. Prefer
 normal build/publish items or `ReferenceCopyLocalPaths` over an unconditional
@@ -98,7 +177,9 @@ The winning strategy must:
   x64.
 - [ ] Define the ARM64 validation boundary: cross-build and inspect the ARM64
   output in CI; keep the existing "not validated on hardware" caveat until a
-  real ARM64 runtime smoke test passes.
+  real ARM64 runtime smoke test passes. *Gated on the prerequisite above — until
+  `PlatformTarget` follows `$(Platform)`, an ARM64 cross-build produces an
+  x64-marked managed assembly and the inspection proves nothing.*
 
 ## Phase 2 — Package the supported implementation
 
@@ -110,7 +191,9 @@ The winning strategy must:
 - [ ] Keep architecture selection aligned with the upstream precedence:
   `RuntimeIdentifier`, then explicit platform.
 - [ ] Support x64 and ARM64 only unless the public platform contract is changed
-  in a separate decision.
+  in a separate decision. *ARM64 requires the prerequisite fix; if it has not
+  landed, ship x64 and have the targets fail loudly on ARM64 rather than
+  shipping a payload the managed assembly cannot pair with.*
 - [ ] Preserve incremental build behavior; do not copy unchanged files on every
   build.
 - [ ] Ensure both `dotnet build` and `dotnet publish` receive the required DLL.
@@ -136,7 +219,10 @@ a pre-merge gate.
   directory.
 - [ ] Assert the generated NuGet target import.
 - [ ] Assert the x64 build and publish outputs contain the x64 native DLL.
-- [ ] Cross-build ARM64 and assert the output contains the ARM64 native DLL.
+- [ ] Cross-build ARM64 and assert the output contains the ARM64 native DLL —
+  and assert the managed `SubZeroDev.WinGet.dll` is itself ARM64-marked, which is
+  what the prerequisite fix buys. A PE machine-type check (`0xAA64` for ARM64,
+  `0x8664` for x64) is enough and runs anywhere.
 - [ ] Assert unsupported/ambiguous platform configurations fail with the
   intended actionable message.
 - [ ] Add a Nuke packaging-test target or equivalent repeatable entry point.
@@ -160,12 +246,26 @@ runtime smoke test pass.
 
 ## Phase 5 — Update documentation and specification
 
-- [ ] Replace the README's "one integration rule" warning with the validated
-  package behavior and any remaining platform caveat.
+Every place that currently states the workaround as a rule — all seven were
+located by grep, do not trust this list without re-running it:
+
+- [ ] Replace the README's "⚠️ The one integration rule" warning
+  ([README.md:83](README.md)) with the validated package behavior and any
+  remaining platform caveat. Note the README is the package's
+  `PackageReadmeFile`, so stale text here ships inside the `.nupkg`.
+- [ ] Remove the second README mention in the GitHub Packages install section
+  ([README.md:100](README.md)) — it repeats the workaround parenthetically and
+  is easy to miss.
 - [ ] Update `docs/getting-started.md` so the minimal consumer truly contains
-  one package reference.
-- [ ] Update `docs/troubleshooting.md` with the new diagnostics and remove the
-  obsolete direct-reference remedy.
+  one package reference — both the `dotnet add package` line (:19) and the
+  "one integration rule" section (:37).
+- [ ] Update `docs/troubleshooting.md` (:11) with the new diagnostics and remove
+  the obsolete direct-reference remedy.
+- [ ] Update `docs/examples.md` (:61), which lists the direct reference as
+  something "every consuming executable needs".
+- [ ] Update `CLAUDE.md` (:63), which states the same rule under "Constraints
+  that will bite you" — stale guidance there misleads future contributors and
+  agents, not just consumers.
 - [ ] Update `docs/testing.md` with the packaging regression target and Windows
   smoke-test boundary.
 - [ ] Update `SPECIFICATION.md` to distinguish the original transitive-copy
@@ -193,7 +293,10 @@ runtime smoke test pass.
 
 - [ ] A clean supported Windows application works with only
   `PackageReference Include="SubZeroDev.WinGet"`.
-- [ ] Build and publish select the correct native DLL for x64 and ARM64.
+- [ ] Build and publish select the correct native DLL for x64 — and for ARM64
+  only once the `PlatformTarget` prerequisite has landed and the packaged
+  managed assembly is ARM64-marked. Do not tick this for ARM64 on the strength
+  of a native-DLL copy alone.
 - [ ] Package behavior is regression-tested before merge.
 - [ ] A read-only x64 runtime smoke test proves COM activation from the packed
   consumer.
