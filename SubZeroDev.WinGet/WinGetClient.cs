@@ -18,11 +18,23 @@ namespace SubZeroDev.WinGet;
 /// which is how winget itself correlates "installed" with "available" — see the E2E interop
 /// tests in the winget-cli repo for the reference pattern.
 /// </summary>
+/// <remarks>
+/// Ownership: the public constructor starts a dedicated MTA owner thread for the WinGet
+/// projection, so an instance built that way must be disposed or the thread leaks for the
+/// lifetime of the process. Instances resolved from <c>AddPackageManagement()</c> instead share
+/// a container-owned <c>WinGetComContext</c>; disposing those is a no-op, and the container
+/// stops the owner thread when the provider is disposed.
+/// </remarks>
 public sealed class WinGetClient : IWinGetClient, IDisposable
 {
     private readonly WinGetComContext _context;
     private readonly bool _ownsContext;
 
+    /// <summary>
+    /// Creates a client that owns its own COM context and MTA owner thread. Dispose it when
+    /// finished. Prefer <c>AddPackageManagement()</c>, which shares one context across all
+    /// clients and disposes it with the provider.
+    /// </summary>
     public WinGetClient()
         : this(new WinGetComContext(), ownsContext: true)
     {

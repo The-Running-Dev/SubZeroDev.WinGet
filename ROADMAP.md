@@ -91,14 +91,16 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   `ConfigureAwait(false)`; COM-client flows intentionally remain on the dedicated MTA owner
   context so projected objects do not cross threads. Windows UI responsiveness validation remains open.
 
-- [ ] **`M` Stop `Lazy<T>` caching activation failures forever.**
-  [WinGetClient.cs:35](SubZeroDev.WinGet/WinGetClient.cs) and
-  [WinGetCliClient.cs:17](SubZeroDev.WinGet/WinGetCliClient.cs) use the default
-  `LazyThreadSafetyMode.ExecutionAndPublication`, which caches the *exception* as well as the
-  value. Because these types are registered as singletons, a single transient COM activation
-  failure (or a transient `winget.exe` resolution failure) poisons the instance for the whole
-  process lifetime — it never recovers even after WinGet is repaired. Use
-  `LazyThreadSafetyMode.PublicationOnly`, or hand-roll caching that only memoizes success.
+- [x] **`M` Stop `Lazy<T>` caching activation failures forever.** ✅ Done.
+  The default `LazyThreadSafetyMode.ExecutionAndPublication` caches the *exception* as well as
+  the value, so on singleton-registered types one transient COM activation failure (or
+  `winget.exe` resolution failure) poisoned the instance for the whole process lifetime, with no
+  recovery even after WinGet was repaired. Both sites now use
+  `LazyThreadSafetyMode.PublicationOnly`, which re-runs the factory after a failure:
+  `PackageManager` in [Com/WinGetComContext.cs](SubZeroDev.WinGet/Com/WinGetComContext.cs) (safe
+  because it is only touched from the single owner thread) and `_wingetPath` in
+  [WinGetCliClient.cs](SubZeroDev.WinGet/WinGetCliClient.cs) (safe because resolution is a pure
+  filesystem lookup, so a raced duplicate returns the same path).
 
 - [ ] **`M` Make `ParsePinList` locale-independent.**
   [WinGetCliClient.cs:192-195](SubZeroDev.WinGet/WinGetCliClient.cs) derives column offsets

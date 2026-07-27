@@ -12,11 +12,21 @@ namespace SubZeroDev.WinGet;
 /// AddPackageCatalogAsync, RemovePackageCatalogAsync, EditPackageCatalog, and
 /// RefreshPackageCatalogAsync.
 /// </summary>
+/// <remarks>
+/// Ownership: as with <see cref="WinGetClient"/>, the public constructor starts a dedicated MTA
+/// owner thread and the instance must be disposed. Instances resolved from
+/// <c>AddPackageManagement()</c> share the container-owned context and need no disposal.
+/// </remarks>
 public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
 {
     private readonly WinGetComContext _context;
     private readonly bool _ownsContext;
 
+    /// <summary>
+    /// Creates a client that owns its own COM context and MTA owner thread. Dispose it when
+    /// finished. Prefer <c>AddPackageManagement()</c>, which shares one context across all
+    /// clients and disposes it with the provider.
+    /// </summary>
     public WinGetSourceClient()
         : this(new WinGetComContext(), ownsContext: true)
     {

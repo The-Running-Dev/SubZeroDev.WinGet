@@ -6,6 +6,11 @@ namespace SubZeroDev.WinGet.Abstractions;
 /// WinGet source (catalog) management — the "winget source" equivalent, via the COM API.
 /// Add/remove typically require an elevated caller; WinGet returns AccessDenied otherwise.
 /// </summary>
+/// <remarks>
+/// Not <see cref="IDisposable"/> by design; see the remarks on <see cref="IWinGetClient"/> for
+/// the ownership rules. Injected instances belong to the container; only direct construction of
+/// <see cref="WinGetSourceClient"/> owns a disposable COM owner thread.
+/// </remarks>
 public interface IWinGetSourceClient
 {
     Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default);

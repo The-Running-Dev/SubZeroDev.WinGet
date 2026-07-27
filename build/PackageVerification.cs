@@ -293,11 +293,16 @@ static class PackageVerification
         using var assets = JsonDocument.Parse(File.ReadAllText(assetsPath));
         var packageFolders = assets.RootElement.GetProperty("packageFolders")
             .EnumerateObject().Select(x => Path.GetFullPath(x.Name)).ToArray();
+        // packageFolders is the global packages folder followed by every configured fallback
+        // folder, so extra entries here mean the fixture's NuGet.Config did not clear fallbacks
+        // (see WriteNuGetConfig) rather than that the restore targeted the wrong folder.
         Require(packageFolders.Length == 1 &&
                 PathEquals(packageFolders[0].TrimEnd(Path.DirectorySeparatorChar),
                     Path.GetFullPath(packages).TrimEnd(Path.DirectorySeparatorChar)),
             $"Restore did not exclusively use isolated NUGET_PACKAGES '{packages}'. Found: " +
-            string.Join(", ", packageFolders));
+            string.Join(", ", packageFolders) +
+            $".{Environment.NewLine}Entries beyond the first are NuGet fallback folders; the " +
+            "fixture NuGet.Config is expected to clear them.");
     }
 
     static void VerifyExpectedFailure(
@@ -424,6 +429,22 @@ static class PackageVerification
                 <add key="local" value="{{feed}}" />
                 <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
               </packageSources>
+              <!--
+                A <clear /> under packageSources does NOT clear fallback folders — they are a
+                separate section, and outer config can register them. Visual Studio does exactly
+                that on GitHub's windows-latest image
+                ("C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages"), and NuGet
+                records every fallback folder in project.assets.json's packageFolders, which is
+                what AssertIsolatedRestoreAndImport inspects.
+
+                This <clear /> covers config-registered fallbacks only; a fallback supplied via
+                the NUGET_FALLBACK_PACKAGES environment variable is NOT affected by it (verified
+                empirically). Run() drops that variable from the child environment to cover the
+                other half.
+              -->
+              <fallbackPackageFolders>
+                <clear />
+              </fallbackPackageFolders>
               <packageSourceMapping>
                 <packageSource key="local">
                   <package pattern="SubZeroDev.WinGet" />
@@ -543,6 +564,11 @@ static class PackageVerification
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
         start.Environment["NUGET_PACKAGES"] = packages;
+        // The fixture's NuGet.Config clears config-registered fallback folders, but a fallback
+        // set through this variable is immune to that <clear /> and would still land in
+        // project.assets.json's packageFolders, breaking the isolation assertion on any machine
+        // that happens to set it. Dropping it here closes that gap.
+        start.Environment.Remove("NUGET_FALLBACK_PACKAGES");
         start.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
 
         using var process = Process.Start(start)

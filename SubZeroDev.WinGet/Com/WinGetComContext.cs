@@ -32,7 +32,14 @@ internal sealed class WinGetComContext : IDisposable
     internal WinGetComContext(WinGetFactory factory)
     {
         _factory = factory;
-        _packageManager = new Lazy<PackageManager>(factory.CreatePackageManager);
+        // PublicationOnly, not the default ExecutionAndPublication: the default caches the
+        // *exception* as well as the value, so a single transient COM activation failure would
+        // poison this context — and therefore the whole process, since it is a DI singleton —
+        // for its entire lifetime, with no recovery even after WinGet is repaired.
+        // PublicationOnly re-runs the factory after a failure. Its usual drawback (racing
+        // threads can each build an instance, one wins) cannot arise here: PackageManager is
+        // only ever touched from the single owner thread that the pump below runs on.
+        _packageManager = new Lazy<PackageManager>(factory.CreatePackageManager, LazyThreadSafetyMode.PublicationOnly);
         _thread = new Thread(Run) { IsBackground = true, Name = "SubZeroDev.WinGet COM context" };
         if (OperatingSystem.IsWindows())
         {

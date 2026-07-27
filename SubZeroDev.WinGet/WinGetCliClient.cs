@@ -14,7 +14,11 @@ namespace SubZeroDev.WinGet;
 /// </summary>
 public sealed class WinGetCliClient : IWinGetCliClient
 {
-    private readonly Lazy<string> _wingetPath = new(ResolveWinGetPath);
+    // PublicationOnly so a transient resolution failure isn't cached for the lifetime of this
+    // singleton: the default mode memoizes the thrown exception, which would keep throwing even
+    // after App Installer is repaired. Resolution is a pure filesystem lookup, so the mode's
+    // racing-threads caveat is harmless — a duplicate lookup just returns the same path.
+    private readonly Lazy<string> _wingetPath = new(ResolveWinGetPath, LazyThreadSafetyMode.PublicationOnly);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
