@@ -30,6 +30,13 @@ synchronously, which would have broken the faulted-task contract the `_gate` che
 establishes for work submitted after disposal. Both now bail early on `_disposing` —
 `Enqueue` returns a faulted task, `RegisterCancellation` returns a no-op registration.
 
+**A third issue, found by Qodo reviewing the fix itself:** the self-disposal early return was keyed
+on `ManagedThreadId`. The runtime may recycle a terminated thread's id, so once the pump exited an
+unrelated caller could be misidentified as the owner, take the early return and silently skip the
+new cleanup. The id comparison predates this work (PR #11), but it only became consequential here —
+before, the early return skipped a harmless join; now it skips releasing four primitives. Switched
+to `ReferenceEquals(Thread.CurrentThread, _thread)`, since `Thread` instances are never reused.
+
 **Known remaining limitation (deliberate, documented in code):** the self-disposal path — `Dispose()`
 called *from* the owner thread, e.g. inside a COM callback — still leaves the primitives to
 finalization. It cannot join itself, so the pump is still running on that very thread and the

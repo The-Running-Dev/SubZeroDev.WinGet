@@ -260,7 +260,12 @@ internal sealed class WinGetComContext : IDisposable
         // cannot release the primitives below — the pump is still running on this very thread —
         // so it leaves them to finalization. Every other path (DI provider disposal, a directly
         // constructed client, the constructor's startup-failure cleanup) reaches the join.
-        if (Environment.CurrentManagedThreadId == _thread.ManagedThreadId)
+        //
+        // Compare Thread identity, not ManagedThreadId: the runtime may recycle a terminated
+        // thread's id onto a new thread, so an id check can misidentify an unrelated caller as
+        // the owner once the pump has exited — taking this early return and silently skipping
+        // the cleanup below. Thread instances are never reused, so identity is exact.
+        if (ReferenceEquals(Thread.CurrentThread, _thread))
         {
             return;
         }
