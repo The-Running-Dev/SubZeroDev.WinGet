@@ -30,6 +30,7 @@
         "Coverage",
         "IntegrationTest",
         "Pack",
+        "PackageTest",
         "PublishGitHubPackages",
         "PublishNuGet",
         "Restore",

@@ -23,8 +23,9 @@ env:
   NUKE_VERSION: 10.1.0
 
 jobs:
-  # Runs on every push to main AND every pull request: tests + coverage only, never
-  # packs or publishes. This is the required status check for branch protection.
+  # Runs on every push to main AND every pull request: tests, coverage, architecture,
+  # and package-contract verification, but never publishes. This is the required
+  # status check for branch protection.
   build:
     runs-on: windows-latest
 
@@ -60,16 +61,17 @@ jobs:
           dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
-      - name: Test, architecture, and coverage
-        # One Nuke invocation for both targets. Nuke de-duplicates target execution only
-        # WITHIN a single invocation, so Test and Coverage must be requested together —
+      - name: Test, coverage, architecture, and package
+        # One Nuke invocation for all requested targets. Nuke de-duplicates target execution
+        # only WITHIN a single invocation, so Test and Coverage must be requested together —
         # separate `nuke Test` then `nuke Coverage` calls would re-run Test (and its
         # Restore/Compile dependencies). Coverage depends on Test, so the plan runs
         # Restore -> Compile -> Test -> Coverage exactly once, while ArchitectureTest
-        # cross-builds x64/ARM64 and verifies the emitted PE headers. A failure stops the
-        # job before release. The append step below surfaces the generated markdown on
-        # the run's summary page (GITHUB_STEP_SUMMARY).
-        run: nuke Test Coverage ArchitectureTest --configuration Release
+        # cross-builds x64/ARM64 and verifies the emitted PE headers. PackageTest then
+        # validates the packed direct and transitive consumer contract without executing
+        # live COM calls. A failure stops the job before release. The append step below
+        # surfaces the generated markdown on the run's summary page (GITHUB_STEP_SUMMARY).
+        run: nuke Test Coverage ArchitectureTest PackageTest --configuration Release
 
       - name: Append coverage summary
         run: Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
@@ -86,7 +88,8 @@ jobs:
   #   push tag v*    -> GitHub Packages, STABLE version (0.1.0)
   #   workflow_dispatch with push_to_nuget -> NuGet.org
   # A tag push is still a `push` event, so the event_name check below covers it.
-  # Pull requests never reach this job — they only run tests + coverage above.
+  # Pull requests never reach this job — they run the full non-publishing verification
+  # suite above, including architecture and package-contract checks.
   release:
     needs: build
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true) }}

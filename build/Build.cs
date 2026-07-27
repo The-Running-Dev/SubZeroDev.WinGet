@@ -139,6 +139,15 @@ class Build : NukeBuild
             }
         });
 
+    // Package-level contract test. This intentionally stops at restore/build/publish:
+    // live COM activation remains in the opt-in IntegrationTest target and requires
+    // a Windows machine with WinGet installed.
+    Target PackageTest => _ => _
+        .DependsOn(Pack)
+        .After(ArchitectureTest)
+        .Executes(() => PackageVerification.Run(
+            RootDirectory, ArtifactsDirectory, Configuration));
+
     // Mirrors the original CI "Test" step exactly: NUnit's [Explicit] attribute already
     // excludes the 12 live integration tests from a plain test run, so no filter is needed.
     Target Test => _ => _
@@ -176,13 +185,17 @@ class Build : NukeBuild
     // its own GitVersion-derived pack in PublishGitHubPackages instead.
     Target Pack => _ => _
         .DependsOn(Compile)
-        .Executes(() => DotNetPack(s => s
-            .SetProject(LibraryProject)
-            .SetConfiguration(Configuration)
-            .SetProperty("EnableWindowsTargeting", "true")
-            .EnableNoRestore()
-            .EnableNoBuild()
-            .SetOutputDirectory(ArtifactsDirectory)));
+        .Executes(() =>
+        {
+            ArtifactsDirectory.CreateOrCleanDirectory();
+            DotNetPack(s => s
+                .SetProject(LibraryProject)
+                .SetConfiguration(Configuration)
+                .SetProperty("EnableWindowsTargeting", "true")
+                .EnableNoRestore()
+                .EnableNoBuild()
+                .SetOutputDirectory(ArtifactsDirectory));
+        });
 
     Target PublishNuGet => _ => _
         .DependsOn(Pack)
@@ -204,6 +217,7 @@ class Build : NukeBuild
         .Requires(() => GithubRepositoryOwner)
         .Executes(() =>
         {
+            ArtifactsDirectory.CreateOrCleanDirectory();
             DotNetPack(s => s
                 .SetProject(LibraryProject)
                 .SetConfiguration(Configuration)

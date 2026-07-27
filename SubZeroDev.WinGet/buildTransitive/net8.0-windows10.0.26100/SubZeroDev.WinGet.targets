@@ -31,7 +31,8 @@
 
   <PropertyGroup Condition="'$(SubZeroDevWinGetConsumerAssetsEnabled)' == 'true'">
     <SubZeroDevWinGetWinMDPath>$(MSBuildThisFileDirectory)Microsoft.Management.Deployment.winmd</SubZeroDevWinGetWinMDPath>
-    <SubZeroDevWinGetNativePath Condition="'$(SubZeroDevWinGetArchitecture)' != ''">$(MSBuildThisFileDirectory)native\win-$(SubZeroDevWinGetArchitecture)\Microsoft.Management.Deployment.dll</SubZeroDevWinGetNativePath>
+    <SubZeroDevWinGetNativePath Condition="'$(SubZeroDevWinGetArchitecture)' == 'x64'">$(MSBuildThisFileDirectory)native\win-x64\Microsoft.Management.Deployment.dll</SubZeroDevWinGetNativePath>
+    <SubZeroDevWinGetNativePath Condition="'$(SubZeroDevWinGetArchitecture)' == 'arm64'">$(MSBuildThisFileDirectory)native\win-arm64\Microsoft.Management.Deployment.dll</SubZeroDevWinGetNativePath>
   </PropertyGroup>
 
   <Target
