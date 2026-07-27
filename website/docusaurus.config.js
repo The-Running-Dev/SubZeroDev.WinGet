@@ -11,8 +11,10 @@ const config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  url: 'https://the-running-dev.github.io',
-  baseUrl: '/SubZeroDev.WinGet/',
+  // Served from a dedicated custom domain (winget.subzerodev.com — see
+  // website/static/CNAME), so this serves from the root, not a repo-name subpath.
+  url: 'https://winget.subzerodev.com',
+  baseUrl: '/',
 
   organizationName: 'The-Running-Dev',
   projectName: 'SubZeroDev.WinGet',
