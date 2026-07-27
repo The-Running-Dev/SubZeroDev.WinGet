@@ -35,6 +35,8 @@ await packages.Pin("Git.Git", blocking: true);
 await packages.Unpin("Git.Git");
 ```
 
+`Pin`/`Unpin` always pin the package definition itself. The lower-level `IWinGetCliClient.AddPin`/`RemovePin` also accept a `pinInstalledVersion` flag to pin the currently-installed version specifically — not exposed through the service layer.
+
 ## Export
 
 Snapshot the machine's installed packages to a `winget import`-compatible JSON file:

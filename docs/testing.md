@@ -33,7 +33,7 @@ Using plain `dotnet` commands directly (below) still works fine for local develo
 dotnet build SubZeroDev.WinGet.sln
 ```
 
-The solution builds three projects: the library, the test suite, and the Examples console app. Platform is pinned to x64 automatically (see [Getting Started](getting-started)). The `build/_build.csproj` Nuke project is intentionally **not** part of this solution.
+The solution builds three projects: the library, the test suite, and the Examples console app. Platform is pinned to x64 automatically (see [Getting Started](getting-started.md)). The `build/_build.csproj` Nuke project is intentionally **not** part of this solution.
 
 ## Unit tests
 
@@ -96,7 +96,7 @@ Two triggers run `nuke PublishGitHubPackages`, and which one fired determines wh
 | Push to `main` (i.e. a merged PR) | `0.1.0-<commits-since-source>` — a **prerelease**, distinct for every merge |
 | Push of a `v*` tag | `0.1.0` — **stable** |
 
-The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an existing version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started#installing-from-github-packages).
+The version is computed by **[GitVersion](https://gitversion.net/)** (resolved by Nuke's GitVersion component) and passed to `dotnet pack`. Authentication uses the automatic `GITHUB_TOKEN` (no secret to configure), and `--skip-duplicate` makes re-pushing an existing version harmless. The package lands at `https://nuget.pkg.github.com/The-Running-Dev/index.json`; consumers install from it as shown in [Getting Started](getting-started.md#installing-from-github-packages).
 
 Consumers need `--prerelease` to install the untagged prerelease builds; tagged releases install normally.
 

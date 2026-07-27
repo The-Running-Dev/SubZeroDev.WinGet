@@ -57,3 +57,9 @@ graphify-out/cache/*
 /Winget-AutoUpdate/
 /winget-cli/
 
+## Docusaurus site (website/). Content itself lives in docs/ and is tracked
+## normally; only the Node tooling output is ignored here.
+website/node_modules/
+website/build/
+website/.docusaurus/
+

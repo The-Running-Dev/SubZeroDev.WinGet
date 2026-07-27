@@ -1,0 +1,88 @@
+name: Docs
+
+# Builds and deploys the Docusaurus site in website/ (content sourced from docs/)
+# to GitHub Pages. Entirely separate from build.yml: this never gates the library's
+# CI, and the library's CI never blocks a docs update.
+#
+# One-time manual prerequisite: repo Settings -> Pages -> Source must be set to
+# "GitHub Actions". Until that's done, the deploy job below fails.
+on:
+  push:
+    branches: [main]
+    # A v* tag always points at a commit already on main, which already triggered
+    # this workflow via the branches:[main] path-filtered push above — so this is
+    # belt-and-suspenders (a rebuild+redeploy of unchanged content), not a fix for
+    # an actual gap. Kept for consistency with build.yml's push trigger, which
+    # genuinely does need both: there, a tag push changes the published *version*
+    # (prerelease vs stable); here, the docs site has no such distinction.
+    tags: ['v*']
+    paths:
+      - 'docs/**'
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  # Validates the build (and therefore every internal link, via onBrokenLinks:
+  # 'throw' below) BEFORE merge, not after. Without this, a broken link only
+  # surfaces once it's already on main and this workflow's push-triggered run
+  # fails post-merge. The deploy job is gated to skip entirely on pull_request
+  # events (see below) — a PR run only ever builds and validates, never publishes.
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Only one deploy in flight at a time; don't cancel one that's already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      # onBrokenLinks/onBrokenMarkdownLinks are set to 'throw' in docusaurus.config.js,
+      # so this build step is also the link checker for every docs/ cross-reference.
+      - name: Build
+        working-directory: website
+        run: npm run build
+
+      # Skipped on pull_request runs: the artifact would never be consumed, since
+      # the deploy job below never runs for that event.
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/build
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

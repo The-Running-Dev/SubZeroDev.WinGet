@@ -12,7 +12,8 @@ complete and working. These are the edges.
 
 ## Where to start
 
-If only three things get done, these are the three that matter most:
+The docs site ([Phase 5](#phase-5--documentation)) is done — see
+<https://the-running-dev.github.io/SubZeroDev.WinGet/>. Of what's left, these two matter most:
 
 1. **Ship the `build/*.targets` file** ([Phase 3](#phase-3--packaging-and-distribution)) so the
    direct `Microsoft.WindowsPackageManager.ComInterop` reference stops being required. It's the
@@ -20,9 +21,6 @@ If only three things get done, these are the three that matter most:
 2. **Fix the threading** ([Phase 2](#phase-2--threading-and-reliability)) — move the blocking COM
    work off the caller's thread and add `ConfigureAwait(false)`. This is the class of bug that
    produces reports you can't reproduce locally.
-3. **Stand up the docs site** ([Phase 5](#phase-5--documentation)). The content is already
-   written for Docusaurus; right now 11 of its internal links 404 on GitHub, which is the only
-   place anyone can read it.
 
 [Phase 1](#phase-1--correctness-fixes) is a good warm-up batch regardless — six small,
 independent edits that each fix something that is currently wrong.
@@ -212,24 +210,24 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 
 ## Phase 5 — Documentation
 
-- [ ] **`M` Stand up the Docusaurus site and deploy to GitHub Pages.**
-  [docs/](docs) is already written for Docusaurus — frontmatter (`id`, `title`,
-  `sidebar_position`, `slug`) is present on every page and `docs/usage/_category_.json` is
-  there — but there is no `docusaurus.config.js`, no `package.json`, and no deploy workflow.
+- [x] **`M` Stand up the Docusaurus site and deploy to GitHub Pages.** ✅ Done.
+  [website/](website) builds `docs/` (via `path: '../docs'`, so there is exactly one source
+  of truth) and deploys to GitHub Pages on push to `main` via
+  [.github/workflows/docs.yml](.github/workflows/docs.yml). Live at
+  <https://the-running-dev.github.io/SubZeroDev.WinGet/>, linked from the README.
 
-  Consequence today: **11 internal links are extensionless** (e.g.
-  `](usage/packages#the-built-in-retry-policy)` in [docs/architecture.md:30](docs/architecture.md),
-  and six in [docs/intro.md](docs/intro.md)). Those resolve correctly under Docusaurus and are
-  **broken 404s when browsed on GitHub** — which is currently the only way anyone can read
-  them.
+  This also fixed the 12 internal links that were extensionless (originally reported as
+  11 — six in [docs/intro.md](docs/intro.md), one each in getting-started/packages/
+  troubleshooting/architecture, two in testing.md) and 404'd when browsed on GitHub: all
+  now carry `.md` suffixes, which resolve correctly both on GitHub and under Docusaurus.
+  `onBrokenLinks`/`onBrokenMarkdownLinks` are set to `'throw'` in `docusaurus.config.js`,
+  so the doc site's own build is the link checker going forward — a future broken
+  cross-reference fails CI instead of shipping.
 
-  Two ways out; the site is worth it given the content already exists:
-  1. Add the Docusaurus site + a Pages deploy workflow, and link it from the README, or
-  2. Convert the 11 links to `.md`-suffixed relative links and treat `docs/` as GitHub-browsable
-     only.
+  **One manual step outside this repo:** GitHub Settings → Pages → Source must be set to
+  "GitHub Actions" once, or the deploy job fails with no Pages target configured.
 
-- [ ] **`S` Add a README roadmap pointer.**
-  Link this file from the README so the known gaps are discoverable without reading the source.
+- [x] **`S` Add a README roadmap pointer.** ✅ Done — see the [Roadmap](README.md#roadmap) section.
 
 ---
 

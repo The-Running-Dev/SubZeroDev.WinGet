@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Managing Packages
 
-All examples below use `IPackageManagementService` from DI (see [Getting Started](../getting-started)). Every method accepts an optional `CancellationToken`; in-flight installs and downloads honor cancellation.
+All examples below use `IPackageManagementService` from DI (see [Getting Started](../getting-started.md)). Every method accepts an optional `CancellationToken`; in-flight installs and downloads honor cancellation.
 
 ## Searching
 
@@ -53,7 +53,7 @@ var package = await packages.GetPackage("Microsoft.VisualStudioCode");   // null
 var details = await packages.GetDetails("Microsoft.VisualStudioCode");   // full manifest metadata
 ```
 
-`GetDetails` returns the full catalog manifest: description, publisher URLs, license, copyright, release notes, agreements, documentation links, icons, tags, and every available version.
+`GetDetails` returns the full catalog manifest: description, publisher URLs, license, copyright, release notes, agreements, documentation links, icons, tags, and every available version — plus `Author`, `PrivacyUrl`, `InstallationNotes`, and `PurchaseUrl` for manifests that populate them.
 
 ## Installing
 
@@ -83,6 +83,19 @@ if (!result.Succeeded)
 
 An empty `InstallRequest` (or `null`) reproduces a plain `winget install <id>`.
 
+### Advanced install options
+
+Beyond what's shown above, `InstallRequest` also has:
+
+| Property | Meaning |
+|---|---|
+| `Force` | Bypass WinGet's applicability checks (hash mismatch, blocking pins, etc.) |
+| `AllowHashMismatch` | Proceed even if the installer's hash doesn't match the manifest |
+| `SkipDependencies` | Don't install declared dependencies first |
+| `LogOutputPath` | Where the underlying installer should write its own log |
+
+`Update` shares this same request type, so all of the above apply to upgrades too.
+
 ## Upgrading
 
 ```csharp
@@ -98,6 +111,8 @@ var result = await packages.Uninstall("Microsoft.VisualStudioCode",
     new UninstallRequest { Mode = PackageOperationMode.Silent });
 ```
 
+`UninstallRequest` also has `Scope` (relevant only to MSIX packages), `Force`, `LogOutputPath`, and `CorrelationData`.
+
 ## Download-only
 
 Fetch the installer without running it (the `winget download` equivalent):
@@ -107,6 +122,13 @@ var result = await packages.Download("Microsoft.VisualStudioCode",
     new DownloadRequest(@"C:\Installers"));
 ```
 
+`DownloadRequest` accepts the same shape as `InstallRequest` (`Version`, `Architecture`, `InstallerType`, `Scope`, `AllowHashMismatch`, `SkipDependencies`, `AcceptPackageAgreements`, `CorrelationData`), plus two download-specific properties:
+
+| Property | Meaning |
+|---|---|
+| `Locale` | Preferred installer locale, if the manifest offers more than one |
+| `SkipMicrosoftStoreLicense` | Skip downloading the license file for Microsoft Store packages |
+
 ## Repairing
 
 The `winget repair` equivalent — requires the package's installer technology to support repair:
@@ -114,6 +136,8 @@ The `winget repair` equivalent — requires the package's installer technology t
 ```csharp
 var result = await packages.Repair("Microsoft.VisualStudioCode");
 ```
+
+`RepairRequest` has the same options as `UninstallRequest` (`Mode`, `Scope`, `Force`, `LogOutputPath`, `CorrelationData`), plus `AllowHashMismatch` and `AcceptPackageAgreements`.
 
 ## Reading operation results
 
@@ -137,3 +161,7 @@ Every operation returns a `PackageOperationResult`:
 - **Installed version unknown** during upgrade → retried once with `AllowUpgradeToUnknownVersion`.
 
 If you don't want any of that, use `IWinGetClient` directly — same operations, single attempt, no normalization.
+
+:::note Method names differ at the client layer
+`IWinGetClient` isn't just `IPackageManagementService` without the retry policy — several methods have different names: `GetInstalled` → `GetInstalledPackages`, `GetDetails` → `GetPackageDetails`, `Update` → `Upgrade`. Its `Search` also takes a required `int limit` where the service picks a default. See [Architecture](../architecture.md) for the full layer breakdown.
+:::

@@ -127,7 +127,9 @@ CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every pus
 
 ## Documentation
 
-Full documentation lives in [docs/](docs) as Docusaurus-ready Markdown: [introduction](docs/intro.md), [getting started](docs/getting-started.md), usage guides for [packages](docs/usage/packages.md), [sources](docs/usage/sources.md), and [pins/export/import](docs/usage/pins-export-import.md), the [examples guide](docs/examples.md), [building & testing](docs/testing.md), [architecture](docs/architecture.md), and [troubleshooting](docs/troubleshooting.md).
+**[the-running-dev.github.io/SubZeroDev.WinGet](https://the-running-dev.github.io/SubZeroDev.WinGet/)** — the hosted docs site (built from `docs/` via Docusaurus, `website/`).
+
+The same content is readable directly on GitHub: [docs/](docs) — [introduction](docs/intro.md), [getting started](docs/getting-started.md), usage guides for [packages](docs/usage/packages.md), [sources](docs/usage/sources.md), and [pins/export/import](docs/usage/pins-export-import.md), the [examples guide](docs/examples.md), [building & testing](docs/testing.md), [architecture](docs/architecture.md), and [troubleshooting](docs/troubleshooting.md).
 
 ## Design Notes
 
