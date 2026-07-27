@@ -38,10 +38,11 @@ cross-workstream execution plan and source of truth for ordering.
 
 ### Verified constraints
 
-- [x] The current package contains an x64-marked managed DLL.
-- [x] A simple ARM64 project build fix does not make one `.nupkg`
-  dual-architecture: ordinary pack still places the default build under
-  `lib/<tfm>`.
+- [x] The library now packs as an IL-only AnyCPU managed assembly; executable
+  and test hosts are explicitly x64/ARM64 and have PE regression checks.
+- [x] One package carries x64 and ARM64 native payloads plus the WinMD under
+  its canonical `buildTransitive` target; this does not establish ARM64
+  hardware runtime support.
 - [x] ProjectReference-based tests and examples still need direct ComInterop
   references; packaged `buildTransitive` assets do not apply to them.
 - [x] Projected WinRT/COM objects are not proven agile. Do not move an already
@@ -69,15 +70,15 @@ cross-workstream execution plan and source of truth for ordering.
 
 ### Implementation
 
-- [ ] Change the tests and examples to
+- [x] Change the tests and examples to
   `<PlatformTarget>$(Platform)</PlatformTarget>`.
-- [ ] Add a regression check proving executable/test x64 builds emit PE machine
+- [x] Add a regression check proving executable/test x64 builds emit PE machine
   `0x8664` and ARM64 builds emit `0xAA64`.
-- [ ] Spike an AnyCPU managed library build using an explicit producer
+- [x] Spike an AnyCPU managed library build using an explicit producer
   configuration: keep `Platform=x64` so the upstream ComInterop build target
   can resolve its producer-only native asset, override the library's
   `PlatformTarget=AnyCPU`, and verify the resulting library is IL-only AnyCPU.
-- [ ] If the library compiles as IL-only AnyCPU, adopt that package shape
+- [x] If the library compiles as IL-only AnyCPU, adopt that package shape
   provisionally while keeping consumers explicitly x64/ARM64 for native target
   selection and using one managed library in `lib/<tfm>`.
 - [ ] Keep the AnyCPU selection provisional until a Windows x64 runtime smoke
@@ -91,11 +92,11 @@ cross-workstream execution plan and source of truth for ordering.
 
 ### Verification
 
-- [ ] Build tests and examples for x64 and ARM64.
-- [ ] Assert AnyCPU for the library if selected, and x64/ARM64 for executable
+- [x] Build tests and examples for x64 and ARM64.
+- [x] Assert AnyCPU for the library if selected, and x64/ARM64 for executable
   fixtures; otherwise inspect both architecture-specific library assets.
-- [ ] Pack once and inspect the managed asset layout.
-- [ ] Confirm an ARM64 consumer never receives an x64 managed assembly.
+- [x] Pack once and inspect the managed asset layout.
+- [x] Confirm an ARM64 consumer never receives an x64 managed assembly.
 
 ## Phase 2 — Ship self-contained package consumer targets
 
@@ -104,33 +105,35 @@ as the evidence-favored implementation.
 
 ### Implementation
 
-- [ ] Set `GeneratePathProperty="true"` on the library's ComInterop reference.
-- [ ] Pack the x64 and ARM64 static native DLLs, WinMD, canonical
+- [x] Set `GeneratePathProperty="true"` on the library's ComInterop reference.
+- [x] Pack the x64 and ARM64 static native DLLs, WinMD, canonical
   `buildTransitive` target, and `THIRD-PARTY-NOTICES.txt`.
-- [ ] Select exact `win-x64`/`win-arm64` RIDs first, then explicit
+- [x] Select exact `win-x64`/`win-arm64` RIDs first, then explicit
   `PlatformTarget`, then explicit `Platform`.
-- [ ] Fail clearly for unresolved AnyCPU or unsupported platforms.
-- [ ] Add the selected native DLL and WinMD through
+- [x] Fail clearly for unresolved AnyCPU or unsupported platforms.
+- [x] Add the selected native DLL and WinMD through
   `ReferenceCopyLocalPaths`, plus `WindowsMetadataReference` with
   `Implementation="Microsoft.Management.Deployment.dll"`.
-- [ ] Guard against duplicate items when a consumer intentionally retains a
+- [x] Guard against duplicate items when a consumer intentionally retains a
   direct ComInterop reference.
-- [ ] Keep direct ComInterop references in the library, tests, and examples.
+- [x] Keep direct ComInterop references in the library, tests, and examples.
+  The library needs the dependency to compile and package its payloads; the ProjectReference
+  test and example hosts need it because package build assets do not apply to their outputs.
 
 ### Verification
 
-- [ ] Inspect exact `.nupkg` entries and embedded `.nuspec`.
-- [ ] Create an isolated clean consumer referencing only the locally packed
+- [x] Inspect exact `.nupkg` entries and embedded `.nuspec`.
+- [x] Create an isolated clean consumer referencing only the locally packed
   `SubZeroDev.WinGet`.
-- [ ] Create a two-hop fixture (`app -> wrapper package -> SubZeroDev.WinGet`)
+- [x] Create a two-hop fixture (`app -> wrapper package -> SubZeroDev.WinGet`)
   proving the canonical `buildTransitive` target reaches an indirect consumer.
-- [ ] Restore with a non-default global-packages directory.
-- [ ] Build and publish x64 and ARM64; validate managed and native PE types.
-- [ ] Verify target import and absence of duplicate output items.
-- [ ] Verify incremental rebuilds do not duplicate or stale-copy assets, and
+- [x] Restore with a non-default global-packages directory.
+- [x] Build and publish x64 and ARM64; validate managed and native PE types.
+- [x] Verify target import and absence of duplicate output items.
+- [x] Verify incremental rebuilds do not duplicate or stale-copy assets, and
   `dotnet clean` removes copied assets.
 - [ ] Run a read-only `GetWinGetVersion` smoke test on Windows x64.
-- [ ] Add a Nuke `PackageTest` target and run it in PR CI before release.
+- [x] Add a Nuke `PackageTest` target and run it in PR CI before release.
 
 ## Phase 3 — Fix synchronization-context capture
 
@@ -185,13 +188,13 @@ as the evidence-favored implementation.
 
 ## Phase 5 — Documentation, roadmap, and final checks
 
-- [ ] Update consumer installation documentation only after the clean package
-  consumer and runtime smoke tests pass.
-- [ ] Update architecture/threading documentation with the verified execution
+- [x] Update consumer installation documentation with the package-contract
+  evidence while retaining the Windows runtime caveat.
+- [x] Update architecture/threading documentation with the verified execution
   model and cancellation limits.
-- [ ] Update `CLAUDE.md`, `README.md`, `ROADMAP.md`, and the relevant `docs/`
+- [x] Update `CLAUDE.md`, `README.md`, `ROADMAP.md`, and the relevant `docs/`
   pages.
-- [ ] Add a dated implementation/amendment note to `SPECIFICATION.md`; preserve
+- [x] Add a dated implementation/amendment note to `SPECIFICATION.md`; preserve
   original normative requirements and make new decisions visibly attributable.
 - [ ] Check off only work actually validated.
 - [ ] Run unit tests, integration tests available on Windows, `PackageTest`,

@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
         services
             // All projected objects share one MTA owner thread; the provider disposes this
             // singleton and therefore stops the dispatcher during provider disposal.
-            .AddSingleton<WinGetComContext>()
+            .AddSingleton(_ => new WinGetComContext())
             .AddSingleton<IWinGetClient>(provider => new WinGetClient(provider.GetRequiredService<WinGetComContext>()))
             .AddSingleton<IWinGetSourceClient>(provider => new WinGetSourceClient(provider.GetRequiredService<WinGetComContext>()))
             .AddSingleton<IWinGetCliClient, WinGetCliClient>()

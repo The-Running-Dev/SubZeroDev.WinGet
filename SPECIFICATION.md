@@ -214,6 +214,39 @@ A claim in the original port's own documentation was also corrected: `[GitVersio
 - **`PackageManagerSettings`** (caller telemetry id, state separation) — in-proc-only COM surface; revisit if a host needs state isolation.
 - **Catalog TLS certificate pinning** (`ConnectionValidationHandler`, contract 29) — in-proc-only, niche; not exposed.
 
+## Amendment — 2026-07-27: package consumer assets and COM owner context
+
+This dated amendment records implementation decisions and validation evidence
+that postdate the original specification. It does not rewrite or replace the
+original normative text above.
+
+- `SubZeroDev.WinGet` now packs a `buildTransitive` target with static
+  `Microsoft.Management.Deployment.dll` payloads for `win-x64` and `win-arm64`,
+  plus `Microsoft.Management.Deployment.winmd`. For an explicitly configured
+  package consumer, it selects the native DLL in RID-first order and then by
+  `PlatformTarget`/`Platform`, copies both native DLL and WinMD to build and
+  publish output, and rejects unresolved AnyCPU or unsupported architectures.
+- The managed library is IL-only AnyCPU; executable/test hosts are explicitly
+  x64 or ARM64. `ArchitectureTest` verifies those PE shapes and `PackageTest`
+  verifies package layout, exact payload architecture, direct and two-hop
+  consumer import/copy behavior, diagnostics, and incremental clean behavior.
+  PR CI runs `nuke Test Coverage ArchitectureTest PackageTest --configuration
+  Release` before the release job.
+- The library now uses a dedicated MTA `WinGetComContext` as the owner of
+  activation and projected WinGet objects. Service and CLI awaits use
+  `ConfigureAwait(false)`; COM-client flows retain the owner context. This is
+  intentionally not a claim that projected objects are agile or may cross
+  arbitrary worker threads.
+- The package consumer contract is verified without executing live COM. A
+  read-only Windows x64 packed-consumer smoke test, Windows UI responsiveness
+  coverage for search/details/source operations, and real ARM64 hardware
+  execution remain open. Therefore the AnyCPU managed package shape is
+  provisional and ARM64 support is limited to build/package-contract evidence.
+- Repository `ProjectReference` executable and test consumers remain an
+  exception: they need a direct `Microsoft.WindowsPackageManager.ComInterop`
+  reference because NuGet `buildTransitive` assets are not applied through a
+  project reference.
+
 ## 11. Open Questions / Remaining Work
 
 | # | Item |

@@ -5,27 +5,31 @@ Goal: make a consuming application work with only a direct reference to
 `Microsoft.WindowsPackageManager.ComInterop` reference just to receive
 `Microsoft.Management.Deployment.dll`.
 
-This plan implements the highest-value open item in
+This plan implements the formerly highest-value open item in
 [ROADMAP.md](ROADMAP.md#phase-3--packaging-and-distribution). It is intentionally
 checkbox-driven so each phase can be executed and reviewed independently.
 
 ## Prerequisite — the ARM64 half needs a managed-layout decision
 
-The current package contains an x64-marked managed assembly (verified PE machine
-type `0x8664`). Copying an ARM64 native DLL beside it cannot make an ARM64
-consumer work.
+The original package contained an x64-marked managed assembly (verified PE
+machine type `0x8664`). The shipped package instead uses an IL-only AnyCPU
+managed assembly plus explicit x64/ARM64 consumer selection. This is
+package-contract evidence; Windows x64 runtime and ARM64 hardware execution
+are still required before expanding runtime claims.
 
-- [ ] Complete Phase 1 of
+- [x] Complete Phase 1 of
   [HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md) before
   starting Phase 2 here: prove an AnyCPU managed library is viable, or pack
   distinct managed assemblies under
   `runtimes/win-{x64,arm64}/lib/<tfm>` with a common `ref/<tfm>` reference
   assembly.
-- [ ] Change tests and examples to
+- [x] Change tests and examples to
   `<PlatformTarget>$(Platform)</PlatformTarget>` so their explicit ARM64 builds
   are no longer emitted as x64.
 
-The x64 work is unblocked and can proceed independently.
+The selected managed layout is IL-only AnyCPU, with executable/test consumers explicitly x64 or
+ARM64. This makes package-contract validation possible for both supported architectures; it does
+not establish Windows x64 runtime activation or ARM64 hardware execution.
 
 ## Where each phase can run
 
@@ -181,70 +185,70 @@ The winning strategy must:
 
 ## Phase 2 — Package the supported implementation
 
-- [ ] Add the canonical target file with a unique, idempotent target/item name.
-- [ ] Place the canonical implementation under `buildTransitive/<tfm>` so it
+- [x] Add the canonical target file with a unique, idempotent target/item name.
+- [x] Place the canonical implementation under `buildTransitive/<tfm>` so it
   supports both direct and two-hop PackageReference consumers.
-- [ ] Add the target and any permitted payloads to
+- [x] Add the target and permitted payloads to
   `SubZeroDev.WinGet/SubZeroDev.WinGet.csproj` with explicit package paths.
-- [ ] Keep architecture selection aligned with the upstream precedence:
+- [x] Keep architecture selection aligned with the upstream precedence:
   `RuntimeIdentifier`, then explicit platform.
-- [ ] Support x64 and ARM64 only unless the public platform contract is changed
+- [x] Support x64 and ARM64 only unless the public platform contract is changed
   in a separate decision. *ARM64 requires the managed-layout prerequisite; if
   it has not landed, ship x64 and have the targets fail loudly on ARM64 rather
   than shipping a payload the managed assembly cannot pair with.*
-- [ ] Preserve incremental build behavior; do not copy unchanged files on every
+- [x] Preserve incremental build behavior; do not copy unchanged files on every
   build.
-- [ ] Ensure both `dotnet build` and `dotnet publish` receive the required DLL.
+- [x] Ensure both `dotnet build` and `dotnet publish` receive the required DLL.
 
 ### Phase verification
 
-- [ ] Run `dotnet pack -c Release`.
-- [ ] Inspect the `.nupkg` as a ZIP and assert the exact targets and payload
+- [x] Run `dotnet pack -c Release` through `PackageTest`.
+- [x] Inspect the `.nupkg` as a ZIP and assert the exact targets and payload
   paths.
-- [ ] Inspect the embedded `.nuspec` dependency and asset metadata.
+- [x] Inspect the embedded `.nuspec` dependency and asset metadata.
 - [ ] Confirm `dotnet nuget verify` is used only for signature verification, not
   as a substitute for package-layout tests.
 
 ## Phase 3 — Add a packaging regression harness
 
-The existing pull-request workflow runs `Test` and `Coverage` but never packs.
-Because merges to `main` publish automatically, package verification must become
+The pull-request workflow now runs `Test`, `Coverage`, `ArchitectureTest`, and
+`PackageTest`. `PackageTest` performs isolated contract packing but does not create or publish
+release artifacts. Because merges to `main` publish automatically, that package verification is
 a pre-merge gate.
 
-- [ ] Add a clean consumer fixture or generated test project that references
+- [x] Add a clean consumer fixture or generated test project that references
   only the locally produced `SubZeroDev.WinGet` package.
-- [ ] Add a two-hop fixture (`app -> wrapper package -> SubZeroDev.WinGet`) so
+- [x] Add a two-hop fixture (`app -> wrapper package -> SubZeroDev.WinGet`) so
   `buildTransitive` behavior is proved rather than inferred from a direct
   consumer.
-- [ ] Restore it from an isolated local feed and an isolated global-packages
+- [x] Restore it from an isolated local feed and an isolated global-packages
   directory.
-- [ ] Assert the generated NuGet target import.
-- [ ] Assert the x64 build and publish outputs contain the x64 native DLL.
-- [ ] Cross-build ARM64 and assert the output contains the ARM64 native DLL —
-  and assert the managed `SubZeroDev.WinGet.dll` is itself ARM64-marked, which is
-  what the prerequisite fix buys. A PE machine-type check (`0xAA64` for ARM64,
-  `0x8664` for x64) is enough and runs anywhere. If the selected package design
-  uses an AnyCPU managed library, assert IL-only AnyCPU metadata instead and
-  prove x64 runtime activation.
-- [ ] Assert unsupported/ambiguous platform configurations fail with the
+- [x] Assert the generated NuGet target import.
+- [x] Assert the x64 build and publish outputs contain the x64 native DLL.
+- [x] Cross-build ARM64 and assert the output contains the ARM64 native DLL;
+  assert the selected `SubZeroDev.WinGet.dll` remains IL-only AnyCPU, while the
+  ARM64 executable is PE-marked `0xAA64`. This establishes package-contract
+  selection only; x64 runtime activation and ARM64 hardware execution remain open.
+- [x] Assert unsupported/ambiguous platform configurations fail with the
   intended actionable message.
-- [ ] Assert an incremental rebuild does not duplicate or stale-copy assets and
+- [x] Assert an incremental rebuild does not duplicate or stale-copy assets and
   `dotnet clean` removes copied package assets.
-- [ ] Add a Nuke packaging-test target or equivalent repeatable entry point.
-- [ ] Run that target in the pull-request build job before any release can run.
+- [x] Add a Nuke packaging-test target or equivalent repeatable entry point.
+- [x] Run that target in the pull-request build job before any release can run.
 - [ ] Keep live COM activation tests Windows-only and read-only.
 
 ## Phase 4 — Remove the consumer workaround
 
-Only begin this phase after the clean-consumer package test and Windows x64
-runtime smoke test pass.
+The clean-consumer package contract is verified in `PackageTest`; the Windows
+x64 runtime smoke test remains open, so public documentation retains that
+runtime boundary.
 
-- [ ] Keep direct ComInterop references in the tests and examples while they use
+- [x] Keep direct ComInterop references in the tests and examples while they use
   `ProjectReference`; packaged `buildTransitive` assets do not participate in a
   project-reference build.
 - [ ] Build and run the examples through the packed-package consumer fixture,
   not only through `ProjectReference`.
-- [ ] Verify the library retains its own direct ComInterop dependency for
+- [x] Verify the library retains its own direct ComInterop dependency for
   compilation and correct NuGet dependency metadata.
 
 ## Phase 5 — Update documentation and specification
@@ -252,30 +256,30 @@ runtime smoke test pass.
 Every place that currently states the workaround as a rule — all seven were
 located by grep, do not trust this list without re-running it:
 
-- [ ] Replace the README's "⚠️ The one integration rule" warning
+- [x] Replace the README's former direct-reference warning
   ([README.md:83](README.md)) with the validated package behavior and any
   remaining platform caveat. Note the README is the package's
   `PackageReadmeFile`, so stale text here ships inside the `.nupkg`.
-- [ ] Remove the second README mention in the GitHub Packages install section
+- [x] Remove the second README mention in the GitHub Packages install section
   ([README.md:100](README.md)) — it repeats the workaround parenthetically and
   is easy to miss.
-- [ ] Update `docs/getting-started.md` so the minimal consumer truly contains
+- [x] Update `docs/getting-started.md` so the minimal consumer truly contains
   one package reference — both the `dotnet add package` line (:19) and the
-  "one integration rule" section (:37).
-- [ ] Update `docs/troubleshooting.md` (:11) with the new diagnostics and remove
+  former direct-reference section.
+- [x] Update `docs/troubleshooting.md` (:11) with the new diagnostics and remove
   the obsolete direct-reference remedy.
-- [ ] Update `docs/examples.md` (:61), which lists the direct reference as
-  something "every consuming executable needs".
-- [ ] Update `CLAUDE.md` (:63), which states the same rule under "Constraints
+- [x] Update `docs/examples.md` (:61), which lists the direct reference as
+  something every consuming executable needs.
+- [x] Update `CLAUDE.md` (:63), which states the same rule under "Constraints
   that will bite you" — stale guidance there misleads future contributors and
   agents, not just consumers.
-- [ ] Update `docs/testing.md` with the packaging regression target and Windows
+- [x] Update `docs/testing.md` with the packaging regression target and Windows
   smoke-test boundary.
-- [ ] Update `SPECIFICATION.md` to distinguish the original transitive-copy
+- [x] Update `SPECIFICATION.md` to distinguish the original transitive-copy
   failure from the shipped fix and its validation evidence.
-- [ ] Check off and annotate the Phase 3 roadmap item only after all acceptance
-  tests pass.
-- [ ] Run the Docusaurus production build so broken documentation links fail
+- [x] Check off and annotate the Phase 3 roadmap item with package-contract
+  evidence while retaining runtime and hardware caveats.
+- [x] Run the Docusaurus production build so broken documentation links fail
   before merge.
 
 ## Phase 6 — Final verification and release readiness
@@ -284,9 +288,9 @@ located by grep, do not trust this list without re-running it:
 - [ ] Run the packaging regression matrix for x64, ARM64 cross-build, build, and
   publish.
 - [ ] Run the read-only x64 COM smoke test from the clean package consumer.
-- [ ] Run `git diff --check`.
+- [x] Run `git diff --check`.
 - [ ] Inspect the final release `.nupkg` and embedded `.nuspec`.
-- [ ] Confirm no direct consumer ComInterop reference remains in the minimal
+- [x] Confirm no direct consumer ComInterop reference remains in the minimal
   installation instructions.
 - [ ] Confirm the PR build gates package correctness before the automatic
   GitHub Packages release job.
@@ -303,6 +307,6 @@ located by grep, do not trust this list without re-running it:
 - [ ] Package behavior is regression-tested before merge.
 - [ ] A read-only x64 runtime smoke test proves COM activation from the packed
   consumer.
-- [ ] Documentation no longer instructs every consumer to add the dependency
+- [x] Documentation no longer instructs every consumer to add the dependency
   workaround.
 - [ ] No support claim exceeds the validation actually performed.

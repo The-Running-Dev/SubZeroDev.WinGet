@@ -18,8 +18,8 @@ Consumers ────────► │ IPackageManagementService    │  vali
               └────────┬───────┘   └────────┬───────────┘   │  — CLI shim)      │
                        │                    │               └────────┬──────────┘
               ┌────────▼────────────────────▼──────┐                 │
-              │ WinGetFactory (internal)            │          winget.exe process
-              │ resilient COM activation chain      │          (ArgumentList, no shell)
+              │ WinGetComContext + WinGetFactory    │          winget.exe process
+              │ dedicated MTA owner / activation    │          (ArgumentList, no shell)
               └────────┬────────────────────────────┘
                        │
               Microsoft.Management.Deployment (COM/WinRT, contract 29)
@@ -31,7 +31,9 @@ Consumers ────────► │ IPackageManagementService    │  vali
 
 **Client layer** (`IWinGetClient`, `IWinGetSourceClient`, `IWinGetCliClient`) — thin, single-attempt translations to/from the COM API (or CLI for the two COM-gap features). Use these when you want full control over retry behavior.
 
-**Activation layer** (`WinGetFactory`, internal) — creates every COM object through a resilient activation chain:
+**COM owner context and activation layer** (`WinGetComContext`, `WinGetFactory`, internal) — a dedicated MTA thread owns projection activation and all synchronous access to projected objects. Projected objects do not escape that context because agility has not been established. Client continuations that use those objects deliberately remain on the owner context; service and CLI awaits use `ConfigureAwait(false)` so they do not capture a caller UI synchronization context. This avoids treating `ConfigureAwait(false)` or arbitrary `Task.Run` as permission to move COM objects between threads.
+
+The owner context creates every COM object through a resilient activation chain:
 
 1. **WinRT projection activation** (`new PackageManager()`) — works in normal interactive contexts.
 2. **`CoCreateInstance` (CLSCTX_LOCAL_SERVER)** against the out-of-proc production CLSIDs — from winget-cli's own projection sources.
@@ -70,3 +72,4 @@ These were discovered by running the API, not reading docs — they shape the im
 - **Elevated processes**: standard projection activation may fail; the factory's fallback chain handles the known cases automatically.
 - **Windows Service / SYSTEM**: COM activation under `LocalSystem` and winget's scope behavior in profile-less contexts are *not yet validated* by this library's test suite — treat as an open item before production service hosting. The CLI shim already handles the missing App Execution Alias in such contexts.
 - **Concurrency**: WinGet serializes some source operations internally; the library does not add its own global lock.
+- **Runtime validation still needed**: unit tests cover owner-context dispatch, cancellation-before-start, result/exception propagation, repeated calls, and synchronization-context behavior. Read-only Windows x64 integration and UI responsiveness runs (search, details, sources), progress-delivery checks, and a recorded activation-path/agility assessment remain open. ARM64 has not run on hardware.
