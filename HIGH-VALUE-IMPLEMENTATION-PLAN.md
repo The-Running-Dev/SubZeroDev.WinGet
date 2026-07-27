@@ -77,9 +77,12 @@ cross-workstream execution plan and source of truth for ordering.
   configuration: keep `Platform=x64` so the upstream ComInterop build target
   can resolve its producer-only native asset, override the library's
   `PlatformTarget=AnyCPU`, and verify the resulting library is IL-only AnyCPU.
-- [ ] If the library compiles and passes Windows x64 runtime tests as AnyCPU,
-  make the library AnyCPU while keeping consumers explicitly x64/ARM64 for
-  native target selection, and use one managed library in `lib/<tfm>`.
+- [ ] If the library compiles as IL-only AnyCPU, adopt that package shape
+  provisionally while keeping consumers explicitly x64/ARM64 for native target
+  selection and using one managed library in `lib/<tfm>`.
+- [ ] Keep the AnyCPU selection provisional until a Windows x64 runtime smoke
+  test passes against the packed consumer experience; revert to the documented
+  architecture-specific package shape if that test exposes an incompatibility.
 - [ ] If AnyCPU is not viable, stop and implement the documented
   architecture-specific package shape:
   `ref/<tfm>` plus `runtimes/win-{x64,arm64}/lib/<tfm>`.

@@ -19,6 +19,7 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.ReportGenerator;
 using Nuke.Common.Utilities.Collections;
+using System.Reflection.PortableExecutable;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 
@@ -74,14 +75,69 @@ class Build : NukeBuild
 
     Target Restore => _ => _
         .Executes(() => DotNetRestore(s => s
-            .SetProjectFile(Solution)));
+            .SetProjectFile(Solution)
+            .SetProperty("EnableWindowsTargeting", "true")));
 
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() => DotNetBuild(s => s
             .SetProjectFile(Solution)
             .SetConfiguration(Configuration)
+            .SetProperty("EnableWindowsTargeting", "true")
             .EnableNoRestore()));
+
+    Target ArchitectureTest => _ => _
+        .DependsOn(Restore)
+        .After(Coverage)
+        .Executes(() =>
+        {
+            foreach (var platform in new[] { "x64", "ARM64" })
+            {
+                DotNetBuild(s => s
+                    .SetProjectFile(Solution)
+                    .SetConfiguration(Configuration)
+                    .SetProperty("Platform", platform)
+                    .SetProperty("EnableWindowsTargeting", "true")
+                    .EnableNoRestore());
+            }
+
+            foreach (var platform in new[] { "x64", "ARM64" })
+            {
+                PeArchitecture.AssertAnyCpu(
+                    RootDirectory / "SubZeroDev.WinGet" / "bin" / platform /
+                    Configuration / "net8.0-windows10.0.26100" / "SubZeroDev.WinGet.dll");
+            }
+
+            foreach (var (platform, machine) in new[]
+                     {
+                         ("x64", Machine.Amd64),
+                         ("ARM64", Machine.Arm64)
+                     })
+            {
+                PeArchitecture.AssertMachine(
+                    RootDirectory / "SubZeroDev.WinGet.Tests" / "bin" / platform /
+                    Configuration / "net8.0-windows10.0.26100" / "SubZeroDev.WinGet.Tests.dll",
+                    machine);
+                PeArchitecture.AssertMachine(
+                    RootDirectory / "SubZeroDev.WinGet.Examples" / "bin" / platform /
+                    Configuration / "net8.0-windows10.0.26100" / "SubZeroDev.WinGet.Examples.dll",
+                    machine);
+
+                foreach (var projectDirectory in new[]
+                         {
+                             "SubZeroDev.WinGet",
+                             "SubZeroDev.WinGet.Tests",
+                             "SubZeroDev.WinGet.Examples"
+                         })
+                {
+                    PeArchitecture.AssertMachine(
+                        RootDirectory / projectDirectory / "bin" / platform /
+                        Configuration / "net8.0-windows10.0.26100" /
+                        "Microsoft.Management.Deployment.dll",
+                        machine);
+                }
+            }
+        });
 
     // Mirrors the original CI "Test" step exactly: NUnit's [Explicit] attribute already
     // excludes the 12 live integration tests from a plain test run, so no filter is needed.
@@ -123,6 +179,7 @@ class Build : NukeBuild
         .Executes(() => DotNetPack(s => s
             .SetProject(LibraryProject)
             .SetConfiguration(Configuration)
+            .SetProperty("EnableWindowsTargeting", "true")
             .EnableNoRestore()
             .EnableNoBuild()
             .SetOutputDirectory(ArtifactsDirectory)));
@@ -150,6 +207,7 @@ class Build : NukeBuild
             DotNetPack(s => s
                 .SetProject(LibraryProject)
                 .SetConfiguration(Configuration)
+                .SetProperty("EnableWindowsTargeting", "true")
                 .SetVersion(GitVersion.SemVer)
                 .SetOutputDirectory(ArtifactsDirectory));
 
