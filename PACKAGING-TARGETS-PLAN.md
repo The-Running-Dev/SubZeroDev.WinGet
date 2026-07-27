@@ -9,23 +9,21 @@ This plan implements the highest-value open item in
 [ROADMAP.md](ROADMAP.md#phase-3--packaging-and-distribution). It is intentionally
 checkbox-driven so each phase can be executed and reviewed independently.
 
-## Prerequisite — the ARM64 half of this plan is blocked
+## Prerequisite — the ARM64 half needs a managed-layout decision
 
-Every ARM64 acceptance criterion below depends on a fix that lives outside this
-plan: **`S` Fix ARM64 builds emitting x64 assemblies** in
-[ROADMAP.md](ROADMAP.md#phase-1--correctness-fixes) Phase 1.
+The current package contains an x64-marked managed assembly (verified PE machine
+type `0x8664`). Copying an ARM64 native DLL beside it cannot make an ARM64
+consumer work.
 
-`<PlatformTarget>x64</PlatformTarget>` is unconditional in
-[SubZeroDev.WinGet.csproj](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj), so the
-assembly inside the current package is x64-marked (verified: PE machine type
-`0x8664` in `lib/net8.0-windows10.0.26100/SubZeroDev.WinGet.dll` of a locally
-packed `0.1.0`). An ARM64 consumer cannot load that assembly no matter which
-native DLL these targets copy next to it — so ARM64 support cannot be claimed,
-tested end to end, or documented until `PlatformTarget` becomes
-`$(Platform)` and the package is rebuilt.
-
-- [ ] Land the roadmap Phase 1 `PlatformTarget` fix before starting Phase 2 here,
-  or explicitly reduce this plan's scope to x64 and strike every ARM64 checkbox.
+- [ ] Complete Phase 1 of
+  [HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md) before
+  starting Phase 2 here: prove an AnyCPU managed library is viable, or pack
+  distinct managed assemblies under
+  `runtimes/win-{x64,arm64}/lib/<tfm>` with a common `ref/<tfm>` reference
+  assembly.
+- [ ] Change tests and examples to
+  `<PlatformTarget>$(Platform)</PlatformTarget>` so their explicit ARM64 builds
+  are no longer emitted as x64.
 
 The x64 work is unblocked and can proceed independently.
 
@@ -34,8 +32,9 @@ The x64 work is unblocked and can proceed independently.
 Package *layout* work does not require Windows. `dotnet build` fails on macOS
 with `NETSDK1100`, but `dotnet pack -p:EnableWindowsTargeting=true` succeeds and
 produces an inspectable `.nupkg`, which covers Phase 0's package discovery and
-Phase 2's layout assertions. Phase 1's clean-consumer build, Phase 3's
-regression harness, and every runtime smoke test in Phase 6 require Windows.
+Phase 2's layout assertions. Clean-consumer restore/build/publish and layout/PE
+assertions may also run cross-platform with `EnableWindowsTargeting=true`.
+COM activation and architecture-native runtime smoke tests require Windows.
 
 ## Phase 0 — Documentation and package discovery
 
@@ -177,23 +176,22 @@ The winning strategy must:
   x64.
 - [ ] Define the ARM64 validation boundary: cross-build and inspect the ARM64
   output in CI; keep the existing "not validated on hardware" caveat until a
-  real ARM64 runtime smoke test passes. *Gated on the prerequisite above — until
-  `PlatformTarget` follows `$(Platform)`, an ARM64 cross-build produces an
-  x64-marked managed assembly and the inspection proves nothing.*
+  real ARM64 runtime smoke test passes. *Gated on the managed-layout prerequisite
+  above; an ARM64 native copy beside an x64 managed assembly proves nothing.*
 
 ## Phase 2 — Package the supported implementation
 
 - [ ] Add the canonical target file with a unique, idempotent target/item name.
-- [ ] Choose `build/`, `buildTransitive/`, or a thin wrapper plus one canonical
-  implementation based on the Phase 1 evidence.
+- [ ] Place the canonical implementation under `buildTransitive/<tfm>` so it
+  supports both direct and two-hop PackageReference consumers.
 - [ ] Add the target and any permitted payloads to
   `SubZeroDev.WinGet/SubZeroDev.WinGet.csproj` with explicit package paths.
 - [ ] Keep architecture selection aligned with the upstream precedence:
   `RuntimeIdentifier`, then explicit platform.
 - [ ] Support x64 and ARM64 only unless the public platform contract is changed
-  in a separate decision. *ARM64 requires the prerequisite fix; if it has not
-  landed, ship x64 and have the targets fail loudly on ARM64 rather than
-  shipping a payload the managed assembly cannot pair with.*
+  in a separate decision. *ARM64 requires the managed-layout prerequisite; if
+  it has not landed, ship x64 and have the targets fail loudly on ARM64 rather
+  than shipping a payload the managed assembly cannot pair with.*
 - [ ] Preserve incremental build behavior; do not copy unchanged files on every
   build.
 - [ ] Ensure both `dotnet build` and `dotnet publish` receive the required DLL.
@@ -215,6 +213,9 @@ a pre-merge gate.
 
 - [ ] Add a clean consumer fixture or generated test project that references
   only the locally produced `SubZeroDev.WinGet` package.
+- [ ] Add a two-hop fixture (`app -> wrapper package -> SubZeroDev.WinGet`) so
+  `buildTransitive` behavior is proved rather than inferred from a direct
+  consumer.
 - [ ] Restore it from an isolated local feed and an isolated global-packages
   directory.
 - [ ] Assert the generated NuGet target import.
@@ -222,9 +223,13 @@ a pre-merge gate.
 - [ ] Cross-build ARM64 and assert the output contains the ARM64 native DLL —
   and assert the managed `SubZeroDev.WinGet.dll` is itself ARM64-marked, which is
   what the prerequisite fix buys. A PE machine-type check (`0xAA64` for ARM64,
-  `0x8664` for x64) is enough and runs anywhere.
+  `0x8664` for x64) is enough and runs anywhere. If the selected package design
+  uses an AnyCPU managed library, assert IL-only AnyCPU metadata instead and
+  prove x64 runtime activation.
 - [ ] Assert unsupported/ambiguous platform configurations fail with the
   intended actionable message.
+- [ ] Assert an incremental rebuild does not duplicate or stale-copy assets and
+  `dotnet clean` removes copied package assets.
 - [ ] Add a Nuke packaging-test target or equivalent repeatable entry point.
 - [ ] Run that target in the pull-request build job before any release can run.
 - [ ] Keep live COM activation tests Windows-only and read-only.
@@ -234,11 +239,9 @@ a pre-merge gate.
 Only begin this phase after the clean-consumer package test and Windows x64
 runtime smoke test pass.
 
-- [ ] Remove the direct ComInterop reference from
-  `SubZeroDev.WinGet.Examples/SubZeroDev.WinGet.Examples.csproj`.
-- [ ] Decide whether the test project's direct reference remains necessary for
-  ProjectReference-based integration tests; do not remove it merely because the
-  installed-package scenario works.
+- [ ] Keep direct ComInterop references in the tests and examples while they use
+  `ProjectReference`; packaged `buildTransitive` assets do not participate in a
+  project-reference build.
 - [ ] Build and run the examples through the packed-package consumer fixture,
   not only through `ProjectReference`.
 - [ ] Verify the library retains its own direct ComInterop dependency for
@@ -293,10 +296,10 @@ located by grep, do not trust this list without re-running it:
 
 - [ ] A clean supported Windows application works with only
   `PackageReference Include="SubZeroDev.WinGet"`.
-- [ ] Build and publish select the correct native DLL for x64 — and for ARM64
-  only once the `PlatformTarget` prerequisite has landed and the packaged
-  managed assembly is ARM64-marked. Do not tick this for ARM64 on the strength
-  of a native-DLL copy alone.
+- [ ] Build and publish select the correct native DLL and a valid managed layout
+  for each architecture: either one IL-only AnyCPU managed library or
+  RID-specific x64/ARM64 managed assets. Do not tick ARM64 on the strength of a
+  native-DLL copy alone.
 - [ ] Package behavior is regression-tested before merge.
 - [ ] A read-only x64 runtime smoke test proves COM activation from the packed
   consumer.

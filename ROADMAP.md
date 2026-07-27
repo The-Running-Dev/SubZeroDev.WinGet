@@ -15,7 +15,7 @@ complete and working. These are the edges.
 The docs site ([Phase 5](#phase-5--documentation)) is done — see
 <https://winget.subzerodev.com/>. Of what's left, these two matter most:
 
-1. **Ship the `build/*.targets` file** ([Phase 3](#phase-3--packaging-and-distribution)) so the
+1. **Ship the `buildTransitive/*.targets` file** ([Phase 3](#phase-3--packaging-and-distribution)) so the
    direct `Microsoft.WindowsPackageManager.ComInterop` reference stops being required. It's the
    first thing every new user trips over.
 2. **Fix the threading** ([Phase 2](#phase-2--threading-and-reliability)) — move the blocking COM
@@ -25,6 +25,10 @@ The docs site ([Phase 5](#phase-5--documentation)) is done — see
 [Phase 1](#phase-1--correctness-fixes) is a good warm-up batch regardless — six small,
 independent edits that each fix something that is currently wrong.
 
+The coordinated execution order for ARM64 correctness, package consumer targets, and
+threading is tracked in
+[HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md).
+
 ---
 
 ## Phase 1 — Correctness fixes
@@ -32,16 +36,18 @@ independent edits that each fix something that is currently wrong.
 Small, self-contained edits that fix things that are currently wrong. Good first batch.
 
 - [ ] **`S` Fix ARM64 builds emitting x64 assemblies.**
-  `<PlatformTarget>x64</PlatformTarget>` is unconditional in all three product projects
+  `<PlatformTarget>x64</PlatformTarget>` is unconditional in all three solution projects
   ([SubZeroDev.WinGet.csproj:8](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj),
   [SubZeroDev.WinGet.Tests.csproj:7](SubZeroDev.WinGet.Tests/SubZeroDev.WinGet.Tests.csproj),
   [SubZeroDev.WinGet.Examples.csproj:8](SubZeroDev.WinGet.Examples/SubZeroDev.WinGet.Examples.csproj))
   while `<Platforms>` advertises `x64;ARM64`. Building `-p:Platform=ARM64` still produces an
   x64-marked assembly that won't load in an ARM64 process — so the declared ARM64 support
-  cannot work as written. Change to `<PlatformTarget>$(Platform)</PlatformTarget>`.
-  Once fixed, validate on real ARM64 hardware before dropping the README's "declared, not
-  yet validated" caveat. This also **blocks the ARM64 half of the packaging targets work**
-  in [Phase 3](#phase-3--packaging-and-distribution) — do it first if ARM64 is in scope there.
+  cannot work as written. Change tests and examples to
+  `<PlatformTarget>$(Platform)</PlatformTarget>`. For the library package, follow the
+  AnyCPU-or-RID-specific managed-layout decision in
+  [HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md); changing the
+  library property alone does not make one `.nupkg` dual-architecture. Validate on real ARM64
+  hardware before dropping the README's "declared, not yet validated" caveat.
 
 - [ ] **`S` Resolve the unreachable `PackageOperationStatus.Cancelled`.**
   Declared at [PackageOperationResult.cs:25](SubZeroDev.WinGet/Models/PackageOperationResult.cs)
@@ -127,26 +133,27 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 
 ## Phase 3 — Packaging and distribution
 
-- [ ] **`M` Ship build targets so consumers don't need the direct `ComInterop` reference.**
+- [ ] **`M` Ship transitive build targets so consumers don't need the direct `ComInterop` reference.**
   **Highest-value single change in this document.** Today every consuming project must add a
   direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop` because the interop
   package's targets copy `Microsoft.Management.Deployment.dll` only into the output of the
   *directly* referencing project. Every new user hits `COMException 0x80040154`
   (`REGDB_E_CLASSNOTREG`) once before finding the README note.
 
-  NuGet auto-imports `build/*.targets` from a *direct* package reference — which
-  SubZeroDev.WinGet is. Ship a `build/SubZeroDev.WinGet.targets` in the package that copies the
-  native DLL to the consumer's output directory.
+  NuGet auto-imports package targets. Ship a canonical
+  `buildTransitive/<tfm>/SubZeroDev.WinGet.targets` so the behavior works for both direct
+  consumers and two-hop PackageReference graphs, and have it copy the correct native DLL and
+  WinMD metadata to the consumer's output.
 
   Needs real end-to-end validation against a clean consumer project before it can be trusted.
   If it works, the README's "⚠️ The one integration rule" section can be reduced to a footnote.
   See [PACKAGING-TARGETS-PLAN.md](PACKAGING-TARGETS-PLAN.md) for the phased implementation and
   verification checklist.
 
-  The x64 half is unblocked. The **ARM64 half depends on the `PlatformTarget` fix** in
-  [Phase 1](#phase-1--correctness-fixes) — the packaged assembly is x64-marked today
-  (PE machine `0x8664`), so copying the ARM64 native DLL next to it still yields an app
-  an ARM64 process cannot load.
+  The x64 half is unblocked. The **ARM64 half depends on the architecture decision** in
+  [HIGH-VALUE-IMPLEMENTATION-PLAN.md](HIGH-VALUE-IMPLEMENTATION-PLAN.md): the packaged
+  assembly is x64-marked today (PE machine `0x8664`), and the project-level
+  `PlatformTarget` fix alone does not make one `.nupkg` dual-architecture.
 
 - [ ] **`S` Collapse the two sources of truth for version.**
   `<Version>0.1.0</Version>` in [SubZeroDev.WinGet.csproj:22](SubZeroDev.WinGet/SubZeroDev.WinGet.csproj)
