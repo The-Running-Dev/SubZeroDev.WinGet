@@ -31,6 +31,21 @@
 
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="buildTransitive\net8.0-windows10.0.26100\SubZeroDev.WinGet.targets"
+          Pack="true"
+          PackagePath="buildTransitive\net8.0-windows10.0.26100\SubZeroDev.WinGet.targets" />
+    <None Include="$(PkgMicrosoft_WindowsPackageManager_ComInterop)\bin\win-x64\native\static\Microsoft.Management.Deployment.dll"
+          Pack="true"
+          PackagePath="buildTransitive\net8.0-windows10.0.26100\native\win-x64\Microsoft.Management.Deployment.dll" />
+    <None Include="$(PkgMicrosoft_WindowsPackageManager_ComInterop)\bin\win-arm64\native\static\Microsoft.Management.Deployment.dll"
+          Pack="true"
+          PackagePath="buildTransitive\net8.0-windows10.0.26100\native\win-arm64\Microsoft.Management.Deployment.dll" />
+    <None Include="$(PkgMicrosoft_WindowsPackageManager_ComInterop)\lib\uap10.0\Microsoft.Management.Deployment.winmd"
+          Pack="true"
+          PackagePath="buildTransitive\net8.0-windows10.0.26100\Microsoft.Management.Deployment.winmd" />
+    <None Include="THIRD-PARTY-NOTICES.txt"
+          Pack="true"
+          PackagePath="THIRD-PARTY-NOTICES.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,7 +55,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
-    <PackageReference Include="Microsoft.WindowsPackageManager.ComInterop" Version="1.29.280" />
+    <PackageReference Include="Microsoft.WindowsPackageManager.ComInterop"
+                      Version="1.29.280"
+                      GeneratePathProperty="true" />
   </ItemGroup>
 
 </Project>
