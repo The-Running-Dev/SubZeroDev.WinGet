@@ -13,7 +13,7 @@ complete and working. These are the edges.
 ## Where to start
 
 The docs site ([Phase 5](#phase-5--documentation)) is done — see
-<https://the-running-dev.github.io/SubZeroDev.WinGet/>. Of what's left, these two matter most:
+<https://winget.subzerodev.com/>. Of what's left, these two matter most:
 
 1. **Ship the `build/*.targets` file** ([Phase 3](#phase-3--packaging-and-distribution)) so the
    direct `Microsoft.WindowsPackageManager.ComInterop` reference stops being required. It's the
@@ -214,7 +214,8 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   [website/](website) builds `docs/` (via `path: '../docs'`, so there is exactly one source
   of truth) and deploys to GitHub Pages on push to `main` via
   [.github/workflows/docs.yml](.github/workflows/docs.yml). Live at
-  <https://the-running-dev.github.io/SubZeroDev.WinGet/>, linked from the README.
+  <https://winget.subzerodev.com/> (a custom domain — `website/static/CNAME` — pointed at the
+  underlying `the-running-dev.github.io/SubZeroDev.WinGet/` Pages site), linked from the README.
 
   This also fixed the 12 internal links that were extensionless (originally reported as
   11 — six in [docs/intro.md](docs/intro.md), one each in getting-started/packages/

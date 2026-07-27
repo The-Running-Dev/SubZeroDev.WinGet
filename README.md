@@ -127,9 +127,19 @@ CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every pus
 
 ## Documentation
 
-**[the-running-dev.github.io/SubZeroDev.WinGet](https://the-running-dev.github.io/SubZeroDev.WinGet/)** — the hosted docs site (built from `docs/` via Docusaurus, `website/`).
+**[winget.subzerodev.com](https://winget.subzerodev.com/)** — the hosted docs site (built from `docs/` via Docusaurus, `website/`). The same content is also readable directly on GitHub under [docs/](docs); each section below links both.
 
-The same content is readable directly on GitHub: [docs/](docs) — [introduction](docs/intro.md), [getting started](docs/getting-started.md), usage guides for [packages](docs/usage/packages.md), [sources](docs/usage/sources.md), and [pins/export/import](docs/usage/pins-export-import.md), the [examples guide](docs/examples.md), [building & testing](docs/testing.md), [architecture](docs/architecture.md), and [troubleshooting](docs/troubleshooting.md).
+| Topic | Site | GitHub |
+|---|---|---|
+| Introduction — why this library, feature overview, the one deliberate CLI exception | [Read](https://winget.subzerodev.com/) | [docs/intro.md](docs/intro.md) |
+| Getting Started — install, requirements, the one integration rule | [Read](https://winget.subzerodev.com/getting-started) | [docs/getting-started.md](docs/getting-started.md) |
+| Managing Packages — search, install, upgrade, uninstall, download, repair, the retry policy | [Read](https://winget.subzerodev.com/usage/packages) | [docs/usage/packages.md](docs/usage/packages.md) |
+| Managing Sources — the `winget source` equivalent | [Read](https://winget.subzerodev.com/usage/sources) | [docs/usage/sources.md](docs/usage/sources.md) |
+| Pins, Export & Import — the CLI-backed features | [Read](https://winget.subzerodev.com/usage/pins-export-import) | [docs/usage/pins-export-import.md](docs/usage/pins-export-import.md) |
+| Running the Examples — a runnable example for every public API | [Read](https://winget.subzerodev.com/examples) | [docs/examples.md](docs/examples.md) |
+| Architecture — layers, retry policy, verified COM API findings | [Read](https://winget.subzerodev.com/architecture) | [docs/architecture.md](docs/architecture.md) |
+| Building & Testing — Nuke targets, coverage, publishing | [Read](https://winget.subzerodev.com/testing) | [docs/testing.md](docs/testing.md) |
+| Troubleshooting — common runtime errors and fixes | [Read](https://winget.subzerodev.com/troubleshooting) | [docs/troubleshooting.md](docs/troubleshooting.md) |
 
 ## Design Notes
 
