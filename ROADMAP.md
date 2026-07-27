@@ -214,8 +214,12 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   [website/](website) builds `docs/` (via `path: '../docs'`, so there is exactly one source
   of truth) and deploys to GitHub Pages on push to `main` via
   [.github/workflows/docs.yml](.github/workflows/docs.yml). Live at
-  <https://winget.subzerodev.com/> (a custom domain — `website/static/CNAME` — pointed at the
-  underlying `the-running-dev.github.io/SubZeroDev.WinGet/` Pages site), linked from the README.
+  <https://winget.subzerodev.com/> via a custom domain (`website/static/CNAME`), linked from
+  the README. This is now the only supported URL: `docusaurus.config.js` builds with
+  `baseUrl: '/'` for the custom domain, so every internal link and asset path is generated
+  root-relative. The previous default `the-running-dev.github.io/SubZeroDev.WinGet/` project-pages
+  URL is superseded, not a working secondary access point — its own internal navigation and
+  assets would resolve against the wrong prefix if that URL is used directly.
 
   This also fixed the 12 internal links that were extensionless (originally reported as
   11 — six in [docs/intro.md](docs/intro.md), one each in getting-started/packages/
