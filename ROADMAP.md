@@ -191,7 +191,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 ## Phase 5 — Documentation
 
 - [x] **`M` Stand up the Docusaurus site and deploy to GitHub Pages.** ✅ Done.
-  [website/](website) builds `docs/` (via `path: '../docs'`, so there is exactly one source
+  [docs/](docs/docs) is built by the containerised `docs-template` image (one source
   of truth) and deploys to GitHub Pages on push to `main` via
   [.github/workflows/docs-deploy.yml](.github/workflows/docs-deploy.yml). Live at
   <https://winget.subzerodev.com/> via a custom domain (`website/static/CNAME`), linked from
