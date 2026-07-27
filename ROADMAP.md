@@ -18,7 +18,7 @@ checks architecture and package layout/consumer contracts without live COM execu
 highest-value validation is read-only Windows x64 runtime/UI coverage, followed by ARM64 hardware
 execution.
 
-[Phase 1](#phase-1--correctness-fixes) contains the remaining small, independent
+[Phase 1](#phase-1-correctness-fixes) contains the remaining small, independent
 correctness fixes.
 
 The coordinated execution order for ARM64 correctness, package consumer targets, and
@@ -65,7 +65,7 @@ Small, self-contained edits that fix things that are currently wrong. Good first
   Present in both `Clsids` and `ProjectionActivators`
   ([WinGetFactory.cs:43,66](SubZeroDev.WinGet/Com/WinGetFactory.cs)) but no `Create*` method
   exposes it. Either delete both lines or complete it as part of
-  [Phase 7 — authenticated sources](#phase-7--new-capabilities).
+  [Phase 7 — authenticated sources](#phase-7-new-capabilities).
 
 - [ ] **`S` Don't abandon the stdout/stderr read tasks on cancellation.**
   [WinGetCliClient.cs:150-171](SubZeroDev.WinGet/WinGetCliClient.cs) — on the cancellation path
@@ -160,7 +160,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 - [ ] **`S` Turn on analyzers.**
   Add `Microsoft.CodeAnalysis.NetAnalyzers` and consider `TreatWarningsAsErrors` for the
   library project. `CA2007` in particular would enforce the `ConfigureAwait` work in
-  [Phase 2](#phase-2--threading-and-reliability).
+  [Phase 2](#phase-2-threading-and-reliability).
 
 - [ ] **`S` Gate the build on a coverage threshold.**
   The `Coverage` target in [build/Build.cs](build/Build.cs) generates a report and surfaces it
@@ -191,9 +191,9 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 ## Phase 5 — Documentation
 
 - [x] **`M` Stand up the Docusaurus site and deploy to GitHub Pages.** ✅ Done.
-  [website/](website) builds `docs/` (via `path: '../docs'`, so there is exactly one source
+  [docs/](docs/docs) is built by the containerised `docs-template` image (one source
   of truth) and deploys to GitHub Pages on push to `main` via
-  [.github/workflows/docs.yml](.github/workflows/docs.yml). Live at
+  [.github/workflows/docs-deploy.yml](.github/workflows/docs-deploy.yml). Live at
   <https://winget.subzerodev.com/> via a custom domain (`website/static/CNAME`), linked from
   the README. This is now the only supported URL: `docusaurus.config.js` builds with
   `baseUrl: '/'` for the custom domain, so every internal link and asset path is generated
@@ -202,7 +202,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   assets would resolve against the wrong prefix if that URL is used directly.
 
   This also fixed the 12 internal links that were extensionless (originally reported as
-  11 — six in [docs/intro.md](docs/intro.md), one each in getting-started/packages/
+  11 — six in [docs/intro.md](docs/docs/intro.md), one each in getting-started/packages/
   troubleshooting/architecture, two in testing.md) and 404'd when browsed on GitHub: all
   now carry `.md` suffixes, which resolve correctly both on GitHub and under Docusaurus.
   `onBrokenLinks`/`onBrokenMarkdownLinks` are set to `'throw'` in `docusaurus.config.js`,
@@ -226,7 +226,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   [WinGetClient.cs:69](SubZeroDev.WinGet/WinGetClient.cs).
 
   The Selectors-OR / Filters-AND distinction is one of the verified findings in
-  [SPECIFICATION.md](SPECIFICATION.md) and [docs/architecture.md](docs/architecture.md) — it's
+  [SPECIFICATION.md](SPECIFICATION.md) and [docs/architecture.md](docs/docs/architecture.md) — it's
   what makes queries like "packages by publisher X *and* tag Y" possible — but it was never
   surfaced. A `SearchRequest` record (`Limit`, `MatchFields`, `MatchOption`, `Filters`) fixes
   both, and keeps the current behaviour as its default.
@@ -292,7 +292,7 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
   startup gating, and DI diagnostics.
 
 - [ ] **`L` Validate and test Windows Service / SYSTEM hosting.**
-  [docs/architecture.md](docs/architecture.md) flags this explicitly as *not yet validated* and
+  [docs/architecture.md](docs/docs/architecture.md) flags this explicitly as *not yet validated* and
   calls it "an open item before production service hosting" — and it's the context most likely
   to break in production, since it's exactly where the activation fallback chain and the
   `winget.exe` alias-less resolution path matter. Needs a real service-hosted integration test,

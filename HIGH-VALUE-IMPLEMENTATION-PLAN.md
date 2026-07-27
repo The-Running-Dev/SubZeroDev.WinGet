@@ -18,7 +18,7 @@ cross-workstream execution plan and source of truth for ordering.
 
 - [x] Use `<PlatformTarget>$(Platform)</PlatformTarget>` for explicit x64 and
   ARM64 executable/test project builds, as identified in
-  [ROADMAP.md](ROADMAP.md#phase-1--correctness-fixes).
+  [ROADMAP.md](ROADMAP.md#phase-1-correctness-fixes).
 - [x] Use `buildTransitive/<tfm>/SubZeroDev.WinGet.targets` for modern
   PackageReference consumers, following
   [NuGet's MSBuild targets guidance](https://learn.microsoft.com/nuget/concepts/msbuild-props-and-targets).
