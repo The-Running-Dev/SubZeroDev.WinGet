@@ -139,6 +139,7 @@ CI: [.github/workflows/build.yml](.github/workflows/build.yml) runs on every pus
 | Running the Examples — a runnable example for every public API | [Read](https://winget.subzerodev.com/examples) | [docs/examples.md](docs/examples.md) |
 | Architecture — layers, retry policy, verified COM API findings | [Read](https://winget.subzerodev.com/architecture) | [docs/architecture.md](docs/architecture.md) |
 | Building & Testing — Nuke targets, coverage, publishing | [Read](https://winget.subzerodev.com/testing) | [docs/testing.md](docs/testing.md) |
+| Documentation System — the containerised `docs-template` image, its gate and deploy | [Read](https://winget.subzerodev.com/documentation-system) | [docs/documentation-system.md](docs/documentation-system.md) |
 | Troubleshooting — common runtime errors and fixes | [Read](https://winget.subzerodev.com/troubleshooting) | [docs/troubleshooting.md](docs/troubleshooting.md) |
 
 ## Design Notes
