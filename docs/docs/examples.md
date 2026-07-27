@@ -1,7 +1,7 @@
 ---
 id: examples
 title: Running the Examples
-sidebar_position: 4
+sidebar_position: 5
 ---
 
 # Running the Examples

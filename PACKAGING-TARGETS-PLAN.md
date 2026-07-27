@@ -6,7 +6,7 @@ Goal: make a consuming application work with only a direct reference to
 `Microsoft.Management.Deployment.dll`.
 
 This plan implements the formerly highest-value open item in
-[ROADMAP.md](ROADMAP.md#phase-3--packaging-and-distribution). It is intentionally
+[ROADMAP.md](ROADMAP.md#phase-3-packaging-and-distribution). It is intentionally
 checkbox-driven so each phase can be executed and reviewed independently.
 
 ## Prerequisite — the ARM64 half needs a managed-layout decision

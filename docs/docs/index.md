@@ -1,3 +1,8 @@
+---
+title: 'SubZeroDev.WinGet'
+sidebar_position: 1
+---
+
 # SubZeroDev.WinGet
 
 [![Build](https://github.com/The-Running-Dev/SubZeroDev.WinGet/actions/workflows/build.yml/badge.svg)](https://github.com/The-Running-Dev/SubZeroDev.WinGet/actions/workflows/build.yml)
@@ -117,7 +122,7 @@ CI runs the same steps through a generic [Nuke](https://nuke.build) build ([buil
 
 The library, tests, and examples target **.NET 8** (`net8.0-windows10.0.26100`). The Nuke build *tooling* (`build/`) targets **.NET 10** because Nuke.Common 10.x is net10-only — it's isolated from the product and not in the solution. So building via Nuke needs both SDKs (net8 to build/run the product, net10 to run Nuke); a plain `dotnet build`/`dotnet test` needs only the .NET 8 SDK.
 
-See [docs/testing.md](https://winget.subzerodev.com/docs/testing#build-orchestration-with-nuke) for the full target list.
+See [docs/testing.md](/docs/testing#build-orchestration-with-nuke) for the full target list.
 
 CI: [.github/workflows/build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml) runs on every push to `main` and every pull request. It runs `Test Coverage ArchitectureTest PackageTest` before release: architecture checks verify the managed/executable PE shapes, and package checks build/publish direct and two-hop consumers without live COM activation. Pull requests never publish.
 
@@ -127,20 +132,20 @@ CI: [.github/workflows/build.yml](https://github.com/The-Running-Dev/SubZeroDev.
 
 ## Documentation
 
-**[winget.subzerodev.com](https://winget.subzerodev.com/)** — the hosted docs site (built from `docs/` via Docusaurus, `website/`). The same content is also readable directly on GitHub under [docs/](https://winget.subzerodev.com/docs/); each section below links both.
+**[winget.subzerodev.com](/)** — the hosted docs site (built from `docs/` via Docusaurus, `website/`). The same content is also readable directly on GitHub under [docs/](/docs/); each section below links both.
 
 | Topic | Site | GitHub |
 |---|---|---|
-| Introduction — why this library, feature overview, the one deliberate CLI exception | [Read](https://winget.subzerodev.com/) | [docs/intro.md](https://winget.subzerodev.com/docs/intro) |
-| Getting Started — install, requirements, and explicit architecture configuration | [Read](https://winget.subzerodev.com/docs/getting-started) | [docs/getting-started.md](https://winget.subzerodev.com/docs/getting-started) |
-| Managing Packages — search, install, upgrade, uninstall, download, repair, the retry policy | [Read](https://winget.subzerodev.com/docs/usage/packages) | [docs/usage/packages.md](https://winget.subzerodev.com/docs/usage/packages) |
-| Managing Sources — the `winget source` equivalent | [Read](https://winget.subzerodev.com/docs/usage/sources) | [docs/usage/sources.md](https://winget.subzerodev.com/docs/usage/sources) |
-| Pins, Export & Import — the CLI-backed features | [Read](https://winget.subzerodev.com/docs/usage/pins-export-import) | [docs/usage/pins-export-import.md](https://winget.subzerodev.com/docs/usage/pins-export-import) |
-| Running the Examples — a runnable example for every public API | [Read](https://winget.subzerodev.com/docs/examples) | [docs/examples.md](https://winget.subzerodev.com/docs/examples) |
-| Architecture — layers, retry policy, verified COM API findings | [Read](https://winget.subzerodev.com/docs/architecture) | [docs/architecture.md](https://winget.subzerodev.com/docs/architecture) |
-| Building & Testing — Nuke targets, coverage, publishing | [Read](https://winget.subzerodev.com/docs/testing) | [docs/testing.md](https://winget.subzerodev.com/docs/testing) |
-| Documentation System — the containerised `docs-template` image, its gate and deploy | [Read](https://winget.subzerodev.com/docs/documentation-system) | [docs/documentation-system.md](https://winget.subzerodev.com/docs/documentation-system) |
-| Troubleshooting — common runtime errors and fixes | [Read](https://winget.subzerodev.com/docs/troubleshooting) | [docs/troubleshooting.md](https://winget.subzerodev.com/docs/troubleshooting) |
+| Introduction — why this library, feature overview, the one deliberate CLI exception | [Read](/) | [docs/intro.md](/docs/intro) |
+| Getting Started — install, requirements, and explicit architecture configuration | [Read](/docs/getting-started) | [docs/getting-started.md](/docs/getting-started) |
+| Managing Packages — search, install, upgrade, uninstall, download, repair, the retry policy | [Read](/docs/usage/packages) | [docs/usage/packages.md](/docs/usage/packages) |
+| Managing Sources — the `winget source` equivalent | [Read](/docs/usage/sources) | [docs/usage/sources.md](/docs/usage/sources) |
+| Pins, Export & Import — the CLI-backed features | [Read](/docs/usage/pins-export-import) | [docs/usage/pins-export-import.md](/docs/usage/pins-export-import) |
+| Running the Examples — a runnable example for every public API | [Read](/docs/examples) | [docs/examples.md](/docs/examples) |
+| Architecture — layers, retry policy, verified COM API findings | [Read](/docs/architecture) | [docs/architecture.md](/docs/architecture) |
+| Building & Testing — Nuke targets, coverage, publishing | [Read](/docs/testing) | [docs/testing.md](/docs/testing) |
+| Documentation System — the containerised `docs-template` image, its gate and deploy | [Read](/docs/documentation-system) | [docs/documentation-system.md](/docs/documentation-system) |
+| Troubleshooting — common runtime errors and fixes | [Read](/docs/troubleshooting) | [docs/troubleshooting.md](/docs/troubleshooting) |
 
 ## Design Notes
 
@@ -153,3 +158,4 @@ Known gaps and planned work — correctness fixes, threading, packaging, API exp
 ## License
 
 MIT
+
