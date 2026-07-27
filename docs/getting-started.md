@@ -112,4 +112,4 @@ catch (WinGetUnavailableException ex)
 }
 ```
 
-Operation failures (a failed install, a package not found by an operation) do **not** throw — they return a result record with `Succeeded`, a normalized `Status`, the WinGet `ExtendedErrorCode` HRESULT, and the installer's own exit code when present. See [Managing Packages](usage/packages).
+Operation failures (a failed install, a package not found by an operation) do **not** throw — they return a result record with `Succeeded`, a normalized `Status`, the WinGet `ExtendedErrorCode` HRESULT, and the installer's own exit code when present. See [Managing Packages](usage/packages.md).

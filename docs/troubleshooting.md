@@ -8,7 +8,7 @@ sidebar_position: 7
 
 ## `COMException 0x80040154 (REGDB_E_CLASSNOTREG)` at runtime
 
-The most common integration failure. Your executable project is missing the **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`. The native activation DLL only gets copied to the output directory of projects that reference the interop package directly — it does not flow through a project or package dependency. See [Getting Started](getting-started#installation).
+The most common integration failure. Your executable project is missing the **direct** `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`. The native activation DLL only gets copied to the output directory of projects that reference the interop package directly — it does not flow through a project or package dependency. See [Getting Started](getting-started.md#installation).
 
 ## `WinGetUnavailableException`
 
@@ -24,7 +24,7 @@ You (or your IDE's "simplify" suggestion) converted an indexed `for` loop over a
 
 ## Install fails with `0x8A150056` (installer prohibits elevation)
 
-The package's installer refuses to run elevated. Run your process non-elevated for that package, or check `ElevationRequirement` via package details before deciding how to launch.
+The package's installer refuses to run elevated. Run your process non-elevated for that package. The library does not surface the installer manifest's elevation requirement ahead of time — `PackageDetails` has no such field — so this is discovered from the `0x8A150056` result itself, not decided in advance.
 
 ## Install fails with `0x8A150019` (command requires admin)
 

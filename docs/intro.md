@@ -36,9 +36,9 @@ Pin management and export/import have **no COM equivalent at any WinGet contract
 
 ## Where to go next
 
-- [Getting Started](getting-started) — install, requirements, and the one integration rule you must not skip.
-- [Managing Packages](usage/packages) — search, install, upgrade, uninstall, download, repair.
-- [Managing Sources](usage/sources) — the `winget source` equivalent.
-- [Pins, Export & Import](usage/pins-export-import) — the CLI-backed features.
-- [Running the Examples](examples) — a runnable example for every public API.
-- [Architecture](architecture) — layers, retry policy, and the verified COM API findings.
+- [Getting Started](getting-started.md) — install, requirements, and the one integration rule you must not skip.
+- [Managing Packages](usage/packages.md) — search, install, upgrade, uninstall, download, repair.
+- [Managing Sources](usage/sources.md) — the `winget source` equivalent.
+- [Pins, Export & Import](usage/pins-export-import.md) — the CLI-backed features.
+- [Running the Examples](examples.md) — a runnable example for every public API.
+- [Architecture](architecture.md) — layers, retry policy, and the verified COM API findings.

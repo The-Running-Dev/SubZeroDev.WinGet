@@ -27,7 +27,7 @@ Consumers ────────► │ IPackageManagementService    │  vali
 
 ## Layers
 
-**Service layer** (`IPackageManagementService`, `IPackageSourceService`) — what most consumers should use. Adds input validation, structured logging (`ILogger<T>`), result normalization, and the documented [auto-retry policy](usage/packages#the-built-in-retry-policy).
+**Service layer** (`IPackageManagementService`, `IPackageSourceService`) — what most consumers should use. Adds input validation, structured logging (`ILogger<T>`), result normalization, and the documented [auto-retry policy](usage/packages.md#the-built-in-retry-policy).
 
 **Client layer** (`IWinGetClient`, `IWinGetSourceClient`, `IWinGetCliClient`) — thin, single-attempt translations to/from the COM API (or CLI for the two COM-gap features). Use these when you want full control over retry behavior.
 

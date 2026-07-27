@@ -46,6 +46,8 @@ progress: new Progress<double>(p => Console.WriteLine($"{p:F0}%")));
 
 Source operations report percentage progress (0–100) rather than staged progress.
 
+`AddPackageSourceRequest` also has `CustomHeader`, sent as a custom HTTP header on requests to the source — for REST sources (`Microsoft.Rest`) that need it for routing or identification.
+
 ## Removing a source
 
 ```csharp
