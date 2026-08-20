@@ -5,27 +5,6 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- **`agent.md` prunes.** The seeded `agent.md` was installed unpruned (`/install-all` cannot approve deletions unattended). Every lesson in it is inherited from other repositories, not earned here — review it and propose deletions for lessons that plainly do not apply to a single-language C#/COM library repo (e.g. anything about knowledge-graph tooling, or about stacks this repo does not have).
-- **`codex/PROFILES.md`.** Skipped by default per the kit's install rule (no `.codex/` directory or profile reference found). The checked-out branch at install time was named `codex/add-design-audit`, which is suggestive of Codex use but is not one of the kit's named evidence types (a `.codex/` directory, a profile reference, or the user saying so) — flagged here rather than treated as evidence, since an unattended pass does not get to make that call itself.
-- **Repeat the hosted-runner version observation after narrowing the guard.** The design now classifies only `InvalidCastException` with `E_NOINTERFACE` as an unavailable version member. Re-run the packed-consumer call after that change and record whether it returns a version, returns null through that classifier, or exposes an unrelated failure. Do not make the machine-state status required until this stop condition is resolved.
-- **The integration-test filter in `WinGetClientIntegrationTests.cs`'s doc comment under-selects.**
-  It names `FullyQualifiedName~WinGetClientIntegrationTests`, which matches one of the three fixtures
-  in that file and runs 8 of the 12 tests while still reporting a clean total. `CLAUDE.md`'s
-  documented `FullyQualifiedName~IntegrationTests` selects all three. A filter that silently
-  under-selects and still reports success is the same failure shape as a coverage gate that never
-  fails, which the brief already calls out separately.
-- **`GitVersion.yml`'s documented behaviour is stale.** Its comment states that an untagged commit on
-  `main` publishes `0.1.0-<n>`, verified before the `v0.1.0` tag existed. Run 32406423223 (2026-08-20)
-  packed and pushed `0.1.1-17`. `SPECIFICATION.md` §11 item 6 ("No stable version has been released
-  yet — that needs a tag") and item 8 ("the two publish targets are still unexercised") are stale the
-  same way: the tag push on 2026-07-22 ran `PublishGitHubPackages` to success. The release decision is
-  now settled: `v0.1.0` remains published history and the proven release is `v0.2.0`; these stale
-  descriptions must be corrected when the claim/release slices materialise that decision.
-- **Two further blanket `catch` clauses in `WinGetClient`.** `design/10-design.md` § *Failure modes*
-  argues that the catch-everything around the version property is a defect because it makes a null
-  unfalsifiable, not because catching is wrong. The same argument applies to the other two catch-all
-  clauses in that file, which were not examined. Worth an audit once the version-property diagnostic
-  has settled which exception types actually arrive.
 
 ---
 
