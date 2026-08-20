@@ -10,9 +10,9 @@ someone has to remember to update. The brief's problem statement is not "the tes
 is an evidence-plumbing problem, and it is solved by deciding what evidence exists, which environment
 can produce it, which claim it licenses, and what fails when the link is missing.
 
-Three of the brief's factual premises were contradicted by evidence gathered while designing. They
-are recorded in *Open questions* rather than reconciled here, because one of them changes a
-definition-of-done item that only the maintainer can rewrite.
+Three of the brief's factual premises were contradicted by evidence gathered while designing. The
+release-identity one changed a definition-of-done item and was put to the maintainer; the brief now
+carries the answer. The rest are recorded in *Open questions*.
 
 ## Data model
 
@@ -328,16 +328,15 @@ Packages release step succeeded. Untagged commits on `main` now publish `0.1.1-<
 stable `0.1.0` is the code as it stood before the COM-context hardening, the package-consumer
 targets and the documentation migration — before nearly everything the brief wants proven.
 
-Two of that criterion's three parts are already satisfied, at the wrong commit, and a tag is
-published state this repository does not rewrite. **Which version number carries the proven
-release?** I recommend cutting the proven release as `v0.2.0` rather than reusing `v0.1.0`: it costs
-one number, it needs no rewrite of a published ref, and it leaves the stale `0.1.0` legible as
-history rather than quietly replaced. The alternative — deleting and re-pushing the tag — moves a ref
-that consumers and the package feed may already have resolved, and its cost is not bounded by this
-repository. `PublishNuGet` genuinely has never run; that part of the criterion stands as written.
+Two of that criterion's three parts were already satisfied, at the wrong commit, and a tag is
+published state this repository does not rewrite. **Answered 2026-08-20: the proven release is cut as
+`v0.2.0`**, and `design/00-brief.md` has been updated to say so. `v0.1.0` stays where it is, legible
+as history rather than quietly replaced, and no published ref is rewritten. `PublishNuGet` genuinely
+has never run; that part of the criterion stands as written.
 
-I could not confirm what the feed actually contains: the available token lacks the scope to read
-package versions. The publish *step* succeeded; the feed itself was not inspected.
+One limit on the evidence behind this: what the feed actually contains was not inspected, because the
+available token lacks the scope to read package versions. The publish *step* is recorded as
+successful; the artifact it produced was not fetched back.
 
 **2. Should the live gate block a merge?** The catalog-dependent and machine-state halves of the
 live suite have different risk profiles, and the design keeps them separable for that reason — but
