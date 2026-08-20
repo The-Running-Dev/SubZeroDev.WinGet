@@ -7,13 +7,7 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 - **`agent.md` prunes.** The seeded `agent.md` was installed unpruned (`/install-all` cannot approve deletions unattended). Every lesson in it is inherited from other repositories, not earned here — review it and propose deletions for lessons that plainly do not apply to a single-language C#/COM library repo (e.g. anything about knowledge-graph tooling, or about stacks this repo does not have).
 - **`codex/PROFILES.md`.** Skipped by default per the kit's install rule (no `.codex/` directory or profile reference found). The checked-out branch at install time was named `codex/add-design-audit`, which is suggestive of Codex use but is not one of the kit's named evidence types (a `.codex/` directory, a profile reference, or the user saying so) — flagged here rather than treated as evidence, since an unattended pass does not get to make that call itself.
-- **`GetWinGetVersion` returns null under the COM API on hosted CI.** The 2026-08-20 spike below
-  found `PackageManager.Version` yielding null on a runner where `winget --version` reports
-  `v1.11.510` and every other live call succeeds. `WinGetClient.GetWinGetVersionCore` catches
-  everything and returns null, so "the property threw" and "the property returned null" cannot be
-  told apart from outside. This is the exact assertion `design/00-brief.md`'s first definition-of-done
-  item makes, so whether it is a defect, an upstream contract gap, or a criterion that needs
-  rewording is a design-tier judgement, deliberately not made here.
+- **Repeat the hosted-runner version observation after narrowing the guard.** The design now classifies only `InvalidCastException` with `E_NOINTERFACE` as an unavailable version member. Re-run the packed-consumer call after that change and record whether it returns a version, returns null through that classifier, or exposes an unrelated failure. Do not make the machine-state status required until this stop condition is resolved.
 - **The integration-test filter in `WinGetClientIntegrationTests.cs`'s doc comment under-selects.**
   It names `FullyQualifiedName~WinGetClientIntegrationTests`, which matches one of the three fixtures
   in that file and runs 8 of the 12 tests while still reporting a clean total. `CLAUDE.md`'s
@@ -24,10 +18,9 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
   `main` publishes `0.1.0-<n>`, verified before the `v0.1.0` tag existed. Run 32406423223 (2026-08-20)
   packed and pushed `0.1.1-17`. `SPECIFICATION.md` §11 item 6 ("No stable version has been released
   yet — that needs a tag") and item 8 ("the two publish targets are still unexercised") are stale the
-  same way: the tag push on 2026-07-22 ran `PublishGitHubPackages` to success. Left uncorrected on
-  purpose — all three sentences describe the release story that `design/10-design.md` § *Open
-  questions* asks the maintainer to decide, and correcting them before that answer would freeze one
-  reading of it.
+  same way: the tag push on 2026-07-22 ran `PublishGitHubPackages` to success. The release decision is
+  now settled: `v0.1.0` remains published history and the proven release is `v0.2.0`; these stale
+  descriptions must be corrected when the claim/release slices materialise that decision.
 - **Two further blanket `catch` clauses in `WinGetClient`.** `design/10-design.md` § *Failure modes*
   argues that the catch-everything around the version property is a defect because it makes a null
   unfalsifiable, not because catching is wrong. The same argument applies to the other two catch-all
@@ -35,6 +28,42 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
   has settled which exception types actually arrive.
 
 ---
+
+### 2026-08-21 — Machine-state live verification is required; catalog verification is advisory
+Context: The first design pass separated seven machine-state tests, five tests coupled to Microsoft's remote catalog, and the packed-consumer smoke, but left their command names and blocking consequences open. The existing fixture-name example selects only eight of twelve tests and still reports a clean total, so an invocation surface without stable risk metadata and count assertions can manufacture success by omission.
+Chosen: add stable `MachineStateTest`, `CatalogIntegrationTest`, and `PackedConsumerSmokeTest` targets. Preserve `IntegrationTest` as a local aggregate of the two integration-test risk classes only. Pull requests run all three risk-specific targets: the machine-state tests and packed-consumer smoke form a required status, while the catalog target remains a normal, visibly failing but non-required status. Every risk-specific target asserts its expected selected count before it can license evidence.
+Rejected: One required all-live status — rejected because a network, source-agreement, or upstream catalog change would block unrelated merges. Making every live target advisory — rejected because it recreates the unobserved suite the brief exists to eliminate. Fixture-name filters — rejected because the repository already contains an under-selecting example that reports clean success.
+Reversibility: cheap for branch-protection policy and target composition; moderate for target names once documentation and automation call them.
+
+### 2026-08-21 — Pure projection translations have one internal owner
+Context: The contract could not name a test seam while enum, option, result, DTO, and collection translations remained private helpers split across both client types. Widening those helpers in place would expose two declaration owners and leave the no-path-to-activation invariant dependent on convention.
+Chosen: a dedicated internal `WinGetProjectionMapper` owns the pure translations used by package and source clients. Production and tests both call that owner through the existing internals grant. It depends on projection metadata and public model values only; projected collection traversal stays indexed.
+Rejected: Widening private helpers in place — rejected because ownership and the activation boundary remain split. Mocking or wrapping the projection — rejected because inert enum/struct metadata needs no fake and a fake would test itself. Adding a public mapper interface — rejected because no consumer needs it and new public surface is a binding non-goal.
+Reversibility: moderate — the internal declaration can move later, but tests and clients will both name it.
+
+### 2026-08-21 — Activation selection is extracted from COM construction
+Context: `WinGetFactory` currently combines the selection state machine with construction of projected COM types. Unit tests cannot control failures without activating COM or mutating concrete activation tables, neither of which tests the selection contract in isolation.
+Chosen: a dedicated internal `WinGetActivationModeSelector` owns ordering, first-success caching, synchronization, cached-mode reuse, and failure aggregation. `WinGetFactory` retains CLSIDs, IIDs, projection constructors, raw activation, and supplies one attempt callback. Tests use inert return values and scripted failures and never construct projected types.
+Rejected: Injecting fake projected objects — rejected because the test would cross the integration boundary. Making activation tables mutable — rejected because it tests configuration instead of selection. Reflecting over private cache state — rejected because it observes representation without controlling the behavior that produces it.
+Reversibility: moderate — internal only, but the selector becomes the single owner of a load-bearing state machine.
+
+### 2026-08-21 — The coverage floor is a build-local decimal checked by exact ratio
+Context: The prior decision fixed one global ratcheting line floor but did not choose its declaration or comparison precision. A command-line value can weaken its own run, a data file adds a schema for one scalar, and rounded display percentages can disagree at the boundary.
+Chosen: declare one checked-in decimal line percentage in build logic, expressed to one decimal place. Compare integer covered-line and valid-line counts directly against that ratio without independently rounding the observed result. Set the first floor one tenth of a percentage point below the measured unit-only result after the required tests land.
+Rejected: A command-line parameter — rejected because the run could lower its own contract. A separate data file — rejected because one scalar does not justify another schema and reader. Comparing rendered percentages — rejected because rounding can move pass/fail.
+Reversibility: cheap — declaration form and precision are internal build details, while the ratchet policy remains unchanged.
+
+### 2026-08-21 — Four support subjects have explicit canonical documents
+Context: The evidence contract requires one authored owner for consumer architecture, managed-assembly package shape, hosting context, and live operation coverage, but the first design pass named only the duplicated surface. Enforcement cannot reject a restatement until ownership is assigned.
+Chosen: `README.md` owns the consumer-architecture and managed-assembly-shape Claims as two distinct records; `docs/docs/troubleshooting.md` owns hosting context; `docs/docs/testing.md` owns live operation coverage. The generated documentation homepage is not a second README owner. Getting Started, Architecture, and the specification reference these claims rather than restating their strength.
+Rejected: Making `SPECIFICATION.md` canonical for consumer support — rejected because package consumers should not need an internal design document to interpret installation support. Generating all four statements from evidence — rejected because a generator and schema exceed four claims and approach the binding documentation-redesign non-goal.
+Reversibility: moderate — canonical ownership can move, but every reference and the documentation gate must move with it.
+
+### 2026-08-21 — Version absence is exactly `InvalidCastException` with `E_NOINTERFACE`
+Context: The hosted runner returned null from `PackageManager.Version`, but a blanket catch erased the cause. [CsWinRT reaches added WinRT interfaces through `QueryInterface`](https://github.com/microsoft/CsWinRT/blob/master/docs/interop.md); COM reports an absent interface as `E_NOINTERFACE`, and [.NET maps HRESULT `0x80004002` to `InvalidCastException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidcastexception?view=net-8.0). That supplies a closed classifier without treating every interop failure as absence.
+Chosen: return null only for `InvalidCastException` carrying exactly HRESULT `0x80004002`. Cancellation and every other exception propagate. Repeat the hosted-runner observation after narrowing; if it still returns null, the packed-consumer definition of done is not satisfied on that environment and the work stops for a brief or environment decision.
+Rejected: Catching every `COMException` — rejected because unrelated failures would remain indistinguishable. Message matching — rejected because localized text is not a contract. Removing the guard — rejected because older runtimes may genuinely lack the added interface. Falling back to `winget --version` — rejected because it changes the observable and broadens the deliberate CLI-only exception.
+Reversibility: cheap in code but contract-significant; broadening the classifier later requires observed evidence and a new decision.
 
 ### 2026-08-20 — The proven release is cut as `v0.2.0`; `v0.1.0` stays where it is
 Context: `design/00-brief.md` asserted that no stable version had been tagged and that neither publish target had ever executed. Both are false. An annotated `v0.1.0` exists and is pushed at `c2cc157` (2026-07-22); that tag push ran the build workflow to success (run 29902339077) with its `release` job's "Release to GitHub Packages" step succeeding, so stable `0.1.0` was published from code predating the COM-context hardening, the package-consumer targets and the documentation migration. Untagged `main` commits now publish `0.1.1-<n>` (run 32406423223), not the `0.1.0-<n>` still documented in `GitVersion.yml`. A tag is published state, which this repository does not rewrite, so the version number was a one-way door already spent.

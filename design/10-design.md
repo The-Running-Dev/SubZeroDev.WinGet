@@ -1,355 +1,324 @@
-# Design — Prove the provisional claims and cut v0.1.0
+# Design — Prove the provisional claims and cut v0.2.0
 
-Designed against `design/00-brief.md`. The product's runtime architecture is settled and is not
+Designed against `design/00-brief.md`. The product runtime architecture is settled and is not
 redesigned here; `CLAUDE.md` § *Architecture* and `SPECIFICATION.md` remain its description.
 
-What is being designed is the thing the brief actually asks for: a **system that binds every
-consumer-facing claim to an execution that licenses it**, so that "provisional" stops being a word
-someone has to remember to update. The brief's problem statement is not "the tests are thin" — it is
-"a consumer cannot tell which claims are proven and which are aspirational, and neither can I." That
-is an evidence-plumbing problem, and it is solved by deciding what evidence exists, which environment
-can produce it, which claim it licenses, and what fails when the link is missing.
+What is being designed is the system the brief asks for: a **binding between every consumer-facing
+support claim and an execution that licenses it**. The problem is not merely thin tests. It is that a
+maintainer or consumer cannot distinguish an executed claim from an aspirational one. The design
+therefore decides what evidence exists, which environment may produce it, which claim it licenses,
+and which gate fails when that relation is absent.
 
-Three of the brief's factual premises were contradicted by evidence gathered while designing. The
-release-identity one changed a definition-of-done item and was put to the maintainer; the brief now
-carries the answer. The rest are recorded in *Open questions*.
+The first design pass exposed six boundaries that were too loose for `design/20-contract.md` to state
+without inventing them. This revision closes the live-gate policy and invocation surface, the two
+internal test seams, the coverage-floor representation, the version-member absence classifier, and
+the canonical document map. It retains one empirical stop condition: the packed-consumer version
+call must be observed again after the classifier is narrowed.
 
 ## Data model
 
-Two models coexist. The **runtime** model — `SubZeroDev.WinGet/Models/` — is unchanged: no new public
-API is a binding non-goal, and nothing here needs one. It is touched in exactly one place, and only
-in *reachability*: `PackageOperationStatus.Cancelled` is presently unreachable (see *Failure modes*).
+The existing runtime model is unchanged. No new public API is introduced. The only runtime semantic
+changes are that `PackageOperationStatus.Cancelled` becomes reachable for WinGet's cancelled-by-user
+HRESULT, and a version lookup returns `null` only for a missing version interface rather than for every
+failure.
 
-The **evidence** model below is new, and is mostly not a set of new files — it is a discipline over
-artifacts that already exist. Its entities are few and concrete; the value is in the relation between
-them, not in any framework.
+The evidence model is a discipline over existing product, build, CI, and Markdown artifacts. It does
+not introduce a database, evidence service, or generated claim manifest.
 
 ### Claim
 
-A statement in consumer-facing prose about what the library supports.
+A Claim is a consumer-facing statement about one support subject.
 
-- **Identity** — its *subject*, not its wording. Four subjects exist today: consumer architecture
-  support, the managed-assembly package shape, hosting context (elevation, service/SYSTEM), and
-  operation coverage (which operations have been executed live).
-- **Fields** — subject; the assertion; the strength of the assertion (`executed`, `contract-checked`,
-  `unvalidated`); a reference to the Evidence that licenses it.
-- **Ownership** — exactly one canonical statement per subject. Other documents reference it. This is
-  `CLAUDE.md` § *Single ownership* applied to claims, and it is the property whose absence produced
-  the present state: the same architecture claim is written five times across `README.md`,
-  `docs/docs/getting-started.md`, `docs/docs/testing.md`, `docs/docs/architecture.md` and
-  `SPECIFICATION.md`, and drifts independently.
-- **Lifecycle** — authored with a strength; strength changes only when the Evidence edge changes.
-  A claim never gains strength because someone believes it, and never silently loses it.
-- **Derived** — strength is derived from whether an Evidence record exists and what Environment
-  produced it. It is not independently authored. That is the whole mechanism.
-- **Persisted** — as Markdown in the repository. `docs/docs/index.md` is generated from `README.md`
-  and already drift-gated, so it is not a second copy; the other four are.
+- **Identity** — the subject, not the sentence used to express it.
+- **Fields** — subject; assertion; strength (`executed`, `contract-checked`, or `unvalidated`);
+  references to the Evidence that licenses that strength.
+- **Ownership** — exactly one authored canonical statement per subject. Generated copies and links do
+  not become further owners.
+- **Lifecycle** — the assertion may be reworded, but its strength changes only when the evidence edge
+  changes. Wording alone never promotes it.
+- **Persistence** — authored Markdown in the repository.
+
+The document map is fixed without changing the documentation information architecture:
+
+| Subject | Canonical owner | Why |
+|---|---|---|
+| Consumer architecture | `README.md` | It is the package-facing entry point and is also projected into the documentation homepage. |
+| Managed-assembly package shape | `README.md` | Package consumers encounter this constraint before any repository-specific technical document. |
+| Hosting context | `docs/docs/troubleshooting.md` | Elevation, service, and SYSTEM limitations are operational caveats with user actions. |
+| Live operation coverage | `docs/docs/testing.md` | This page owns what was executed, where, and what remains unvalidated. |
+
+The two README-owned subjects remain distinct Claim records even if adjacent prose expresses them.
+`docs/docs/index.md` is generated from the README and is not a second owner. Getting Started,
+Architecture, and the specification reference the canonical statements rather than restating their
+strength.
 
 ### Evidence
 
-The record that a specific Gate ran to completion in a specific Environment at a specific commit.
+Evidence records that a Gate ran in an Environment against an exact commit.
 
-- **Identity** — the triple (gate, environment, commit).
-- **Fields** — outcome; the run that produced it; what was asserted; what was *not* asserted.
-- **Ownership** — CI owns it. `design/90-decisions.md` may *reference* a run; it must never restate
-  the result, because a restated result is a copy that cannot be re-derived and rots exactly like a
-  claim does.
-- **Lifecycle** — created by a run, and it **expires against a moving environment**. Evidence that
-  the library works against WinGet 1.11 is not evidence that it works against 1.13. Expiry is the
-  reason a live gate that runs once is worth less than one that runs repeatedly.
-- **Persisted** — as CI run history and run artifacts. Not in prose.
+- **Identity** — `(gate, environment, commit)`.
+- **Fields** — binary outcome; run identity; assertions actually exercised; explicit non-assertions;
+  observed environment facts.
+- **Ownership** — CI run history and artifacts. Prose and the decision log may reference a run but do
+  not copy its result.
+- **Lifecycle** — immutable for that run, but time-bounded when the environment moves. A result
+  against one WinGet or runner image does not silently license later images.
+- **Partial results** — a passing assertion licenses only its own claim. Eleven passing tests do not
+  become an all-suite pass, but neither are their results discarded.
 
 ### Gate
 
-An executable check with a binary outcome and no human in the loop.
+A Gate is an executable check that can fail, records a binary outcome for one commit, and is invoked
+by a workflow. A build target that no workflow invokes, or that only reports a number, is not a gate.
 
-- **Identity** — its build-target name. The existing set is enumerated in `CLAUDE.md` § *Commands*.
-- **Fields** — what it asserts; what it requires of its Environment; whether a failure blocks a merge.
-- **Invariant** — *a gate that no workflow invokes does not exist.* The twelve `[Explicit]`
-  integration tests are the proof: they are correct, they are maintained, and until the 2026-08-20
-  spike no commit had ever run them anywhere but a developer's own machine.
-- **Second invariant** — a gate must be able to *fail*. `Coverage` presently computes a number and
-  reports it; a number nobody can fall below is a dashboard, not a gate.
+The stable live invocation surface is:
+
+| Target | Risk class | Meaning |
+|---|---|---|
+| `MachineStateTest` | Machine state | Executes the seven read-only tests whose truth depends on the runner's installed/local state rather than a particular remote catalog entry. |
+| `CatalogIntegrationTest` | Catalog dependent | Executes the five tests whose witnesses are identities or content in Microsoft's remote catalog. |
+| `PackedConsumerSmokeTest` | Machine state | Builds through the existing packed-consumer construction path, then executes `GetWinGetVersion` from that consumer. |
+| `IntegrationTest` | Local aggregate | Preserves the existing developer entry point by composing the two integration-test risk classes; it is not itself assigned a CI blocking consequence. |
+
+Selection is by stable test risk metadata, not fixture-name substrings. Each target asserts its
+expected selected count before its result can license a claim, so an under-selecting filter fails.
+The packed smoke remains a separate target because it consumes an artifact; it does not become a
+thirteenth project-reference integration test.
+
+The required pull-request statuses are the existing hermetic check and a separate machine-state live
+status that invokes `MachineStateTest` and `PackedConsumerSmokeTest` in one build invocation. The
+catalog-dependent target runs for the same pull requests and records a normal pass or failure, but it
+is not a required branch-protection status. Advisory means non-required, not swallowed or rewritten
+as success.
 
 ### Environment
 
-Where a Gate runs, and therefore which Claims its Evidence can license.
+An Environment is observed execution context, not runner-image documentation.
 
-- **Identity** — a name. Three exist: the GitHub-hosted `windows-latest` x64 runner, the maintainer's
-  Windows x64 machine, and the maintainer's macOS machine (on which nothing in this repository builds
-  or runs).
-- **Fields** — OS and architecture; whether WinGet is installed and at what version; whether the
-  session is interactive; whether it is elevated; whether it has network reach to the remote catalog.
-- **Load-bearing property** — an Environment **licenses a bounded set of claims and no more**. No
-  ARM64 environment exists in the loop, so no evidence can license an ARM64 runtime claim, which is
-  why the brief makes narrowing that claim a non-goal-protected instruction rather than a task.
-- **Derived** — nothing. It is observed and recorded, never assumed. The spike recorded the runner's
-  WinGet version, source list, session interactivity and CLSID registration state for precisely this
-  reason: an Evidence record whose Environment was not captured cannot be interpreted later.
+- **Identity** — a named runner or maintainer machine.
+- **Fields** — OS; architecture; WinGet version; interactivity; elevation; configured sources;
+  remote-catalog reachability where relevant.
+- **Licensing rule** — evidence licenses only the bounded environment it records. Windows x64 is not
+  ARM64 runtime evidence; an interactive user is not service or SYSTEM evidence; contract checks are
+  not runtime evidence.
+
+The current loop contains the GitHub-hosted Windows x64 runner, the maintainer's Windows x64 machine,
+and the maintainer's macOS machine, on which the product does not build or run. No ARM64 execution
+environment exists, so ARM64 remains build/package-contract evidence only.
 
 ### Coverage floor
 
-The one number the brief requires to exist.
+The coverage floor is one build-owned checked-in decimal line percentage, not a command-line
+parameter and not a separate data file. It is expressed to one decimal place. Enforcement compares
+the exact integer covered-line and valid-line counts against that decimal ratio; it does not compare
+two independently rounded display values.
 
-- **Identity** — a single checked-in value, read by the `Coverage` gate.
-- **Derived from** — a measurement, taken after the unit tests the brief calls for have landed, and
-  set just below it. It is never chosen aspirationally; an aspirational floor is a gate that fails
-  on unrelated work until someone lowers it, which trains everyone to lower it.
-- **Lifecycle** — ratchets up only. It is raised in the same commit that shows the measurement
-  justifying the raise. It is lowered only by an explicit decision-log entry.
-- **Invariant** — **the floor is measured against a run that excludes the `[Explicit]` tests.** If
-  live integration coverage were ever folded into the same report, the number would inflate without
-  a single new unit test, and the gate would stop meaning what its name says. This is the constraint
-  that decides where live tests may run relative to the coverage collector, not a preference.
+The initial value is measured after the required unit tests land and set one tenth of a percentage
+point below that observed unit-only result. It ratchets upward only. Lowering it requires a decision
+log entry. The input excludes every `[Explicit]` test and covers the whole library without file,
+namespace, class, or COM-orchestration exclusions.
 
 ### Release
 
-- **Identity** — a git tag. The version is **derived from git history by GitVersion**, not from the
-  project file; the project file's version governs only the manual NuGet.org path. These two sources
-  disagreeing is not hypothetical — it is what produced the current release state (*Open questions*).
-- **Lifecycle** — a tag is *published state*. `CLAUDE.md` forbids rewriting published history, which
-  makes a tag a one-way door and makes the choice of version number an irreversible decision rather
-  than a formality.
+A Release is the immutable pair `(tag, commit)` plus positive confirmation from each intended feed.
+GitVersion output and the project-file version are publishing inputs, not release identity.
+`v0.1.0` remains at its published commit. The proven release is `v0.2.0`; once pushed, that tag is the
+same one-way door and is never moved.
 
 ## Module boundaries
 
-Three groups. Only the second and third change.
+The dependency direction is:
 
-**Product layers** — service, client, COM owner/activation. Owns runtime behaviour; depends on the
-WinRT projection; exposes the public surface. Unchanged, and described in `CLAUDE.md` §
-*Architecture*. The dependency direction is service → client → COM owner → projection, and it is
-already acyclic.
+`service → client → {pure translation, COM owner}`
 
-**Pure translation** — the enum mappers and DTO projections that today sit as private members inside
-`WinGetClient` and `WinGetSourceClient`. The brief requires unit tests for them, and they are
-untestable only because they are private, not because they need COM.
+`COM owner → factory → activation-mode selector → {projection activation, raw COM activation}`
 
-- Owns: total functions from projection values to public model values.
-- Depends on: the projection's *enum and struct metadata only*. **It must not depend on
-  `WinGetComContext` or `WinGetFactory`.** That is the boundary's entire purpose: loading the
-  projection assembly to read an enum value activates nothing, whereas touching the factory
-  activates an out-of-proc COM server. A unit test that has to activate WinGet is an integration
-  test wearing the wrong attribute.
-- Exposed to: the client layer, and the test assembly through the `InternalsVisibleTo` grant that
-  already exists.
-- Direction: translation ← client, translation ← tests. Nothing depends on the client from here, so
-  it is acyclic. Whether this becomes its own type or stays in place with widened visibility is a
-  slice-level call; the *boundary* — no path from a mapper to activation — is the design.
+`workflow → gate → artifact/evidence → canonical claim`
 
-**Gates** — the build targets and the workflows that invoke them.
+No edge points back toward a consumer, and the graph is acyclic.
 
-- Owns: assertions and their outcomes. Depends on build artifacts, never on another gate's side
-  effects. Exposes: a binary result and a recorded artifact.
-- The existing package-contract gate is **hermetic**: it builds packed consumers and asserts asset
-  selection without executing a live COM call, so it runs anywhere a Windows SDK does. That property
-  is worth more than the convenience of reusing it, so the live packed-consumer smoke test is a
-  *separate* gate that reuses the consumer-construction step rather than an assertion bolted onto the
-  hermetic one. Direction: consumer construction ← contract assertions, and consumer construction ←
-  live smoke. Acyclic, and either can fail without implicating the other.
+**Product layers** — service, client, and COM owner/activation retain their existing responsibilities.
+The service owns validation, logging, normalization, and retry policy. Clients own single-attempt
+translation between the public model and WinGet. The owner context serializes all projected-object
+access on one MTA thread. No COM/WinRT object crosses that boundary.
 
-**Claims** — the prose surface. Depends on Evidence. Nothing depends on it. The documentation gate
-already enforces one generated-file relationship and a terminology rule set, which is the shape a
-claim-drift rule fits into; the claim surface is small enough that a rule over four files is
-proportionate and a generated claims table is not.
+**Pure translation** — a dedicated internal `WinGetProjectionMapper` owns every pure projection enum,
+option, result, DTO, and collection translation used by both package and source clients.
+
+- It depends only on projection metadata and public model values.
+- It has no path to `WinGetFactory`, `WinGetComContext`, network access, or `winget.exe`.
+- Production clients call it directly; tests reach it through the existing internals grant.
+- Projected collections remain indexed inside this boundary. Moving a translation does not license
+  `foreach` or LINQ over CsWinRT collections.
+
+This selects one declaration owner rather than widening private helpers across two client types. It
+is an internal organization boundary, not a fakeable projection abstraction.
+
+**Activation-mode selection** — a dedicated internal `WinGetActivationModeSelector` owns the ordered
+mode list, first-success choice, cache, synchronization, and aggregation of failed attempts.
+`WinGetFactory` continues to own real projected and raw COM construction and supplies one attempt
+callback to the selector.
+
+The selector is testable with inert values and scripted failures; unit tests do not construct a
+WinGet projected type. They prove projection-first ordering, each fallback, first-success caching,
+cached-mode reuse, total-failure aggregation, and serialization. The factory remains the only module
+that knows CLSIDs, IIDs, or raw activation flags.
+
+**Gates** — build targets own assertions and binary outcomes. Workflows own cadence, required-status
+policy, and evidence persistence. The existing package-contract gate remains hermetic. The live packed
+smoke reuses its consumer-construction implementation but has an independent assertion and outcome.
+
+**Claims** — canonical prose depends on Evidence. No product or gate depends on prose. The existing
+documentation gate enforces ownership, strength vocabulary, evidence references, and the absence of
+non-canonical restatements; it does not fetch external evidence during a documentation check.
 
 ## Control flow
 
-**A pull request is opened.** The required check runs the hermetic chain: unit tests, coverage — now
-with a floor that can fail — the cross-architecture PE assertions, and the package contract. Nothing
-in this path touches a live COM server, a network catalog, or a package feed, so its failures are
-always about the change under review. This is the path that must stay fast and deterministic, and
-the reason live verification is not added to it.
+**A pull request is opened.** The existing required hermetic check runs unit tests, exact coverage-floor
+enforcement, architecture assertions, and package-contract verification. Separately, the required
+machine-state status runs the seven machine-state tests plus the packed-consumer smoke. A third,
+non-required status runs the five catalog-dependent tests. All three record results against the same
+commit; one cannot substitute for another.
 
-**Live behaviour is checked.** A separate path activates the real COM server on a real Windows x64
-machine: the twelve integration tests, and the packed-consumer smoke test that answers the one
-question the hermetic package gate structurally cannot — whether a consumer that resolved the package
-the way NuGet resolves it can make a COM call at all. Its outcome is Evidence, and its Environment is
-recorded alongside it. Its trigger and its blocking status are the policy question in *Open questions*;
-its shape is not affected by that answer.
+**Live behaviour is interpreted.** A live target first records its environment and selected-test
+count, then executes. Missing prerequisites are failures with no licensed claim, not product success.
+Passing assertions become Evidence only for their named subjects. A catalog outage may leave valid
+machine-state evidence intact. An empty input that makes an implication vacuously true records no
+evidence for that assertion and makes the absent witness visible.
 
-**A release is cut.** A tag push derives a version from history, packs, and pushes to the package
-feed; the manual dispatch path publishes to NuGet.org at the project file's version. Both are gated
-on the required check. The ordering hazard here is that the version is derived from a ref that
-already exists at the moment of the push — so the tag *is* the decision, and there is no later point
-at which it can be reconsidered without rewriting published history.
+**A release is cut.** The required hermetic and machine-state checks must pass for the tagged commit.
+Publishing derives the intended version, pushes, then retrieves or queries each intended feed and
+confirms that exact version. A green push command or skipped duplicate without retrieval is not a
+successful publication. Only after both GitHub Packages and NuGet.org positively confirm `v0.2.0`
+does the release satisfy the brief.
 
 ## Failure modes
 
-**WinGet COM activation.** Detected as an exception from every mode in the factory's chain, surfaced
-as `WinGetUnavailableException`. The 2026-08-20 spike established that the chain succeeds on a hosted
-runner where neither production CLSID is registered — meaning the fallback that the brief calls the
-library's main resilience mechanism is now exercised, not merely present. State left behind: none;
-activation failure leaves the owner context constructed but unusable, and the context deliberately
-does not cache the failure, so a later call retries.
+**COM activation fails.** Each real mode is attempted in order. The selector aggregates failures and
+the client surface receives `WinGetUnavailableException`. No failed mode is cached as success. A later
+independent call may retry after the environment changes; no projected object is left outside the
+owner context.
 
-**A projected interface is unavailable while activation succeeds.** This is the failure shape behind
-the spike's single failure, and it is the most consequential finding in this design.
-`PackageManager.Version` is declared on `IPackageManager7`, contract version 13 (read from the pinned
-projection metadata, 1.29.280). Reaching it requires a `QueryInterface` beyond the default interface
-the factory activates against, whereas every call that passed on the runner is reachable through the
-interfaces the activation already holds. The leading hypothesis is therefore that the property is
-unreachable *through that activation mode*, not that WinGet lacks it — the runner reports
-`v1.11.510`, far past contract 13.
+**A cached activation mode later fails.** The cached mode is the context invariant and is not silently
+reselected for one object. The failure propagates. Mixing activation contexts would make projected
+object ownership unknowable and is worse than failing the call.
 
-It cannot presently be confirmed, because the accessor is wrapped in a catch-everything that returns
-null. **The defect is not the null; it is that the null is unfalsifiable.** "The interface is not
-implemented on this runtime" and "the call failed for an unrelated reason" are different facts with
-different consequences, and the code makes them indistinguishable from outside. The design's position:
-narrow the guard to the exception types that actually mean *this member does not exist here*, and let
-anything else propagate. That preserves the documented old-runtime behaviour, keeps the public
-signature untouched, and converts an unfalsifiable null into a distinguishable outcome. It is a change
-to error semantics and therefore `/contract`'s to record, but the semantics are decided here.
-A blanket catch anywhere is now suspect for the same reason; two others exist in the same file.
+**The version interface is absent.** [CsWinRT obtains added WinRT interfaces through
+`QueryInterface`](https://github.com/microsoft/CsWinRT/blob/master/docs/interop.md); COM reports an
+absent interface as `E_NOINTERFACE`, and [.NET represents HRESULT `0x80004002` as
+`InvalidCastException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidcastexception?view=net-8.0).
+`GetWinGetVersion` therefore converts only an
+`InvalidCastException` carrying exactly `0x80004002` to `null`. Cancellation, activation errors,
+other COM failures, and every other exception propagate unchanged. Message matching and a blanket
+`COMException` guard are forbidden.
 
-**The remote catalog, and third-party package identity.** Five of the twelve live tests assert
-against `Microsoft.VisualStudioCode` or a `git` match in the `winget` source — its publisher, its
-display name, its tags, its presence. These are assertions about *Microsoft's catalog*, not about
-this library, and they fail on a catalog change, a network fault, or a source-agreement prompt.
-The remaining seven depend only on the executing machine's own state. **These are two different risk
-classes and must not share a blocking status**, or an upstream catalog edit blocks every merge in
-this repository. Splitting them is what makes a live gate safe to require at all.
+The hosted-runner observation must be repeated after that guard is installed. If it still yields
+`null`, the packed-consumer criterion is not satisfied on that runner; the implementation must stop
+before making the machine-state status required and return to the brief for either a different
+observable or an environment that exposes the member. It must not silently replace
+`GetWinGetVersion`, weaken non-null, or call `winget --version` as a fallback.
 
-One of the machine-state tests asserts an implication over a possibly-empty list, so it passes
-vacuously when the machine has no available upgrades. Vacuous evidence licenses no claim; the
-evidence model above says so, and this is the concrete instance.
+**A remote catalog or witness changes.** Catalog-dependent tests fail their non-required status and
+retain any separately passing machine-state evidence. A package identity, publisher, tag, or source
+agreement is upstream data, not product state. A machine-state assertion over an empty list is not
+evidence merely because an implication returned true.
 
-**The `winget.exe` shim.** Pins and export/import have no COM equivalent, so they shell out. Failure
-is a non-zero exit or unparseable output. The two live CLI tests passed on the runner, so the shim
-path has Evidence in the hosted Environment.
+**The CLI shim fails.** Pins and export/import have no COM equivalent. A non-zero exit, missing
+executable, or unparseable output remains the existing typed failure. The shim does not expand beyond
+those operations.
 
-**The package feed.** A push of an already-present version is made harmless by the skip-duplicate
-flag, so concurrent or repeated runs are benign. The consequential failure is not a rejected push —
-it is a **successful push of the wrong version**, which is silent, irreversible, and has already
-happened once (*Open questions*). Detection has to be positive: after publishing, confirm the version
-that landed is the version intended, rather than inferring it from a green job.
+**The coverage floor fails.** Exact covered and valid line counts fall below the checked-in decimal
+ratio. The gate fails. A refactor changing the ratio is not an automatic reason to lower the floor;
+lowering requires an explicit decision.
 
-**Version derivation.** GitVersion reads git history. A shallow clone degrades it to a warning in the
-non-publishing job and a fatal error in the publishing one — a difference the workflow already
-accounts for. The subtler failure is that its *output changes when a tag is added*, without any file
-in the repository changing, so a documented example of its behaviour goes stale silently. One is
-stale now.
+**A claim drifts.** Duplicate canonical owners, invalid strength, missing or insufficient evidence,
+and non-canonical restatement are blocking documentation failures. A warning is not enough because a
+green documentation gate is part of the evidence chain.
 
-**Runner image drift.** The hosted runner's WinGet version is not pinned by this repository and will
-move. This is Evidence expiry made concrete: a live gate that runs on every change converts drift
-into a visible failure, whereas one that ran once in August records a fact about August.
+**Publication partially succeeds.** Each feed confirmation is independent. If one feed contains the
+intended release and the other does not, the successful feed remains published state but the release
+criterion is incomplete. Re-running is safe only for the same intended version; changing the tag to
+escape a partial publish is forbidden.
 
-**The coverage gate.** Fails below the floor. Its own failure mode is a floor that drifts from what
-it was measured against — a large refactor can move the ratio without changing a test. That is
-acceptable, and the ratchet policy, not the gate, is what handles it.
-
-**Partial failure across the live suite.** Eleven of twelve passing is the actual observed state, and
-it is the state the design must handle rather than treat as an anomaly. A partial pass is Evidence
-for the claims its passing tests license and for nothing else. The brief's definition of done demands
-all twelve green, so a partial pass is not "mostly done" — but it is also not "no information", and
-the failing one is the one carrying the finding.
+**Runner image drift.** A later runner may change WinGet version, sources, or interface availability.
+Recurring live execution turns that drift into a visible result. Historical evidence remains an
+observation about its recorded environment and does not automatically license the new one.
 
 ## Concurrency and ordering
 
-**Inside the library, nothing is concurrent, and the owner thread enforces it.** All COM work is
-serialised onto one MTA thread; projected objects never leave it; agility is not assumed. This is
-existing, tested behaviour and is not changed here.
+Inside the library, COM work is serialized on one owned MTA thread. Projected objects never leave it.
+The activation selector uses the factory's existing synchronization boundary so one caller resolves
+the mode and later callers observe the same cached choice.
 
-**Inside a test run, nothing is concurrent, and the test framework's default enforces it.** NUnit does
-not parallelise without an assembly-level opt-in, and this assembly has none. That default is now
-load-bearing rather than incidental: each live fixture constructs its own client and therefore its own
-owner thread and its own activation. Enabling parallelism would activate several COM contexts at once,
-each with an independent activation-mode cache, in an out-of-proc server whose behaviour under that
-pattern has never been observed. **Turning it on is a design change, not a speed tweak.**
+Inside a live test process, tests remain non-parallel. Each fixture currently owns a client/context;
+parallel opt-in would activate several independent COM contexts against one out-of-proc server and is
+a contract change, not a test-speed optimization.
 
-**Across gates, ordering is by artifact dependency.** The live packed-consumer smoke test cannot run
-before the package it consumes exists. The coverage floor is evaluated against the report produced by
-the run that just executed — and, per the *Coverage floor* invariant, that run must be the one that
-excluded the live tests. If live tests and unit tests ever share a coverage collector, the ordering
-stops being a scheduling detail and becomes a correctness bug in the number.
+Across gates, the packed-consumer smoke runs only after its package and consumer construction exist.
+Coverage is evaluated only after its unit-only report exists. Live execution never contributes to
+that report. Several targets requested in one build invocation share dependencies once, but sharing a
+dependency never merges their outcomes or risk classes.
 
-Requesting several targets in one invocation is what keeps shared dependencies from re-running; this
-is an existing property of the build tool, documented in `CLAUDE.md` § *Commands*, and the reason
-gates are composed into one invocation rather than chained across several.
-
-**Across workflow runs, publishing is idempotent by flag, not by design.** Two runs pushing the same
-version is benign. Two runs pushing *different* versions derived from different refs is not ordered
-by anything, which is a further reason the release decision belongs to the tag rather than to the run.
+Across workflow runs, two publications of the same version are idempotent at the push step. Two
+different versions derived from different refs are not ordered by the build system; the pushed tag
+therefore remains the release decision. Feed confirmation follows publishing and cannot be inferred
+from it.
 
 ## Alternatives considered
 
-**Where live verification runs.** *Chosen:* a live path separate from the required hermetic check,
-with its trigger and blocking status decided as policy. *Rejected:* folding the live tests into the
-existing required check — it makes every merge in this repository depend on Microsoft's catalog, a
-runner's WinGet installation, and network reach, and the first outage teaches everyone to merge past
-a red check. *Rejected:* keeping them local-only and recording why under the brief's "or record why"
-branch — the spike removed the blocker that branch exists for, and taking it now would write down a
-false reason permanently.
+**Live status policy and invocation.** *Chosen:* required machine-state and packed-consumer checks,
+plus a separately failing but non-required catalog status; stable risk metadata; count assertions;
+and `IntegrationTest` retained only as a local aggregate. *Rejected:* one all-live required status,
+because an upstream catalog edit would block unrelated merges. *Rejected:* making all live checks
+advisory, because that recreates a suite nobody must keep green. *Rejected:* fixture-name filters,
+because the existing under-selection proved they can report a clean partial run.
 
-**How the packed consumer is smoke-tested.** *Chosen:* a separate gate reusing the existing
-consumer-construction step. *Rejected:* adding a live call to the hermetic package-contract gate —
-it is currently executable on any Windows machine with an SDK and no WinGet, and that portability is
-a real property to spend rather than lose. *Rejected:* a new standalone consumer project checked into
-the repository — it would be a second definition of "what a packed consumer looks like", free to
-disagree with the one the contract gate already builds, which is the duplication failure this
-repository's own rules forbid.
+**Packed-consumer execution.** *Chosen:* a separate target reusing consumer construction. *Rejected:*
+adding live COM to the hermetic package-contract gate, because it spends determinism and portability.
+*Rejected:* a checked-in second consumer project, because it would duplicate the existing definition
+of a packed consumer.
 
-**How the mappers become testable.** *Chosen:* a boundary that guarantees no path from a mapper to
-activation, with visibility widened through the existing internals grant. *Rejected:* testing them
-through the public API against a mocked client — the mappers translate projection types, so a mock
-that avoids the projection tests the mock. *Rejected:* wrapping the projection behind an abstraction
-so it can be faked — that is a large refactor of settled, working code to serve a test, and the
-projection's enums are already inert data that need no faking.
+**Translation seam.** *Chosen:* one dedicated internal pure mapper used by both clients and tests.
+*Rejected:* widening helpers in place across two client types, because ownership and the no-activation
+boundary would remain split. *Rejected:* mocking the projection, because a fake projection tests the
+fake. *Rejected:* adding a public mapper interface, because no consumer needs it and new public surface
+is a binding non-goal.
 
-**What the coverage gate measures.** *Chosen:* one global line floor over the library, ratcheting up,
-plus branch coverage reported but not gated initially. *Rejected:* per-class or per-namespace floors —
-they encode the current shape of the code and must be edited by every refactor, so they rot into
-noise. *Rejected:* excluding the COM-orchestration paths from measurement to make the number look
-better — an exclusion makes the number stop describing the library, and the brief's entire complaint
-is about numbers and claims that no longer describe the thing.
+**Activation-selection seam.** *Chosen:* extract only the mode-selection state machine and inject one
+attempt callback from the factory. *Rejected:* injecting fake projected `PackageManager` objects,
+because constructing or faking those types crosses back into the integration boundary. *Rejected:*
+making CLSID/IID tables mutable for tests, because that tests raw activation configuration rather than
+selection. *Rejected:* reflection over private cache state, because it couples tests to representation
+without controlling failures.
 
-**`PackageOperationStatus.Cancelled`.** *Chosen:* produce it. The pinned projection metadata was read
-directly: **no result-status enum in the WinGet contract has any cancelled member**, so no mapper over
-those enums can ever reach it — but WinGet does have a cancelled-by-user error code, and this library
-already declares that constant. Cancellation is therefore a real outcome that arrives as an error
-code on an otherwise-failed result, not as a status. *Rejected:* deleting the member — it names a real
-outcome the library can observe, and deleting it would be a breaking change to an already-published
-stable version for no gain. *Rejected:* keeping it unreachable and pinning that with a test — a test
-asserting that a public value can never occur documents a defect instead of fixing one.
+**Coverage declaration.** *Chosen:* one build-local decimal percentage with one-decimal precision and
+an exact integer-ratio comparison. *Rejected:* a command-line parameter, because a green run could
+lower its own contract. *Rejected:* a separate data file, because one scalar does not justify a schema
+and reader. *Rejected:* comparing rounded display percentages, because rounding can move a boundary.
 
-**Where narrowed claims live.** *Chosen:* one canonical statement per subject, referenced elsewhere,
-with a mechanical drift check in the existing documentation gate. *Rejected:* editing all five copies
-and relying on care — that is precisely the process that produced five copies saying different things.
-*Rejected:* generating the claim text from evidence records — a generator, a schema and a template for
-four sentences, and the docs redesign is a binding non-goal.
+**Version-member absence.** *Chosen:* only `InvalidCastException` with HRESULT `0x80004002` means
+unavailable. *Rejected:* every `COMException`, because unrelated interop failures would become null.
+*Rejected:* message matching, because localized text is not an error contract. *Rejected:* removing
+the guard, because old runtimes genuinely may omit the interface. *Rejected:* `winget --version`
+fallback, because it changes the meaning from COM-backend version and broadens the CLI exception.
+
+**Canonical claims.** *Chosen:* package-facing architecture and managed-shape claims in the README,
+hosting caveats in Troubleshooting, and execution coverage in Testing. *Rejected:* making the
+specification canonical for consumer support, because package consumers should not need an internal
+design document to interpret installation support. *Rejected:* generating claim prose from evidence,
+because a generator and schema for four statements exceed the problem and approach the excluded docs
+redesign.
+
+**Cancellation result.** *Chosen:* produce `PackageOperationStatus.Cancelled` from WinGet's
+cancelled-by-user HRESULT while retaining the HRESULT. *Rejected:* deleting the public value, because
+it names a real outcome and removal is breaking. *Rejected:* merging it with caller-token
+cancellation, because returned terminal state and thrown cancellation have different caller actions.
 
 ## Open questions
 
-**1. The release identity is already spent, and the definition of done assumes it is not.**
-The brief states that no stable version has been tagged and that the publish targets have never run.
-The repository says otherwise: an annotated `v0.1.0` tag exists and is pushed, pointing at commit
-`c2cc157` from 2026-07-22; the tag push ran the build workflow to success, and within it the GitHub
-Packages release step succeeded. Untagged commits on `main` now publish `0.1.1-<n>`, not the
-`0.1.0-<n>` that `GitVersion.yml` and `SPECIFICATION.md` §11 both still describe. So the published
-stable `0.1.0` is the code as it stood before the COM-context hardening, the package-consumer
-targets and the documentation migration — before nearly everything the brief wants proven.
-
-Two of that criterion's three parts were already satisfied, at the wrong commit, and a tag is
-published state this repository does not rewrite. **Answered 2026-08-20: the proven release is cut as
-`v0.2.0`**, and `design/00-brief.md` has been updated to say so. `v0.1.0` stays where it is, legible
-as history rather than quietly replaced, and no published ref is rewritten. `PublishNuGet` genuinely
-has never run; that part of the criterion stands as written.
-
-One limit on the evidence behind this: what the feed actually contains was not inspected, because the
-available token lacks the scope to read package versions. The publish *step* is recorded as
-successful; the artifact it produced was not fetched back.
-
-**2. Should the live gate block a merge?** The catalog-dependent and machine-state halves of the
-live suite have different risk profiles, and the design keeps them separable for that reason — but
-whether either blocks a pull request is a policy call about what a red check should mean here. I
-recommend requiring the machine-state half and leaving the catalog-dependent half advisory but
-visible. Left unanswered, the live gate defaults back to the thing the brief is complaining about:
-a suite nobody is obliged to look at.
-
-**3. If the version property turns out to be an upstream contract gap rather than a defect here,
-what does the first definition-of-done item become?** The diagnostic that distinguishes the two is
-specified above and is cheap. If it comes back "unreachable through the activation mode this library
-uses on that environment", the criterion is satisfiable and this is a bug to fix. If it comes back
-"WinGet does not serve this property out-of-proc at all", then no packed-consumer smoke test can ever
-make it return non-null on a hosted runner, and the criterion needs a different observable — a live
-call that proves the COM path works without depending on that one property. I am not rewording a
-definition-of-done item on a hypothesis; the question is recorded so it is answered by measurement.
+No maintainer policy question remains in this design revision. One empirical stop condition remains:
+after the version guard is narrowed, does the GitHub-hosted Windows x64 runner return a non-null
+version, return `null` specifically through `E_NOINTERFACE`, or expose an unrelated failure that the
+old blanket catch hid? The required packed-consumer status is not enabled in branch protection until
+that execution is recorded. The result may force a brief amendment or environment decision; it does
+not license an implementation slice to choose either silently.
