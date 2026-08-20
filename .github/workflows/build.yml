@@ -61,6 +61,7 @@ jobs:
           dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
 
+      # verification: true
       - name: Test, coverage, architecture, and package
         # One Nuke invocation for all requested targets. Nuke de-duplicates target execution
         # only WITHIN a single invocation, so Test and Coverage must be requested together —
