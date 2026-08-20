@@ -10,6 +10,12 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-20 — Install the two bounded session hooks
+Context: an attended `/install` found PowerShell 7 available and no existing `SessionEnd` or `UserPromptSubmit` hooks. The target's `.claude/settings.local.json` contains only permissions, so neither event has an existing hook to preserve.
+Chosen: create `.claude/settings.json` containing only the kit's `Measure-Session.ps1` hooks: `-Hook` on `SessionEnd` and `-Watch` on `UserPromptSubmit`.
+Rejected: Omitting both hooks — rejected because it leaves the installed measurement and context-warning capability inactive despite both events being available; appending to `.claude/settings.local.json` or adding any other settings — rejected because that file and every setting outside these two hook events remain target-owned.
+Reversibility: cheap — remove `.claude/settings.json` if these are its only contents, or remove the two event keys if the target later adds unrelated settings.
+
 ### 2026-08-19 — First kit install: `AGENTS.md`/`CLAUDE.md` direction kept inverted
 Context: `/install-all` first-installed the agent kit into a repo where `CLAUDE.md` already held real, non-overlapping project guidance (build commands, architecture, constraints, retry policy, CI/releasing, known gaps) and `AGENTS.md` was absent. `INSTALL.md`'s rule for "one holds content, the other absent" is to keep the existing direction as the smaller change.
 Chosen: `CLAUDE.md` remains the content-holding contract file — the kit's `AGENTS.md` sections were merged into it as a baseline, with the repository's own pre-existing content preserved verbatim underneath a "Repository specifics" heading. `AGENTS.md` was installed as a one-line pointer to `CLAUDE.md` (direction reversed from the kit's own default of `AGENTS.md` holding content and `CLAUDE.md` pointing to it).
