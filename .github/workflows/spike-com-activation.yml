@@ -79,10 +79,15 @@ jobs:
       - name: Run the 12 [Explicit] integration tests
         id: integration
         continue-on-error: true
+        # The 12 tests live in THREE fixtures in one file — WinGetClientIntegrationTests (8),
+        # WinGetSourceClientIntegrationTests (2), WinGetCliClientIntegrationTests (2). Filtering
+        # on the first fixture's name (as that file's own doc comment suggests) silently runs
+        # only 8 of them and still reports a clean "Total: 8". This is CLAUDE.md's documented
+        # filter, and it is the one that selects all three fixtures.
         run: >
           dotnet test SubZeroDev.WinGet.sln
           --configuration Release
-          --filter "FullyQualifiedName~WinGetClientIntegrationTests"
+          --filter "FullyQualifiedName~IntegrationTests"
           --logger "trx;LogFileName=integration.trx"
           --results-directory artifacts/spike
 
@@ -110,6 +115,12 @@ jobs:
           $c = $x.TestRun.ResultSummary.Counters
           "Total $($c.total), passed $($c.passed), failed $($c.failed)." |
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          # A filter that selects fewer tests than expected still reports a clean total, so the
+          # count is asserted rather than trusted — that is how the first run reported 8/8.
+          if ([int]$c.total -ne 12) {
+            "> **Only $($c.total) of the expected 12 tests were selected.** The filter is not matching every fixture." |
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          }
           '', '| Test | Outcome | Error |', '|---|---|---|' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
           foreach ($r in $x.TestRun.Results.UnitTestResult) {
             $msg = ($r.Output.ErrorInfo.Message -replace '\s+', ' ') -replace '\|', '\'
