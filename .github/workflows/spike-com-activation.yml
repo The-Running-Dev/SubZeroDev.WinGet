@@ -1,0 +1,137 @@
+name: Spike — COM activation on hosted CI
+
+# THROWAWAY. This workflow exists to answer one question that four items in
+# design/00-brief.md's definition of done all depend on: can the WinGet COM server be
+# activated at all from a GitHub-hosted windows-latest session? Delete it (or promote it
+# into build.yml) once the answer is recorded in design/90-decisions.md.
+#
+# It deliberately runs the 12 [Explicit] integration tests rather than a bespoke probe, so
+# the result is evidence about the tests the brief actually names. The per-test outcomes
+# distinguish the two failure shapes that matter:
+#   - every test failing with REGDB_E_CLASSNOTREG (0x80040154) => the COM server cannot
+#     activate here, and the brief's "or record why" branch is the only one available;
+#   - activation passing while catalog assertions fail => COM works and the remaining
+#     problem is source configuration or network, which is solvable.
+
+on:
+  push:
+    branches: ['spike/**']
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # 8.0.x only: this job never invokes Nuke, so the net10 build tooling SDK is
+          # not needed. `dotnet test` drives the net8 test project directly.
+          dotnet-version: 8.0.x
+
+      # Diagnostics run before the tests and must never fail the job — a missing
+      # App Installer package IS the finding, not an error in collecting it.
+      - name: Probe the runner's WinGet state
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          function Report {
+            param([string] $Label, [scriptblock] $Block)
+            $text = try { (& $Block 2>&1 | Out-String).Trim() } catch { "ERROR: $_" }
+            if ([string]::IsNullOrWhiteSpace($text)) { $text = '(no output)' }
+            "### $Label", '```', $text, '```' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+            Write-Host "--- $Label`n$text"
+          }
+
+          '## Runner WinGet state' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+          Report 'winget.exe on PATH' {
+            $cmd = Get-Command winget -ErrorAction SilentlyContinue
+            if ($cmd) { $cmd.Source } else { 'not found' }
+          }
+          Report 'winget --version' { winget --version }
+          Report 'App Installer package' {
+            Get-AppxPackage Microsoft.DesktopAppInstaller | Format-List Name, Version, InstallLocation
+          }
+          Report 'winget source list' { winget source list }
+          # Each fact is its own Report so that one unavailable API cannot swallow the rest —
+          # whether the runner session is interactive is one of the candidate explanations if
+          # activation fails, so it must survive any neighbouring failure.
+          Report 'Session identity' { "User: $env:USERNAME"; "Interactive: $([Environment]::UserInteractive)" }
+          Report 'OS version' { [Environment]::OSVersion.Version.ToString() }
+          # The out-of-proc CLSIDs WinGetFactory activates, copied from its own table in
+          # SubZeroDev.WinGet/Com/WinGetFactory.cs. Registry presence is what separates
+          # "the class is not registered here" from "registered but activation was refused".
+          Report 'Production CLSID registration' {
+            @{
+              PackageManager     = 'C53A4F16-787E-42A4-B304-29EFFB4BF597'
+              FindPackagesOptions = '572DED96-9C60-4526-8F92-EE7D91D38C1A'
+            }.GetEnumerator() | ForEach-Object {
+              "$($_.Key) {$($_.Value)}: registered = " +
+                (Test-Path "Registry::HKEY_CLASSES_ROOT\CLSID\{$($_.Value)}")
+            }
+          }
+
+      - name: Run the 12 [Explicit] integration tests
+        id: integration
+        continue-on-error: true
+        # The 12 tests live in THREE fixtures in one file — WinGetClientIntegrationTests (8),
+        # WinGetSourceClientIntegrationTests (2), WinGetCliClientIntegrationTests (2). Filtering
+        # on the first fixture's name (as that file's own doc comment suggests) silently runs
+        # only 8 of them and still reports a clean "Total: 8". This is CLAUDE.md's documented
+        # filter, and it is the one that selects all three fixtures.
+        run: >
+          dotnet test SubZeroDev.WinGet.sln
+          --configuration Release
+          --filter "FullyQualifiedName~IntegrationTests"
+          --logger "trx;LogFileName=integration.trx"
+          --results-directory artifacts/spike
+
+      - name: Summarise the run
+        if: always()
+        shell: pwsh
+        # The step outcome arrives as an environment variable rather than a `${{ }}`
+        # interpolation into the script body, so the script stays valid PowerShell that
+        # can be parse-checked outside Actions.
+        env:
+          INTEGRATION_OUTCOME: ${{ steps.integration.outcome }}
+        run: |
+          '## Integration test outcome' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          "Test step result: **$env:INTEGRATION_OUTCOME**" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+          $trx = Get-ChildItem artifacts/spike -Filter *.trx -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $trx) {
+            'No .trx was produced — the run never reached test execution. See the step log above.' |
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY
+            return
+          }
+
+          $x = [xml](Get-Content $trx.FullName)
+          $c = $x.TestRun.ResultSummary.Counters
+          "Total $($c.total), passed $($c.passed), failed $($c.failed)." |
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          # A filter that selects fewer tests than expected still reports a clean total, so the
+          # count is asserted rather than trusted — that is how the first run reported 8/8.
+          if ([int]$c.total -ne 12) {
+            "> **Only $($c.total) of the expected 12 tests were selected.** The filter is not matching every fixture." |
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          }
+          '', '| Test | Outcome | Error |', '|---|---|---|' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          foreach ($r in $x.TestRun.Results.UnitTestResult) {
+            $msg = ($r.Output.ErrorInfo.Message -replace '\s+', ' ') -replace '\|', '\'
+            if ($msg.Length -gt 200) { $msg = $msg.Substring(0, 200) + '...' }
+            "| $($r.testName) | $($r.outcome) | $msg |" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spike-integration-results
+          path: artifacts/spike
+          if-no-files-found: warn
