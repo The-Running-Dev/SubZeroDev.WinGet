@@ -9,7 +9,7 @@ library API.
 
 | Id | Assertion | Owner | Enforcement |
 |---|---|---|---|
-| C1 | For each claim subject — consumer architecture, managed-assembly package shape, hosting context, and live operation coverage — exactly one authored Markdown statement is canonical. Every other mention references that statement rather than restating its assertion or strength. | Documentation | Planned code enforcement in the documentation gate. |
+| C1 | For each claim subject — consumer architecture, managed-assembly package shape, hosting context, live operation coverage, and the runtime version floor — exactly one authored Markdown statement is canonical. Every other mention references that statement rather than restating its assertion or strength. | Documentation | Planned code enforcement in the documentation gate. |
 | C2 | A claim's strength is exactly one of `executed`, `contract-checked`, or `unvalidated`, and is justified by referenced evidence from an environment capable of licensing that strength. Wording alone never raises it. | Documentation | Planned code enforcement in the documentation gate; the evidence-to-strength judgement remains reviewable. |
 | C3 | Evidence is identified by gate, environment, and commit. It records outcome, run identity, asserted facts, and explicit non-assertions. A passing subset licenses only the claims asserted by that subset. | Live-verification workflow | Planned workflow and artifact enforcement. |
 | C4 | Environment facts are observed, not assumed. Live evidence records OS, architecture, WinGet version, interactivity, elevation state, configured-source state, and remote-catalog reachability where each fact affects interpretation. | Live-verification workflow | Planned workflow enforcement. |
@@ -31,7 +31,9 @@ library API.
 | C20 | ARM64 is described only as build and package-contract support until ARM64 hardware evidence exists. Elevation, Windows Service, SYSTEM hosting, and mutating-operation live coverage remain `unvalidated`. | Documentation | Planned documentation-gate enforcement. |
 | C21 | A release is identified by its pushed tag and exact commit. `v0.2.0` is the next stable release; `v0.1.0` is not moved. A publishing run is successful only after the intended version is positively confirmed on each intended feed. | Release workflow | Tag immutability is repository policy; positive feed confirmation is planned. |
 | C22 | No work governed by this contract adds public library surface, changes the service/client/COM dependency direction, or broadens the documented CLI-shim exception beyond pins and export/import. | Product | Review-enforced; regression enforcement is planned. |
-| C23 | The machine-state live status is not made required until the narrowed version-member classifier has run on the GitHub-hosted Windows x64 environment and `PackedConsumerSmokeTest` has observed a non-null version. A `null` result or unrelated failure stops that rollout; it does not license a fallback observable, weaker assertion, or required status. | Live-verification workflow | Planned workflow and branch-protection sequencing. |
+| C23 | The machine-state live status is not made required until the narrowed version-member classifier has run on the GitHub-hosted Windows x64 environment constituted by C24 and `PackedConsumerSmokeTest` has observed a non-null version. A `null` result or unrelated failure stops that rollout; it does not license a fallback observable, weaker assertion, or required status. | Live-verification workflow | Planned workflow and branch-protection sequencing. |
+| C24 | The hosted live-verification jobs constitute their own WinGet runtime: they install one explicitly pinned build — the version the library's `Microsoft.WindowsPackageManager.ComInterop` reference pins — and record the App Installer version observed both before and after that install. A floating latest is not a pinned build, because C4's observed environment fact must be reproducible. Constituting the runtime is not a fallback observable: the assertion under C23 remains a non-null `GetWinGetVersion` from the packed consumer. | Live-verification workflow | Planned workflow enforcement. |
+| C25 | `GetWinGetVersion` requires a runtime exposing WinGet COM contract 13, first declared in WinGet 1.12; below that it returns `null` under C16 rather than failing. That floor is a Claim with subject `runtime-version-floor` and is scoped to this member alone — no library-wide minimum WinGet version is asserted, because live evidence exists of the rest of the surface working below it. | Documentation | Planned documentation-gate enforcement. |
 
 Only rows whose enforcement says **enforced** may be trusted without inspecting the planned slice that
 materialises the rest. A green workflow before those slices land is not evidence that a planned row is
@@ -54,8 +56,8 @@ cancelled mapping compares the `HResult` carried by the projection's `Exception`
 
 No runtime type. A Claim is an authored Markdown record with:
 
-- `Subject`: one of `consumer-architecture`, `managed-assembly-shape`, `hosting-context`, or
-  `operation-coverage`;
+- `Subject`: one of `consumer-architecture`, `managed-assembly-shape`, `hosting-context`,
+  `operation-coverage`, or `runtime-version-floor`;
 - `Assertion`: the consumer-facing statement;
 - `Strength`: one of `executed`, `contract-checked`, or `unvalidated`;
 - `Evidence`: zero or more evidence references; `executed` and `contract-checked` require sufficient
