@@ -141,8 +141,8 @@ jobs:
 
           @(
             '## Packed consumer smoke evidence',
-            "Commit: `$env:GITHUB_SHA`",
-            "Run: `$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)`",
+            "Commit: $env:GITHUB_SHA",
+            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
             "OS: $([Environment]::OSVersion.VersionString)",
             "Architecture: $([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)",
             "Interactive: $([Environment]::UserInteractive)",

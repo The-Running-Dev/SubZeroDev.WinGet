@@ -394,6 +394,8 @@ static class PackageVerification
             """);
         File.WriteAllText(directory / "Program.cs", runsWinGetVersion
             ? """
+              using System;
+
               using SubZeroDev.WinGet;
 
               using var client = new WinGetClient();
