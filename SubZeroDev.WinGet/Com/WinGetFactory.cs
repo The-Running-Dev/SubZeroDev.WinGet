@@ -16,14 +16,6 @@ namespace SubZeroDev.WinGet.Com;
 /// </summary>
 internal sealed class WinGetFactory
 {
-    private enum ActivationMode
-    {
-        Unresolved,
-        Projection,
-        LocalServer,
-        LocalServerLowerTrust
-    }
-
     private const uint ClsctxLocalServer = 0x4;
 
     private const uint ClsctxAllowLowerTrustRegistration = 0x4000000;
@@ -69,9 +61,7 @@ internal sealed class WinGetFactory
         [typeof(EditPackageCatalogOptions)] = () => new EditPackageCatalogOptions()
     };
 
-    private readonly object _gate = new();
-
-    private ActivationMode _mode = ActivationMode.Unresolved;
+    private readonly WinGetActivationModeSelector _activationModeSelector = new();
 
     public PackageManager CreatePackageManager() => Create<PackageManager>();
 
@@ -97,48 +87,19 @@ internal sealed class WinGetFactory
 
     private T Create<T>() where T : class
     {
-        lock (_gate)
-        {
-            if (_mode != ActivationMode.Unresolved)
-            {
-                return CreateWithMode<T>(_mode);
-            }
-
-            var failures = new List<Exception>();
-
-            foreach (var mode in new[] { ActivationMode.Projection, ActivationMode.LocalServer, ActivationMode.LocalServerLowerTrust })
-            {
-                try
-                {
-                    var instance = CreateWithMode<T>(mode);
-                    _mode = mode;
-
-                    return instance;
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
-            }
-
-            throw new WinGetUnavailableException(
-                "Failed to activate the WinGet COM server. Ensure WinGet (App Installer) is installed and up to date " +
-                "on this machine. If running elevated or as a Windows service, the COM server may not be registered " +
-                "for this context.",
-                new AggregateException(failures));
-        }
+        return _activationModeSelector.Create(CreateWithMode<T>);
     }
 
-    private static T CreateWithMode<T>(ActivationMode mode) where T : class
+    private static T CreateWithMode<T>(WinGetActivationMode mode) where T : class
     {
-        if (mode == ActivationMode.Projection)
+        if (mode == WinGetActivationMode.Projection)
         {
             return (T)ProjectionActivators[typeof(T)]();
         }
 
         var clsctx = ClsctxLocalServer;
 
-        if (mode == ActivationMode.LocalServerLowerTrust)
+        if (mode == WinGetActivationMode.LocalServerLowerTrust)
         {
             clsctx |= ClsctxAllowLowerTrustRegistration;
         }
