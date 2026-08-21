@@ -25,10 +25,12 @@
       "type": "string",
       "enum": [
         "ArchitectureTest",
+        "CatalogIntegrationTest",
         "Clean",
         "Compile",
         "Coverage",
         "IntegrationTest",
+        "MachineStateTest",
         "Pack",
         "PackageTest",
         "PackedConsumerSmokeTest",

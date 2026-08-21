@@ -19,6 +19,7 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.ReportGenerator;
 using Nuke.Common.Utilities.Collections;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
@@ -62,6 +63,48 @@ class Build : NukeBuild
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
     AbsolutePath TestResultsDirectory => RootDirectory / "TestResults";
     AbsolutePath CoverageDirectory => RootDirectory / "coverage";
+
+    const string MachineStateCategory = "MachineState";
+    const string CatalogIntegrationCategory = "CatalogIntegration";
+
+    void AssertLiveTestCount(string category, int expectedCount)
+    {
+        var startInfo = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = RootDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+        startInfo.ArgumentList.Add("test");
+        startInfo.ArgumentList.Add(Solution);
+        startInfo.ArgumentList.Add("--configuration");
+        startInfo.ArgumentList.Add(Configuration);
+        startInfo.ArgumentList.Add("--no-restore");
+        startInfo.ArgumentList.Add("--no-build");
+        startInfo.ArgumentList.Add("--list-tests");
+        startInfo.ArgumentList.Add("--filter");
+        startInfo.ArgumentList.Add($"Category={category}");
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to list live tests.");
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"Unable to list {category} tests before execution:{Environment.NewLine}{output}{error}");
+        }
+
+        var selectedCount = output.Split(Environment.NewLine)
+            .Count(line => line.StartsWith("    SubZeroDev.WinGet.Tests.", StringComparison.Ordinal));
+        if (selectedCount != expectedCount)
+        {
+            throw new InvalidOperationException(
+                $"{category} must select exactly {expectedCount} live tests before execution; selected {selectedCount}.");
+        }
+    }
 
     // Local-dev convenience only - CI always starts from a fresh checkout, so this is
     // never part of the target chains the workflow invokes.
@@ -168,17 +211,36 @@ class Build : NukeBuild
             .SetResultsDirectory(TestResultsDirectory)
             .SetProcessAdditionalArguments("--collect:\"XPlat Code Coverage\"")));
 
-    // Opt-in only, never part of the default CI target chain - mirrors the
-    // `--filter "FullyQualifiedName~IntegrationTests"` command documented in the README
-    // and docs/testing.md. Needs a real WinGet install on the machine that runs it.
+    // Opt-in only, never part of the default CI target chain. It composes both live risk
+    // classes locally after their count guards, and needs a real WinGet install.
     Target IntegrationTest => _ => _
+        .DependsOn(MachineStateTest, CatalogIntegrationTest);
+
+    Target MachineStateTest => _ => _
         .DependsOn(Compile)
-        .Executes(() => DotNetTest(s => s
-            .SetProjectFile(Solution)
-            .SetConfiguration(Configuration)
-            .EnableNoRestore()
-            .EnableNoBuild()
-            .SetFilter("FullyQualifiedName~IntegrationTests")));
+        .Executes(() =>
+        {
+            AssertLiveTestCount(MachineStateCategory, 7);
+            DotNetTest(s => s
+                .SetProjectFile(Solution)
+                .SetConfiguration(Configuration)
+                .EnableNoRestore()
+                .EnableNoBuild()
+                .SetFilter($"Category={MachineStateCategory}"));
+        });
+
+    Target CatalogIntegrationTest => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            AssertLiveTestCount(CatalogIntegrationCategory, 5);
+            DotNetTest(s => s
+                .SetProjectFile(Solution)
+                .SetConfiguration(Configuration)
+                .EnableNoRestore()
+                .EnableNoBuild()
+                .SetFilter($"Category={CatalogIntegrationCategory}"));
+        });
 
     Target Coverage => _ => _
         .DependsOn(Test)
