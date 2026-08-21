@@ -210,6 +210,53 @@ public class PackageManagementServiceTests
     }
 
     [Test]
+    public async Task Install_WhenClientReturnsCancelled_ReturnsResultUnchanged_WithoutRetrying()
+    {
+        var cancelled = PackageOperationResult.Failure(
+            PackageOperationStatus.Cancelled, "InstallError", WinGetErrorCodes.InstallCancelledByUser);
+
+        _winGetClient
+            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cancelled);
+
+        var result = await _service.Install("id");
+
+        result.Should().Be(cancelled);
+        _winGetClient.Verify(c => c.Install("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task Install_WhenClientCancelsThroughCallerToken_PropagatesOperationCanceledException()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        _winGetClient
+            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, cancellation.Token))
+            .ThrowsAsync(new OperationCanceledException(cancellation.Token));
+
+        var act = async () => await _service.Install("id", cancellationToken: cancellation.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Test]
+    public async Task Update_WhenClientReturnsCancelled_ReturnsResultUnchanged_WithoutRetrying()
+    {
+        var cancelled = PackageOperationResult.Failure(
+            PackageOperationStatus.Cancelled, "InstallError", WinGetErrorCodes.InstallCancelledByUser);
+
+        _winGetClient
+            .Setup(c => c.Upgrade("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cancelled);
+
+        var result = await _service.Update("id");
+
+        result.Should().Be(cancelled);
+        _winGetClient.Verify(c => c.Upgrade("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
     public async Task Update_DelegatesToClientUpgrade_AndReturnsResult()
     {
         var expected = PackageOperationResult.Success(rebootRequired: true);
