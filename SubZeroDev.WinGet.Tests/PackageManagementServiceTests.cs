@@ -228,11 +228,14 @@ public class PackageManagementServiceTests
     [Test]
     public async Task Install_WhenClientCancelsThroughCallerToken_PropagatesOperationCanceledException()
     {
-        _winGetClient
-            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new OperationCanceledException());
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
 
-        var act = async () => await _service.Install("id");
+        _winGetClient
+            .Setup(c => c.Install("id", It.IsAny<InstallRequest>(), null, cancellation.Token))
+            .ThrowsAsync(new OperationCanceledException(cancellation.Token));
+
+        var act = async () => await _service.Install("id", cancellationToken: cancellation.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }

@@ -650,7 +650,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
     internal static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode)
     {
-        if (extendedError?.HResult == WinGetErrorCodes.InstallCancelledByUser)
+        if (status != PackageOperationStatus.Ok && extendedError?.HResult == WinGetErrorCodes.InstallCancelledByUser)
         {
             status = PackageOperationStatus.Cancelled;
         }

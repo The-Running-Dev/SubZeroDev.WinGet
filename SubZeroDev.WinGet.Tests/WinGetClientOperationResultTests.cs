@@ -27,15 +27,14 @@ public class WinGetClientOperationResultTests
         result.ExtendedErrorCode.Should().Be(WinGetErrorCodes.InstallCancelledByUser);
     }
 
-    [TestCase((int)PackageOperationStatus.InstallError)]
-    [TestCase((int)PackageOperationStatus.BlockedByPolicy)]
-    [TestCase((int)PackageOperationStatus.CatalogError)]
-    public void ToOperationResult_WithAnyOtherHResult_RetainsMappedStatusAndFailureData(int statusValue)
+    [TestCase(PackageOperationStatus.InstallError)]
+    [TestCase(PackageOperationStatus.BlockedByPolicy)]
+    [TestCase(PackageOperationStatus.CatalogError)]
+    public void ToOperationResult_WithAnyOtherHResult_RetainsMappedStatusAndFailureData(PackageOperationStatus status)
     {
-        var status = (PackageOperationStatus)statusValue;
         var extendedError = new InvalidOperationException("failed")
         {
-            HResult = unchecked((int)0x8A150019)
+            HResult = WinGetErrorCodes.CommandRequiresAdmin
         };
 
         var result = WinGetClient.ToOperationResult(
@@ -47,7 +46,7 @@ public class WinGetClientOperationResultTests
 
         result.Succeeded.Should().BeFalse();
         result.Status.Should().Be(status);
-        result.ExtendedErrorCode.Should().Be(unchecked((int)0x8A150019));
+        result.ExtendedErrorCode.Should().Be(WinGetErrorCodes.CommandRequiresAdmin);
         result.ErrorMessage.Should().Be("SomeStatus");
         result.InstallerErrorCode.Should().Be((uint)42);
     }
@@ -69,15 +68,33 @@ public class WinGetClientOperationResultTests
     [Test]
     public void ToOperationResult_WhenStatusIsOk_ReturnsSuccessRegardlessOfExtendedError()
     {
+        // C15 and S3.1 scope the cancelled classification to a *failed* operation, so an Ok
+        // status stays successful even when an extended error carries the cancelled HRESULT —
+        // dropping the guard would also discard RebootRequired, which Failure never carries.
+        var extendedError = new InvalidOperationException("cancelled")
+        {
+            HResult = WinGetErrorCodes.InstallCancelledByUser
+        };
+
         var result = WinGetClient.ToOperationResult(
+            PackageOperationStatus.Ok,
+            rebootRequired: true,
+            extendedError,
+            statusDescription: "Ok",
+            installerErrorCode: null);
+
+        result.Succeeded.Should().BeTrue();
+        result.Status.Should().Be(PackageOperationStatus.Ok);
+        result.RebootRequired.Should().BeTrue();
+
+        var withoutExtendedError = WinGetClient.ToOperationResult(
             PackageOperationStatus.Ok,
             rebootRequired: true,
             extendedError: null,
             statusDescription: "Ok",
             installerErrorCode: null);
 
-        result.Succeeded.Should().BeTrue();
-        result.RebootRequired.Should().BeTrue();
+        withoutExtendedError.Should().Be(result);
     }
 
     [Test]
