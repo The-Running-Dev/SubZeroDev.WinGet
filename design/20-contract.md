@@ -181,13 +181,12 @@ Operation methods keep their existing declarations. When C15 applies they return
 
 ### Internal translation boundary
 
-The operation and request translations materialised in S5 are called directly from
-[`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs). Until the remaining
-scaffold under *Projection mapper* is materialised in S6, the still-private translation declarations
-remain in [`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) (`ToPackages`, `ToPackageInfo`,
-`ToPackageDetails`, and their `Copy*` helpers) and
-[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). Tests reach the mapper only
-through the existing `InternalsVisibleTo` grant in
+The operation and request translations materialised in S5 are declared in
+[`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs) and called from
+[`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs). Until the remaining scaffold under
+*Projection mapper* is materialised in S6, the still-private translation declarations it lists remain
+in `WinGetClient.cs` and [`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). Tests
+reach the mapper only through the existing `InternalsVisibleTo` grant in
 [`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj); they do not reach it
 through a constructed client, factory, context, or live COM object.
 

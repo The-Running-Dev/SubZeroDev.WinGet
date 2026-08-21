@@ -186,7 +186,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return WinGetProjectionMapper.ToOperationResult(WinGetProjectionMapper.MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
     }
 
     /// <inheritdoc />
@@ -217,7 +219,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return WinGetProjectionMapper.ToOperationResult(WinGetProjectionMapper.MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
     }
 
     /// <inheritdoc />
@@ -256,7 +260,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return WinGetProjectionMapper.ToOperationResult(WinGetProjectionMapper.MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.UninstallerErrorCode);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.UninstallerErrorCode);
     }
 
     /// <inheritdoc />
@@ -318,7 +324,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return WinGetProjectionMapper.ToOperationResult(WinGetProjectionMapper.MapStatus(result.Status), rebootRequired: false, result.ExtendedErrorCode, result.Status.ToString(), installerErrorCode: null);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, rebootRequired: false, result.ExtendedErrorCode, result.Status.ToString(), installerErrorCode: null);
     }
 
     /// <inheritdoc />
@@ -359,7 +367,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return WinGetProjectionMapper.ToOperationResult(WinGetProjectionMapper.MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.RepairerErrorCode);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.RepairerErrorCode);
     }
 
     private async Task<CatalogPackage?> FindById(string packageId, CancellationToken cancellationToken)
