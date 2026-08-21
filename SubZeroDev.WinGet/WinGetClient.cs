@@ -724,7 +724,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
             ReleaseNotesUrl: metadata?.ReleaseNotesUrl,
             InstallationNotes: metadata?.InstallationNotes,
             PurchaseUrl: metadata?.PurchaseUrl,
-            Tags: CopyStrings(metadata?.Tags),
+            Tags: WinGetProjectionMapper.CopyStrings(metadata?.Tags),
             Agreements: CopyAgreements(metadata?.Agreements),
             Documentations: CopyDocumentations(metadata?.Documentations),
             Icons: CopyIcons(metadata?.Icons),
@@ -734,19 +734,6 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
             IsInstalled: installed is not null,
             IsUpdateAvailable: package.IsUpdateAvailable,
             Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
-    }
-
-    private static List<string> CopyStrings(IReadOnlyList<string>? source)
-    {
-        var count = source?.Count ?? 0;
-        var list = new List<string>(count);
-
-        for (var i = 0; i < count; i++)
-        {
-            list.Add(source![i]);
-        }
-
-        return list;
     }
 
     private static List<PackageAgreementInfo> CopyAgreements(IReadOnlyList<PackageAgreement>? source)
