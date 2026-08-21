@@ -148,6 +148,13 @@ class Build : NukeBuild
         .Executes(() => PackageVerification.Run(
             RootDirectory, ArtifactsDirectory, Configuration));
 
+    // Deliberately separate from PackageTest: this consumes the same locally packed package,
+    // but executes its consumer and therefore activates the live WinGet COM server.
+    Target PackedConsumerSmokeTest => _ => _
+        .DependsOn(Pack)
+        .Executes(() => PackageVerification.RunPackedConsumerSmoke(
+            ArtifactsDirectory, Configuration));
+
     // Mirrors the original CI "Test" step exactly: NUnit's [Explicit] attribute already
     // excludes the 12 live integration tests from a plain test run, so no filter is needed.
     Target Test => _ => _

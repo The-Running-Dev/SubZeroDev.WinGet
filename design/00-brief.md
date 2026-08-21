@@ -73,7 +73,10 @@ The binding list. Everything here is out of scope for every agent, permanently, 
 
 Single maintainer. Primary development happens on macOS, where **nothing in this repository builds or
 runs** — the product targets `net8.0-windows10.0.26100`. Validation therefore happens on a Windows
-x64 machine and on GitHub Actions `windows-latest` (x64). No ARM64 hardware exists in the loop.
+x64 machine and on GitHub Actions `windows-latest` (x64). The runner image pins no WinGet
+version and has shipped builds too old to expose parts of the COM surface, so hosted live gates
+install one pinned WinGet build and record it rather than taking whatever the image happens to
+carry. No ARM64 hardware exists in the loop.
 
 The library is consumed in-process by .NET 8+ Windows desktop and console applications. Not a
 service, not multi-tenant, no meaningful data volume. The only concurrency that matters is internal:

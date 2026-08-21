@@ -254,7 +254,7 @@ Touches: `README.md`, `docs/docs/index.md`, `docs/docs/getting-started.md`,
          `build/Test-Documentation.ps1`, documentation-gate tests
 Depends on: S2, S8, S9
 Acceptance:
-  - S10.1 The four claim subjects have exactly the canonical owners assigned by C1, and each canonical
+  - S10.1 The five claim subjects have exactly the canonical owners assigned by C1, and each canonical
     statement names one valid strength plus the evidence sufficient for that strength.
   - S10.2 Windows x64 execution evidence is not presented as ARM64 evidence; ARM64 is stated only as
     build/package-contract support, while elevation, service/SYSTEM hosting, and mutating-operation
@@ -269,6 +269,9 @@ Acceptance:
     homepage, only after every support claim matches evidence produced by the exact referenced run.
   - S10.6 Existing link, anchor, generated-file, warning, and terminology checks retain their current
     behaviour.
+  - S10.7 The `runtime-version-floor` subject has a canonical owner stating that `GetWinGetVersion`
+    requires WinGet 1.12 or newer and returns `null` below it, per C25; no document asserts a
+    library-wide minimum WinGet version.
 Out of scope: the documentation redesign, generated claim manifests, changing routes or information
     architecture, or promoting a claim from wording alone.
 
