@@ -648,8 +648,13 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         progress.Report(new PackageOperationProgress(state, info.RepairCompletionProgress * 100, state.ToString()));
     }
 
-    private static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode)
+    internal static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode)
     {
+        if (extendedError?.HResult == WinGetErrorCodes.InstallCancelledByUser)
+        {
+            status = PackageOperationStatus.Cancelled;
+        }
+
         return status == PackageOperationStatus.Ok
             ? PackageOperationResult.Success(rebootRequired)
             : PackageOperationResult.Failure(status, statusDescription, extendedError?.HResult, installerErrorCode);
