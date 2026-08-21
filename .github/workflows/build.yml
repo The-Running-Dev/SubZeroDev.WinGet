@@ -83,6 +83,75 @@ jobs:
           name: coverage-report
           path: coverage/Cobertura.xml
 
+  # This is intentionally not a required status until C23 has been satisfied by a
+  # successful hosted run. It consumes the freshly packed package, not a project reference.
+  packed-consumer-smoke:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Install Nuke
+        run: |
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Check WinGet prerequisite
+        id: prerequisite
+        shell: pwsh
+        run: |
+          $package = Get-AppxPackage Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue
+          if ($null -eq $package) {
+            throw 'WinGet/App Installer is not installed on this runner.'
+          }
+
+      - name: Run packed consumer smoke test
+        id: smoke
+        shell: pwsh
+        run: |
+          nuke PackedConsumerSmokeTest --configuration Release 2>&1 |
+            Tee-Object -FilePath packed-consumer-smoke.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Record packed-consumer evidence
+        if: always()
+        shell: pwsh
+        env:
+          PREREQUISITE_OUTCOME: ${{ steps.prerequisite.outcome }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+          $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          $version = if (Test-Path packed-consumer-smoke.log) {
+            Select-String -Path packed-consumer-smoke.log -Pattern '^WinGet version:' |
+              Select-Object -Last 1 | ForEach-Object Line
+          }
+
+          @(
+            '## Packed consumer smoke evidence',
+            "Commit: `$env:GITHUB_SHA`",
+            "Run: `$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)`",
+            "OS: $([Environment]::OSVersion.VersionString)",
+            "Architecture: $([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)",
+            "Interactive: $([Environment]::UserInteractive)",
+            "Elevated: $elevated",
+            "WinGet prerequisite: $env:PREREQUISITE_OUTCOME",
+            "Smoke target: $env:SMOKE_OUTCOME",
+            "Observed $($version ?? 'WinGet version: (not observed)')"
+          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
   # Builds and releases the package. Three ways in, all gated on `build` so nothing
   # publishes unless tests pass:
   #   push to main   -> GitHub Packages, PRERELEASE version (0.1.0-<n>)

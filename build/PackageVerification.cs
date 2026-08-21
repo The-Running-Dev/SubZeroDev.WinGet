@@ -96,6 +96,35 @@ static class PackageVerification
         (testRoot / "selected-payloads").DeleteDirectory();
     }
 
+    public static void RunPackedConsumerSmoke(AbsolutePath artifactsDirectory, string configuration)
+    {
+        var producedPackages = artifactsDirectory.GlobFiles("*.nupkg").ToArray();
+        Require(producedPackages.Length == 1,
+            $"PackedConsumerSmokeTest requires exactly one freshly produced .nupkg in {artifactsDirectory}; " +
+            $"found {producedPackages.Length}: {string.Join(", ", producedPackages.Select(x => Path.GetFileName(x)))}");
+        var package = producedPackages.Single();
+        var identity = ReadPackageIdentity(package);
+
+        var testRoot = artifactsDirectory / "packed-consumer-smoke";
+        testRoot.CreateOrCleanDirectory();
+        var feed = testRoot / "feed";
+        var packages = testRoot / "packages";
+        feed.CreateDirectory();
+        packages.CreateDirectory();
+        File.Copy(package, feed / Path.GetFileName(package), overwrite: true);
+        WriteNuGetConfig(testRoot, feed);
+
+        var consumer = testRoot / "consumer";
+        WriteConsumer(consumer, DirectReference(identity), platform: "x64", runsWinGetVersion: true);
+        AssertNoProjectReference(consumer);
+        RunDotNet(consumer, packages, "restore", "-p:EnableWindowsTargeting=true");
+        AssertIsolatedRestoreAndImport(consumer, packages, identity);
+        RunDotNet(consumer, packages, "build", "--no-restore", "--configuration", configuration,
+            "-p:EnableWindowsTargeting=true");
+        RunDotNet(consumer, packages, "run", "--no-build", "--configuration", configuration,
+            "-p:EnableWindowsTargeting=true");
+    }
+
     static PackageIdentity ReadPackageIdentity(AbsolutePath package)
     {
         using var archive = ZipFile.OpenRead(package);
@@ -327,7 +356,8 @@ static class PackageVerification
         AbsolutePath directory,
         string references,
         string? platform = null,
-        string? runtimeIdentifier = null)
+        string? runtimeIdentifier = null,
+        bool runsWinGetVersion = false)
     {
         directory.CreateDirectory();
         var platformProperty = platform is null ? "" : $"<PlatformTarget>{platform}</PlatformTarget>";
@@ -362,8 +392,25 @@ static class PackageVerification
               </Target>
             </Project>
             """);
-        File.WriteAllText(directory / "Program.cs",
-            "using SubZeroDev.WinGet;\nSystem.Console.WriteLine(typeof(PackageManagementService).FullName);\n");
+        File.WriteAllText(directory / "Program.cs", runsWinGetVersion
+            ? """
+              using SubZeroDev.WinGet;
+
+              using var client = new WinGetClient();
+              var version = await client.GetWinGetVersion();
+              if (string.IsNullOrWhiteSpace(version))
+                  throw new InvalidOperationException("Packed consumer did not obtain a WinGet version.");
+
+              Console.WriteLine($"WinGet version: {version}");
+              """
+            : "using SubZeroDev.WinGet;\nSystem.Console.WriteLine(typeof(PackageManagementService).FullName);\n");
+    }
+
+    static void AssertNoProjectReference(AbsolutePath directory)
+    {
+        var project = XDocument.Load(directory / "Consumer.csproj");
+        Require(!project.Descendants().Any(x => x.Name.LocalName == "ProjectReference"),
+            "Packed consumer must reference only the produced package, not the library project.");
     }
 
     static void SetProjectProperty(AbsolutePath directory, string name, string value)
