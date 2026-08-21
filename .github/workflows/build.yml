@@ -148,8 +148,12 @@ jobs:
             $file = Join-Path $work $asset
             Invoke-WebRequest "$base/$asset" -OutFile $file
 
-            $sidecar = [IO.Path]::GetFileNameWithoutExtension($asset) + '.txt'
-            $expected = (Invoke-WebRequest "$base/$sidecar").Content.Trim()
+            # Downloaded rather than read from the response body: GitHub serves release assets
+            # as application/octet-stream, so Invoke-WebRequest hands back Content as bytes.
+            $sidecar = Join-Path $work ([IO.Path]::GetFileNameWithoutExtension($asset) + '.txt')
+            Invoke-WebRequest "$base/$([IO.Path]::GetFileName($sidecar))" -OutFile $sidecar
+
+            $expected = (Get-Content -Path $sidecar -Raw).Trim()
             $actual = (Get-FileHash -Path $file -Algorithm SHA256).Hash
 
             if ($actual -ne $expected) {
