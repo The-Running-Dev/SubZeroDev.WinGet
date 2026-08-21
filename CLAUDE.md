@@ -331,7 +331,9 @@ Everything below predates the kit install and is kept verbatim from this reposit
 ```shell
 dotnet build SubZeroDev.WinGet.sln
 dotnet test  SubZeroDev.WinGet.sln                    # mocked unit tests, no COM, ~200ms
-dotnet test  SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"   # 12 live tests
+./build.ps1 MachineStateTest                   # 7 local-machine live tests
+./build.ps1 CatalogIntegrationTest             # 5 remote-catalog live tests
+./build.ps1 IntegrationTest                    # all 12 live tests
 dotnet test  SubZeroDev.WinGet.sln --filter "Name=Install_WithAnyAlreadyInstalledCode_NormalizesToSuccess"
 ```
 
@@ -343,7 +345,7 @@ CI drives everything through Nuke ([build/Build.cs](build/Build.cs)). Same targe
 ./build.ps1 Test Coverage ArchitectureTest PackageTest     # bootstrapper — no tool install needed
 ```
 
-Targets: `Restore`, `Compile`, `Test`, `IntegrationTest`, `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus local-only `Clean`. PR CI invokes `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`. Request multiple targets in **one** invocation — Nuke de-duplicates shared dependencies only within a single invocation.
+Targets: `Restore`, `Compile`, `Test`, `MachineStateTest`, `CatalogIntegrationTest`, `IntegrationTest`, `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus local-only `Clean`. PR CI invokes `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`. Request multiple targets in **one** invocation — Nuke de-duplicates shared dependencies only within a single invocation.
 
 Examples console app, one runnable example per public API:
 

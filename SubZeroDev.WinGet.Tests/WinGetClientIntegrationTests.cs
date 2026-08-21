@@ -5,14 +5,16 @@ namespace SubZeroDev.WinGet.Tests;
 /// <summary>
 /// Exercises the real WinGet COM API on the machine running the tests. Excluded from normal
 /// `dotnet test` runs (NUnit's [Explicit]) since it requires an actual Windows machine with
-/// WinGet installed and makes live catalog/network calls. Deliberately read-only — no
+/// WinGet installed. The <c>MachineState</c> and <c>CatalogIntegration</c> categories declare
+/// whether each assertion depends on local machine state or a remote catalog witness. Deliberately read-only — no
 /// Install/Upgrade/Uninstall/Repair/Import calls belong here, since those would mutate the
 /// test machine.
-/// Run explicitly with:
-///   dotnet test --filter "FullyQualifiedName~WinGetClientIntegrationTests"
+/// Run explicitly with <c>nuke MachineStateTest</c>, <c>nuke CatalogIntegrationTest</c>, or
+/// <c>nuke IntegrationTest</c> for both categories.
 /// </summary>
 [TestFixture]
 [Explicit("Requires a real Windows machine with WinGet installed; makes live catalog calls.")]
+[NonParallelizable]
 public class WinGetClientIntegrationTests
 {
     private WinGetClient _client = null!;
@@ -27,6 +29,7 @@ public class WinGetClientIntegrationTests
     public void TearDown() => _client.Dispose();
 
     [Test]
+    [Category("MachineState")]
     public async Task GetWinGetVersion_ReturnsAVersion()
     {
         var version = await _client.GetWinGetVersion();
@@ -35,6 +38,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("CatalogIntegration")]
     public async Task Search_ForVsCode_ReturnsAtLeastOneMatch()
     {
         var results = await _client.Search("Visual Studio Code", limit: 10);
@@ -44,6 +48,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("CatalogIntegration")]
     public async Task Search_RestrictedToWingetSource_OnlyReturnsThatSource()
     {
         var results = await _client.Search("git", limit: 10, sourceName: "winget");
@@ -53,6 +58,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("MachineState")]
     public async Task GetInstalledPackages_ReturnsTheLocalMachinesInstalledPackages()
     {
         var results = await _client.GetInstalledPackages();
@@ -62,6 +68,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("MachineState")]
     public async Task GetAvailableUpgrades_OnlyReturnsPackagesWithUpdates()
     {
         var results = await _client.GetAvailableUpgrades();
@@ -70,6 +77,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("CatalogIntegration")]
     public async Task GetPackage_ForAKnownId_ReturnsMatchingDetails()
     {
         var package = await _client.GetPackage("Microsoft.VisualStudioCode");
@@ -80,6 +88,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("CatalogIntegration")]
     public async Task GetPackage_ForAnUnknownId_ReturnsNull()
     {
         var package = await _client.GetPackage("Not.A.Real.Package.Id.12345");
@@ -88,6 +97,7 @@ public class WinGetClientIntegrationTests
     }
 
     [Test]
+    [Category("CatalogIntegration")]
     public async Task GetPackageDetails_ForAKnownId_ReturnsManifestMetadata()
     {
         var details = await _client.GetPackageDetails("Microsoft.VisualStudioCode");
@@ -111,6 +121,7 @@ public class WinGetClientIntegrationTests
 /// </summary>
 [TestFixture]
 [Explicit("Requires a real Windows machine with WinGet installed.")]
+[NonParallelizable]
 public class WinGetSourceClientIntegrationTests
 {
     private WinGetSourceClient _client = null!;
@@ -125,6 +136,7 @@ public class WinGetSourceClientIntegrationTests
     public void TearDown() => _client.Dispose();
 
     [Test]
+    [Category("MachineState")]
     public async Task GetSources_ReturnsTheConfiguredSources()
     {
         var sources = await _client.GetSources();
@@ -134,6 +146,7 @@ public class WinGetSourceClientIntegrationTests
     }
 
     [Test]
+    [Category("MachineState")]
     public async Task GetSource_ForWinget_ReturnsIt()
     {
         var source = await _client.GetSource("winget");
@@ -150,6 +163,7 @@ public class WinGetSourceClientIntegrationTests
 /// </summary>
 [TestFixture]
 [Explicit("Requires a real Windows machine with winget.exe available.")]
+[NonParallelizable]
 public class WinGetCliClientIntegrationTests
 {
     private WinGetCliClient _client = null!;
@@ -161,6 +175,7 @@ public class WinGetCliClientIntegrationTests
     }
 
     [Test]
+    [Category("MachineState")]
     public async Task GetPins_ReturnsWithoutError()
     {
         var act = async () => await _client.GetPins();
@@ -169,6 +184,7 @@ public class WinGetCliClientIntegrationTests
     }
 
     [Test]
+    [Category("MachineState")]
     public async Task Export_WritesAnImportableJsonFile()
     {
         var filePath = Path.Combine(Path.GetTempPath(), $"winget-export-{Guid.NewGuid():N}.json");

@@ -23,7 +23,7 @@ The product — library, tests, examples — targets `net8.0-windows10.0.26100`,
 The `build.ps1`/`build.sh` bootstrappers are also **required**, not optional: the Nuke global tool locates a build by searching for them, and without them `nuke <Target>` drops into an interactive setup prompt that fails in CI.
 :::
 
-Targets: `Restore`, `Compile`, `Test`, `IntegrationTest` (opt-in, see below), `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus a local-only `Clean`. `ArchitectureTest` verifies AnyCPU library and x64/ARM64 executable PE output. `PackageTest` inspects the packed assets and validates direct and two-hop package consumers through restore/build/publish without executing COM. Every target also works standalone.
+Targets: `Restore`, `Compile`, `Test`, `MachineStateTest`, `CatalogIntegrationTest`, `IntegrationTest` (all live targets are opt-in, see below), `Coverage`, `ArchitectureTest`, `PackageTest`, `Pack`, `PublishNuGet`, `PublishGitHubPackages`, plus a local-only `Clean`. `ArchitectureTest` verifies AnyCPU library and x64/ARM64 executable PE output. `PackageTest` inspects the packed assets and validates direct and two-hop package consumers through restore/build/publish without executing COM. Every target also works standalone.
 
 Using plain `dotnet` commands directly (below) still works fine for local development — Nuke doesn't replace them, it's what CI now calls instead of hand-written `dotnet` steps.
 
@@ -47,11 +47,12 @@ Mocked unit tests — zero COM dependency, run anywhere in ~200ms. They cover th
 ## Live integration tests
 
 ```shell
-dotnet test SubZeroDev.WinGet.sln --filter "FullyQualifiedName~IntegrationTests"
-# or: nuke IntegrationTest
+./build.ps1 MachineStateTest        # 7 assertions about this machine's installed/local state
+./build.ps1 CatalogIntegrationTest  # 5 assertions with a remote-catalog witness
+./build.ps1 IntegrationTest         # all 12 checks, composed from the two risk classes
 ```
 
-12 tests marked NUnit `[Explicit]` (excluded from plain `dotnet test`) that exercise the **real** COM API and the **real** winget.exe on the machine: version query, search, installed list, upgrade list, get-by-id hit/miss, full details, source list/get, pin list, and a real export.
+12 tests marked NUnit `[Explicit]` (excluded from plain `dotnet test`) exercise the **real** COM API and the **real** winget.exe on the machine. Stable NUnit categories split them into seven `MachineState` checks and five `CatalogIntegration` checks; each risk-specific target verifies its selected count before it executes. The catalog class contains the assertions whose witness is a `Microsoft.VisualStudioCode` or `git` result in the remote catalog.
 
 They are **deliberately read-only** — no install/upgrade/uninstall — because they run against whatever machine executes them. Live coverage of the mutating operations is a tracked roadmap item pending a disposable, side-effect-free test package.
 
