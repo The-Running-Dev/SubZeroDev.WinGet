@@ -5,7 +5,7 @@ using SubZeroDev.WinGet.Models;
 namespace SubZeroDev.WinGet.Tests;
 
 [TestFixture]
-public class WinGetClientOperationResultTests
+public class WinGetProjectionMapperOperationResultTests
 {
     [Test]
     public void ToOperationResult_WhenExtendedErrorIsInstallCancelledByUser_ReturnsCancelled()
@@ -15,7 +15,7 @@ public class WinGetClientOperationResultTests
             HResult = WinGetErrorCodes.InstallCancelledByUser
         };
 
-        var result = WinGetClient.ToOperationResult(
+        var result = WinGetProjectionMapper.ToOperationResult(
             PackageOperationStatus.InstallError,
             rebootRequired: false,
             extendedError,
@@ -37,7 +37,7 @@ public class WinGetClientOperationResultTests
             HResult = WinGetErrorCodes.CommandRequiresAdmin
         };
 
-        var result = WinGetClient.ToOperationResult(
+        var result = WinGetProjectionMapper.ToOperationResult(
             status,
             rebootRequired: false,
             extendedError,
@@ -54,7 +54,7 @@ public class WinGetClientOperationResultTests
     [Test]
     public void ToOperationResult_WithNoExtendedError_RetainsMappedStatus()
     {
-        var result = WinGetClient.ToOperationResult(
+        var result = WinGetProjectionMapper.ToOperationResult(
             PackageOperationStatus.InstallError,
             rebootRequired: false,
             extendedError: null,
@@ -76,7 +76,7 @@ public class WinGetClientOperationResultTests
             HResult = WinGetErrorCodes.InstallCancelledByUser
         };
 
-        var result = WinGetClient.ToOperationResult(
+        var result = WinGetProjectionMapper.ToOperationResult(
             PackageOperationStatus.Ok,
             rebootRequired: true,
             extendedError,
@@ -87,7 +87,7 @@ public class WinGetClientOperationResultTests
         result.Status.Should().Be(PackageOperationStatus.Ok);
         result.RebootRequired.Should().BeTrue();
 
-        var withoutExtendedError = WinGetClient.ToOperationResult(
+        var withoutExtendedError = WinGetProjectionMapper.ToOperationResult(
             PackageOperationStatus.Ok,
             rebootRequired: true,
             extendedError: null,
@@ -101,7 +101,7 @@ public class WinGetClientOperationResultTests
     public void ToOperationResult_RevertingTheHResultClassification_FailsThisRegression()
     {
         // Regression witness for S3.5: this asserts the override branch in
-        // WinGetClient.ToOperationResult actually runs, not merely that Cancelled can be
+        // WinGetProjectionMapper.ToOperationResult actually runs, not merely that Cancelled can be
         // constructed. Removing the InstallCancelledByUser check makes this fail because the
         // input status (InstallError) would flow through unchanged.
         var extendedError = new InvalidOperationException("cancelled")
@@ -109,7 +109,7 @@ public class WinGetClientOperationResultTests
             HResult = WinGetErrorCodes.InstallCancelledByUser
         };
 
-        var result = WinGetClient.ToOperationResult(
+        var result = WinGetProjectionMapper.ToOperationResult(
             PackageOperationStatus.InstallError,
             rebootRequired: false,
             extendedError,

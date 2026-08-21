@@ -1,0 +1,166 @@
+using Windows.System;
+
+using Microsoft.Management.Deployment;
+
+using SubZeroDev.WinGet.Models;
+
+namespace SubZeroDev.WinGet;
+
+internal static class WinGetProjectionMapper
+{
+    internal static PackageVersionId? FindVersionId(CatalogPackage package, string version)
+    {
+        var versions = package.AvailableVersions;
+
+        for (var i = 0; i < versions.Count; i++)
+        {
+            if (string.Equals(versions[i].Version, version, StringComparison.OrdinalIgnoreCase))
+            {
+                return versions[i];
+            }
+        }
+
+        return null;
+    }
+
+    internal static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode)
+    {
+        if (status != PackageOperationStatus.Ok && extendedError?.HResult == WinGetErrorCodes.InstallCancelledByUser)
+        {
+            status = PackageOperationStatus.Cancelled;
+        }
+
+        return status == PackageOperationStatus.Ok
+            ? PackageOperationResult.Success(rebootRequired)
+            : PackageOperationResult.Failure(status, statusDescription, extendedError?.HResult, installerErrorCode);
+    }
+
+    internal static uint? GetInstallerErrorCode(InstallResult result) =>
+        result.Status == InstallResultStatus.InstallError ? result.InstallerErrorCode : null;
+
+    internal static PackageOperationStatus MapStatus(InstallResultStatus status) => status switch
+    {
+        InstallResultStatus.Ok => PackageOperationStatus.Ok,
+        InstallResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
+        InstallResultStatus.CatalogError => PackageOperationStatus.CatalogError,
+        InstallResultStatus.InternalError => PackageOperationStatus.InternalError,
+        InstallResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
+        InstallResultStatus.DownloadError => PackageOperationStatus.DownloadError,
+        InstallResultStatus.InstallError => PackageOperationStatus.InstallError,
+        InstallResultStatus.ManifestError => PackageOperationStatus.ManifestError,
+        InstallResultStatus.NoApplicableInstallers => PackageOperationStatus.NoApplicableInstallers,
+        InstallResultStatus.NoApplicableUpgrade => PackageOperationStatus.NoApplicableUpgrade,
+        InstallResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
+        _ => PackageOperationStatus.Unknown
+    };
+
+    internal static PackageOperationStatus MapStatus(UninstallResultStatus status) => status switch
+    {
+        UninstallResultStatus.Ok => PackageOperationStatus.Ok,
+        UninstallResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
+        UninstallResultStatus.CatalogError => PackageOperationStatus.CatalogError,
+        UninstallResultStatus.InternalError => PackageOperationStatus.InternalError,
+        UninstallResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
+        UninstallResultStatus.UninstallError => PackageOperationStatus.UninstallError,
+        UninstallResultStatus.ManifestError => PackageOperationStatus.ManifestError,
+        _ => PackageOperationStatus.Unknown
+    };
+
+    internal static PackageOperationStatus MapStatus(DownloadResultStatus status) => status switch
+    {
+        DownloadResultStatus.Ok => PackageOperationStatus.Ok,
+        DownloadResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
+        DownloadResultStatus.CatalogError => PackageOperationStatus.CatalogError,
+        DownloadResultStatus.InternalError => PackageOperationStatus.InternalError,
+        DownloadResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
+        DownloadResultStatus.DownloadError => PackageOperationStatus.DownloadError,
+        DownloadResultStatus.ManifestError => PackageOperationStatus.ManifestError,
+        DownloadResultStatus.NoApplicableInstallers => PackageOperationStatus.NoApplicableInstallers,
+        DownloadResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
+        _ => PackageOperationStatus.Unknown
+    };
+
+    internal static PackageOperationStatus MapStatus(RepairResultStatus status) => status switch
+    {
+        RepairResultStatus.Ok => PackageOperationStatus.Ok,
+        RepairResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
+        RepairResultStatus.CatalogError => PackageOperationStatus.CatalogError,
+        RepairResultStatus.DownloadError => PackageOperationStatus.DownloadError,
+        RepairResultStatus.InternalError => PackageOperationStatus.InternalError,
+        RepairResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
+        RepairResultStatus.RepairError => PackageOperationStatus.RepairError,
+        RepairResultStatus.ManifestError => PackageOperationStatus.ManifestError,
+        RepairResultStatus.NoApplicableRepairer => PackageOperationStatus.NoApplicableRepairer,
+        RepairResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
+        _ => PackageOperationStatus.Unknown
+    };
+
+    internal static PackageInstallScope MapScope(PackageScope scope) => scope switch
+    {
+        PackageScope.User => PackageInstallScope.User,
+        PackageScope.System => PackageInstallScope.System,
+        PackageScope.UserOrUnknown => PackageInstallScope.UserOrUnknown,
+        PackageScope.SystemOrUnknown => PackageInstallScope.SystemOrUnknown,
+        _ => PackageInstallScope.Any
+    };
+
+    internal static PackageInstallMode MapInstallMode(PackageOperationMode mode) => mode switch
+    {
+        PackageOperationMode.Silent => PackageInstallMode.Silent,
+        PackageOperationMode.Interactive => PackageInstallMode.Interactive,
+        _ => PackageInstallMode.Default
+    };
+
+    internal static PackageUninstallMode MapUninstallMode(PackageOperationMode mode) => mode switch
+    {
+        PackageOperationMode.Silent => PackageUninstallMode.Silent,
+        PackageOperationMode.Interactive => PackageUninstallMode.Interactive,
+        _ => PackageUninstallMode.Default
+    };
+
+    internal static PackageUninstallScope MapUninstallScope(PackageScope scope) => scope switch
+    {
+        PackageScope.User or PackageScope.UserOrUnknown => PackageUninstallScope.User,
+        PackageScope.System or PackageScope.SystemOrUnknown => PackageUninstallScope.System,
+        _ => PackageUninstallScope.Any
+    };
+
+    internal static PackageRepairMode MapRepairMode(PackageOperationMode mode) => mode switch
+    {
+        PackageOperationMode.Silent => PackageRepairMode.Silent,
+        PackageOperationMode.Interactive => PackageRepairMode.Interactive,
+        _ => PackageRepairMode.Default
+    };
+
+    internal static PackageRepairScope MapRepairScope(PackageScope scope) => scope switch
+    {
+        PackageScope.User or PackageScope.UserOrUnknown => PackageRepairScope.User,
+        PackageScope.System or PackageScope.SystemOrUnknown => PackageRepairScope.System,
+        _ => PackageRepairScope.Any
+    };
+
+    internal static ProcessorArchitecture MapArchitecture(PackageArchitecture architecture) => architecture switch
+    {
+        PackageArchitecture.X86 => ProcessorArchitecture.X86,
+        PackageArchitecture.X64 => ProcessorArchitecture.X64,
+        PackageArchitecture.Arm => ProcessorArchitecture.Arm,
+        PackageArchitecture.Arm64 => ProcessorArchitecture.Arm64,
+        _ => ProcessorArchitecture.Unknown
+    };
+
+    internal static PackageInstallerType MapInstallerType(PackageInstallerKind kind) => kind switch
+    {
+        PackageInstallerKind.Inno => PackageInstallerType.Inno,
+        PackageInstallerKind.Wix => PackageInstallerType.Wix,
+        PackageInstallerKind.Msi => PackageInstallerType.Msi,
+        PackageInstallerKind.Nullsoft => PackageInstallerType.Nullsoft,
+        PackageInstallerKind.Zip => PackageInstallerType.Zip,
+        PackageInstallerKind.Msix => PackageInstallerType.Msix,
+        PackageInstallerKind.Exe => PackageInstallerType.Exe,
+        PackageInstallerKind.Burn => PackageInstallerType.Burn,
+        PackageInstallerKind.MSStore => PackageInstallerType.MSStore,
+        PackageInstallerKind.Portable => PackageInstallerType.Portable,
+        PackageInstallerKind.Font => PackageInstallerType.Font,
+        _ => PackageInstallerType.Unknown
+    };
+}

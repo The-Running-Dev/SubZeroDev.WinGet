@@ -1,5 +1,4 @@
 using Windows.Foundation;
-using Windows.System;
 
 using Microsoft.Management.Deployment;
 
@@ -187,7 +186,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return ToOperationResult(MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), GetInstallerErrorCode(result));
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
     }
 
     /// <inheritdoc />
@@ -218,7 +219,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return ToOperationResult(MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), GetInstallerErrorCode(result));
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), WinGetProjectionMapper.GetInstallerErrorCode(result));
     }
 
     /// <inheritdoc />
@@ -237,8 +240,8 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         }
 
         var options = Factory.CreateUninstallOptions();
-        options.PackageUninstallMode = MapUninstallMode(request.Mode);
-        options.PackageUninstallScope = MapUninstallScope(request.Scope);
+        options.PackageUninstallMode = WinGetProjectionMapper.MapUninstallMode(request.Mode);
+        options.PackageUninstallScope = WinGetProjectionMapper.MapUninstallScope(request.Scope);
         options.Force = request.Force;
 
         if (request.LogOutputPath is not null)
@@ -257,7 +260,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return ToOperationResult(MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.UninstallerErrorCode);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.UninstallerErrorCode);
     }
 
     /// <inheritdoc />
@@ -275,7 +280,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var options = Factory.CreateDownloadOptions();
         options.DownloadDirectory = request.DownloadDirectory;
-        options.Scope = MapScope(request.Scope);
+        options.Scope = WinGetProjectionMapper.MapScope(request.Scope);
         options.AllowHashMismatch = request.AllowHashMismatch;
         options.SkipDependencies = request.SkipDependencies;
         options.SkipMicrosoftStoreLicense = request.SkipMicrosoftStoreLicense;
@@ -283,12 +288,12 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         if (request.Architecture != PackageArchitecture.Default)
         {
-            options.Architecture = MapArchitecture(request.Architecture);
+            options.Architecture = WinGetProjectionMapper.MapArchitecture(request.Architecture);
         }
 
         if (request.InstallerType != PackageInstallerKind.Default)
         {
-            options.InstallerType = MapInstallerType(request.InstallerType);
+            options.InstallerType = WinGetProjectionMapper.MapInstallerType(request.InstallerType);
         }
 
         if (request.Locale is not null)
@@ -303,7 +308,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         if (request.Version is not null)
         {
-            var versionId = FindVersionId(package, request.Version);
+            var versionId = WinGetProjectionMapper.FindVersionId(package, request.Version);
 
             if (versionId is null)
             {
@@ -319,7 +324,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return ToOperationResult(MapStatus(result.Status), rebootRequired: false, result.ExtendedErrorCode, result.Status.ToString(), installerErrorCode: null);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, rebootRequired: false, result.ExtendedErrorCode, result.Status.ToString(), installerErrorCode: null);
     }
 
     /// <inheritdoc />
@@ -338,8 +345,8 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         }
 
         var options = Factory.CreateRepairOptions();
-        options.PackageRepairMode = MapRepairMode(request.Mode);
-        options.PackageRepairScope = MapRepairScope(request.Scope);
+        options.PackageRepairMode = WinGetProjectionMapper.MapRepairMode(request.Mode);
+        options.PackageRepairScope = WinGetProjectionMapper.MapRepairScope(request.Scope);
         options.Force = request.Force;
         options.AllowHashMismatch = request.AllowHashMismatch;
         options.AcceptPackageAgreements = request.AcceptPackageAgreements;
@@ -360,7 +367,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await AwaitOperation(operation, cancellationToken);
 
-        return ToOperationResult(MapStatus(result.Status), result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.RepairerErrorCode);
+        var status = WinGetProjectionMapper.MapStatus(result.Status);
+
+        return WinGetProjectionMapper.ToOperationResult(status, result.RebootRequired, result.ExtendedErrorCode, result.Status.ToString(), result.RepairerErrorCode);
     }
 
     private async Task<CatalogPackage?> FindById(string packageId, CancellationToken cancellationToken)
@@ -388,8 +397,8 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
     private (InstallOptions Options, PackageOperationResult? Error) BuildInstallOptions(CatalogPackage package, InstallRequest request)
     {
         var options = Factory.CreateInstallOptions();
-        options.PackageInstallScope = MapScope(request.Scope);
-        options.PackageInstallMode = MapInstallMode(request.Mode);
+        options.PackageInstallScope = WinGetProjectionMapper.MapScope(request.Scope);
+        options.PackageInstallMode = WinGetProjectionMapper.MapInstallMode(request.Mode);
         options.Force = request.Force;
         options.AllowHashMismatch = request.AllowHashMismatch;
         options.SkipDependencies = request.SkipDependencies;
@@ -423,18 +432,18 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         if (request.InstallerType != PackageInstallerKind.Default)
         {
-            options.InstallerType = MapInstallerType(request.InstallerType);
+            options.InstallerType = WinGetProjectionMapper.MapInstallerType(request.InstallerType);
         }
 
         if (request.Architecture != PackageArchitecture.Default)
         {
             options.AllowedArchitectures.Clear();
-            options.AllowedArchitectures.Add(MapArchitecture(request.Architecture));
+            options.AllowedArchitectures.Add(WinGetProjectionMapper.MapArchitecture(request.Architecture));
         }
 
         if (request.Version is not null)
         {
-            var versionId = FindVersionId(package, request.Version);
+            var versionId = WinGetProjectionMapper.FindVersionId(package, request.Version);
 
             if (versionId is null)
             {
@@ -547,21 +556,6 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         return result;
     }
 
-    private static PackageVersionId? FindVersionId(CatalogPackage package, string version)
-    {
-        var versions = package.AvailableVersions;
-
-        for (var i = 0; i < versions.Count; i++)
-        {
-            if (string.Equals(versions[i].Version, version, StringComparison.OrdinalIgnoreCase))
-            {
-                return versions[i];
-            }
-        }
-
-        return null;
-    }
-
     private static PackageOperationResult NotFound(string packageId) =>
         PackageOperationResult.Failure(PackageOperationStatus.PackageNotFound, $"Package '{packageId}' was not found in any configured source.");
 
@@ -647,149 +641,6 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         progress.Report(new PackageOperationProgress(state, info.RepairCompletionProgress * 100, state.ToString()));
     }
-
-    internal static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode)
-    {
-        if (status != PackageOperationStatus.Ok && extendedError?.HResult == WinGetErrorCodes.InstallCancelledByUser)
-        {
-            status = PackageOperationStatus.Cancelled;
-        }
-
-        return status == PackageOperationStatus.Ok
-            ? PackageOperationResult.Success(rebootRequired)
-            : PackageOperationResult.Failure(status, statusDescription, extendedError?.HResult, installerErrorCode);
-    }
-
-    private static uint? GetInstallerErrorCode(InstallResult result)
-    {
-        return result.Status == InstallResultStatus.InstallError ? result.InstallerErrorCode : null;
-    }
-
-    private static PackageOperationStatus MapStatus(InstallResultStatus status) => status switch
-    {
-        InstallResultStatus.Ok => PackageOperationStatus.Ok,
-        InstallResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
-        InstallResultStatus.CatalogError => PackageOperationStatus.CatalogError,
-        InstallResultStatus.InternalError => PackageOperationStatus.InternalError,
-        InstallResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
-        InstallResultStatus.DownloadError => PackageOperationStatus.DownloadError,
-        InstallResultStatus.InstallError => PackageOperationStatus.InstallError,
-        InstallResultStatus.ManifestError => PackageOperationStatus.ManifestError,
-        InstallResultStatus.NoApplicableInstallers => PackageOperationStatus.NoApplicableInstallers,
-        InstallResultStatus.NoApplicableUpgrade => PackageOperationStatus.NoApplicableUpgrade,
-        InstallResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
-        _ => PackageOperationStatus.Unknown
-    };
-
-    private static PackageOperationStatus MapStatus(UninstallResultStatus status) => status switch
-    {
-        UninstallResultStatus.Ok => PackageOperationStatus.Ok,
-        UninstallResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
-        UninstallResultStatus.CatalogError => PackageOperationStatus.CatalogError,
-        UninstallResultStatus.InternalError => PackageOperationStatus.InternalError,
-        UninstallResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
-        UninstallResultStatus.UninstallError => PackageOperationStatus.UninstallError,
-        UninstallResultStatus.ManifestError => PackageOperationStatus.ManifestError,
-        _ => PackageOperationStatus.Unknown
-    };
-
-    private static PackageOperationStatus MapStatus(DownloadResultStatus status) => status switch
-    {
-        DownloadResultStatus.Ok => PackageOperationStatus.Ok,
-        DownloadResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
-        DownloadResultStatus.CatalogError => PackageOperationStatus.CatalogError,
-        DownloadResultStatus.InternalError => PackageOperationStatus.InternalError,
-        DownloadResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
-        DownloadResultStatus.DownloadError => PackageOperationStatus.DownloadError,
-        DownloadResultStatus.ManifestError => PackageOperationStatus.ManifestError,
-        DownloadResultStatus.NoApplicableInstallers => PackageOperationStatus.NoApplicableInstallers,
-        DownloadResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
-        _ => PackageOperationStatus.Unknown
-    };
-
-    private static PackageOperationStatus MapStatus(RepairResultStatus status) => status switch
-    {
-        RepairResultStatus.Ok => PackageOperationStatus.Ok,
-        RepairResultStatus.BlockedByPolicy => PackageOperationStatus.BlockedByPolicy,
-        RepairResultStatus.CatalogError => PackageOperationStatus.CatalogError,
-        RepairResultStatus.DownloadError => PackageOperationStatus.DownloadError,
-        RepairResultStatus.InternalError => PackageOperationStatus.InternalError,
-        RepairResultStatus.InvalidOptions => PackageOperationStatus.InvalidOptions,
-        RepairResultStatus.RepairError => PackageOperationStatus.RepairError,
-        RepairResultStatus.ManifestError => PackageOperationStatus.ManifestError,
-        RepairResultStatus.NoApplicableRepairer => PackageOperationStatus.NoApplicableRepairer,
-        RepairResultStatus.PackageAgreementsNotAccepted => PackageOperationStatus.PackageAgreementsNotAccepted,
-        _ => PackageOperationStatus.Unknown
-    };
-
-    private static PackageInstallScope MapScope(PackageScope scope) => scope switch
-    {
-        PackageScope.User => PackageInstallScope.User,
-        PackageScope.System => PackageInstallScope.System,
-        PackageScope.UserOrUnknown => PackageInstallScope.UserOrUnknown,
-        PackageScope.SystemOrUnknown => PackageInstallScope.SystemOrUnknown,
-        _ => PackageInstallScope.Any
-    };
-
-    private static PackageInstallMode MapInstallMode(PackageOperationMode mode) => mode switch
-    {
-        PackageOperationMode.Silent => PackageInstallMode.Silent,
-        PackageOperationMode.Interactive => PackageInstallMode.Interactive,
-        _ => PackageInstallMode.Default
-    };
-
-    private static PackageUninstallMode MapUninstallMode(PackageOperationMode mode) => mode switch
-    {
-        PackageOperationMode.Silent => PackageUninstallMode.Silent,
-        PackageOperationMode.Interactive => PackageUninstallMode.Interactive,
-        _ => PackageUninstallMode.Default
-    };
-
-    private static PackageUninstallScope MapUninstallScope(PackageScope scope) => scope switch
-    {
-        PackageScope.User or PackageScope.UserOrUnknown => PackageUninstallScope.User,
-        PackageScope.System or PackageScope.SystemOrUnknown => PackageUninstallScope.System,
-        _ => PackageUninstallScope.Any
-    };
-
-    private static PackageRepairMode MapRepairMode(PackageOperationMode mode) => mode switch
-    {
-        PackageOperationMode.Silent => PackageRepairMode.Silent,
-        PackageOperationMode.Interactive => PackageRepairMode.Interactive,
-        _ => PackageRepairMode.Default
-    };
-
-    private static PackageRepairScope MapRepairScope(PackageScope scope) => scope switch
-    {
-        PackageScope.User or PackageScope.UserOrUnknown => PackageRepairScope.User,
-        PackageScope.System or PackageScope.SystemOrUnknown => PackageRepairScope.System,
-        _ => PackageRepairScope.Any
-    };
-
-    private static ProcessorArchitecture MapArchitecture(PackageArchitecture architecture) => architecture switch
-    {
-        PackageArchitecture.X86 => ProcessorArchitecture.X86,
-        PackageArchitecture.X64 => ProcessorArchitecture.X64,
-        PackageArchitecture.Arm => ProcessorArchitecture.Arm,
-        PackageArchitecture.Arm64 => ProcessorArchitecture.Arm64,
-        _ => ProcessorArchitecture.Unknown
-    };
-
-    private static PackageInstallerType MapInstallerType(PackageInstallerKind kind) => kind switch
-    {
-        PackageInstallerKind.Inno => PackageInstallerType.Inno,
-        PackageInstallerKind.Wix => PackageInstallerType.Wix,
-        PackageInstallerKind.Msi => PackageInstallerType.Msi,
-        PackageInstallerKind.Nullsoft => PackageInstallerType.Nullsoft,
-        PackageInstallerKind.Zip => PackageInstallerType.Zip,
-        PackageInstallerKind.Msix => PackageInstallerType.Msix,
-        PackageInstallerKind.Exe => PackageInstallerType.Exe,
-        PackageInstallerKind.Burn => PackageInstallerType.Burn,
-        PackageInstallerKind.MSStore => PackageInstallerType.MSStore,
-        PackageInstallerKind.Portable => PackageInstallerType.Portable,
-        PackageInstallerKind.Font => PackageInstallerType.Font,
-        _ => PackageInstallerType.Unknown
-    };
 
     // IReadOnlyList<T>'s CsWinRT-projected enumerator throws InvalidCastException ("No such
     // interface supported") when walked via foreach/LINQ (verified empirically against WinGet

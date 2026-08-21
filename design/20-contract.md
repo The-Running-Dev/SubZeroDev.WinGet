@@ -93,28 +93,14 @@ required unit tests produce the measurement prescribed by C12.
 
 ### Projection mapper
 
-The following internal scaffold moves to a dedicated file under the library project. Materialisation
-replaces it with a pointer to that declaration and preserves C13-C15 and the state-dependent facts
-under *Product result types*.
+The operation and request translations materialised in S5 are declared in
+[`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs). The remaining internal
+scaffold moves there in S6. C13-C15 and the state-dependent facts under *Product result types* remain
+authoritative.
 
 ```csharp
 internal static class WinGetProjectionMapper
 {
-    internal static PackageVersionId? FindVersionId(CatalogPackage package, string version);
-    internal static PackageOperationResult ToOperationResult(PackageOperationStatus status, bool rebootRequired, Exception? extendedError, string statusDescription, uint? installerErrorCode);
-    internal static uint? GetInstallerErrorCode(InstallResult result);
-    internal static PackageOperationStatus MapStatus(InstallResultStatus status);
-    internal static PackageOperationStatus MapStatus(UninstallResultStatus status);
-    internal static PackageOperationStatus MapStatus(DownloadResultStatus status);
-    internal static PackageOperationStatus MapStatus(RepairResultStatus status);
-    internal static PackageInstallScope MapScope(PackageScope scope);
-    internal static PackageInstallMode MapInstallMode(PackageOperationMode mode);
-    internal static PackageUninstallMode MapUninstallMode(PackageOperationMode mode);
-    internal static PackageUninstallScope MapUninstallScope(PackageScope scope);
-    internal static PackageRepairMode MapRepairMode(PackageOperationMode mode);
-    internal static PackageRepairScope MapRepairScope(PackageScope scope);
-    internal static ProcessorArchitecture MapArchitecture(PackageArchitecture architecture);
-    internal static PackageInstallerType MapInstallerType(PackageInstallerKind kind);
     internal static List<PackageInfo> ToPackages(IReadOnlyList<MatchResult> matches);
     internal static PackageInfo ToPackageInfo(CatalogPackage package);
     internal static PackageDetails ToPackageDetails(CatalogPackage package);
@@ -195,11 +181,12 @@ Operation methods keep their existing declarations. When C15 applies they return
 
 ### Internal translation boundary
 
-Until the scaffold under *Projection mapper* is materialised, the current private translation
-declarations remain in [`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) and
-[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). Production clients and tests
-then call the dedicated mapper directly. Tests reach it only through the existing
-`InternalsVisibleTo` grant in
+The operation and request translations materialised in S5 are declared in
+[`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs) and called from
+[`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs). Until the remaining scaffold under
+*Projection mapper* is materialised in S6, the still-private translation declarations it lists remain
+in `WinGetClient.cs` and [`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). Tests
+reach the mapper only through the existing `InternalsVisibleTo` grant in
 [`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj); they do not reach it
 through a constructed client, factory, context, or live COM object.
 
