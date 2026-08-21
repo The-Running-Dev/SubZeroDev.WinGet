@@ -27,6 +27,8 @@ namespace SubZeroDev.WinGet;
 /// </remarks>
 public sealed class WinGetClient : IWinGetClient, IDisposable
 {
+    private const int ENoInterface = unchecked((int)0x80004002);
+
     private readonly WinGetComContext _context;
     private readonly bool _ownsContext;
 
@@ -65,16 +67,19 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         => _context.InvokeAsync(() => GetWinGetVersionCore(cancellationToken), cancellationToken);
 
     private string? GetWinGetVersionCore(CancellationToken cancellationToken)
+        => ReadWinGetVersion(() => (string?)PackageManager.Version, cancellationToken);
+
+    internal static string? ReadWinGetVersion(Func<string?> readVersion, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
-            return (string?)PackageManager.Version;
+            return readVersion();
         }
-        catch
+        catch (InvalidCastException exception) when (exception.HResult == ENoInterface)
         {
-            // Version is contract 13; unavailable on very old WinGet runtimes.
+            // The version member is unavailable on runtimes that do not implement its interface.
             return null;
         }
     }
