@@ -21,6 +21,11 @@ on:
 env:
   # Pinned to match build/_build.csproj's Nuke.Common reference - keep these two in sync.
   NUKE_VERSION: 10.1.0
+  # C24: the hosted live job constitutes its own WinGet runtime instead of accepting whatever
+  # the runner image carries. Pinned to the library's Microsoft.WindowsPackageManager.ComInterop
+  # reference in SubZeroDev.WinGet/SubZeroDev.WinGet.csproj - keep these two in sync, so the
+  # client winmd and the server implementation always share one COM contract version.
+  WINGET_VERSION: 1.29.280
 
 jobs:
   # Runs on every push to main AND every pull request: tests, coverage, architecture,
@@ -116,6 +121,70 @@ jobs:
             throw 'WinGet/App Installer is not installed on this runner.'
           }
 
+          # C4 requires the environment fact to be observed rather than inferred from a
+          # successful call. Capture it here, where it exists whether or not the smoke target
+          # later succeeds - the previous shape read the version out of the consumer's own
+          # stdout, so the run that most needed it was the one run that never recorded it.
+          "before=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+
+      # The runner image pins no WinGet version at all and has shipped builds predating COM
+      # contract 13, where PackageManager.Version does not exist - see design/90-decisions.md,
+      # 2026-08-21. Downloading a specific release tag is what makes C24's "explicitly pinned
+      # build" true; the published SHA256 sidecars make it verifiable rather than asserted,
+      # since a tag can be moved and a hash cannot.
+      - name: Install pinned WinGet
+        id: install
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Invoke-WebRequest's progress rendering dominates the runtime of a 200 MB download.
+          $ProgressPreference = 'SilentlyContinue'
+
+          $base = "https://github.com/microsoft/winget-cli/releases/download/v$env:WINGET_VERSION"
+          $work = (New-Item -ItemType Directory -Force -Path (Join-Path $env:RUNNER_TEMP 'winget-pin')).FullName
+
+          foreach ($asset in 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
+                             'DesktopAppInstaller_Dependencies.zip') {
+            $file = Join-Path $work $asset
+            Invoke-WebRequest "$base/$asset" -OutFile $file
+
+            $sidecar = [IO.Path]::GetFileNameWithoutExtension($asset) + '.txt'
+            $expected = (Invoke-WebRequest "$base/$sidecar").Content.Trim()
+            $actual = (Get-FileHash -Path $file -Algorithm SHA256).Hash
+
+            if ($actual -ne $expected) {
+              throw "$asset hash mismatch: expected $expected, got $actual."
+            }
+          }
+
+          Expand-Archive -Path (Join-Path $work 'DesktopAppInstaller_Dependencies.zip') `
+                         -DestinationPath (Join-Path $work 'dependencies') -Force
+
+          # -DependencyPath installs only the dependencies the bundle actually needs, so an
+          # already-present VCLibs is skipped rather than failing as an unnecessary downgrade.
+          # The runner is x64; ARM64 runtime execution is a binding non-goal in design/00-brief.md.
+          $dependencies = @(Get-ChildItem -Path (Join-Path $work 'dependencies') -Recurse -Include *.appx, *.msix |
+            Where-Object { $_.FullName -match '[\\/]x64[\\/]' })
+
+          $arguments = @{
+            Path = Join-Path $work 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+            ForceUpdateFromAnyVersion = $true
+          }
+
+          # An empty -DependencyPath is an error rather than a no-op, so omit it when the layout
+          # yielded nothing. A genuinely missing dependency then fails the bundle install below,
+          # which is the outcome that should fail the gate anyway.
+          if ($dependencies.Count -gt 0) { $arguments.DependencyPath = $dependencies.FullName }
+
+          Add-AppxPackage @arguments
+
+          $package = Get-AppxPackage Microsoft.DesktopAppInstaller
+          if ($null -eq $package) {
+            throw 'App Installer is absent after installing the pinned build.'
+          }
+
+          "after=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+
       - name: Run packed consumer smoke test
         id: smoke
         shell: pwsh
@@ -129,7 +198,10 @@ jobs:
         shell: pwsh
         env:
           PREREQUISITE_OUTCOME: ${{ steps.prerequisite.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
           SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          APP_INSTALLER_BEFORE: ${{ steps.prerequisite.outputs.before }}
+          APP_INSTALLER_AFTER: ${{ steps.install.outputs.after }}
         run: |
           $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
           $principal = [Security.Principal.WindowsPrincipal]::new($identity)
@@ -148,6 +220,9 @@ jobs:
             "Interactive: $([Environment]::UserInteractive)",
             "Elevated: $elevated",
             "WinGet prerequisite: $env:PREREQUISITE_OUTCOME",
+            "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
+            "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
+            "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
             "Smoke target: $env:SMOKE_OUTCOME",
             "Observed $($version ?? 'WinGet version: (not observed)')"
           ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
