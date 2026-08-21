@@ -181,13 +181,18 @@ Operation methods keep their existing declarations. When C15 applies they return
 
 ### Internal translation boundary
 
-The operation and request translations materialised in S5 are declared in
+The operation and request translations materialised in S5, plus `CopyStrings` and `ToNullableDate`
+materialised in S6, are declared in
 [`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs) and called from
-[`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs). Until the remaining scaffold under
-*Projection mapper* is materialised in S6, the still-private translation declarations it lists remain
-in `WinGetClient.cs` and [`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). Tests
-reach the mapper only through the existing `InternalsVisibleTo` grant in
-[`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj); they do not reach it
+[`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) and
+[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). The remaining scaffold under
+*Projection mapper* — `ToPackages`, `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`,
+`CopyDocumentations`, `CopyIcons`, `ToPackageSource`, `GetPriority` — is still declared as private
+translations in `WinGetClient.cs` and `WinGetSourceClient.cs`; each takes a concrete WinRT-projected
+type as a parameter that cannot be constructed outside live COM activation, so it is not yet known how
+to satisfy this contract's unit-test-only requirement for it. Tests reach the materialised mapper
+members only through the existing `InternalsVisibleTo` grant in
+[`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj); they do not reach them
 through a constructed client, factory, context, or live COM object.
 
 The activation-selection seam is the scaffold under *Activation-mode selector*. Tests call it with

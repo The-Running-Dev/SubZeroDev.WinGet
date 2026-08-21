@@ -217,7 +217,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
             Name: info.Name,
             Type: info.Type,
             Argument: info.Argument,
-            LastUpdated: ToNullableDate(info.LastUpdateTime),
+            LastUpdated: WinGetProjectionMapper.ToNullableDate(info.LastUpdateTime),
             Origin: info.Origin switch
             {
                 PackageCatalogOrigin.Predefined => PackageSourceOrigin.Predefined,
@@ -243,9 +243,6 @@ public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
             return 0;
         }
     }
-
-    private static DateTimeOffset? ToNullableDate(DateTimeOffset value) =>
-        value == default ? null : value;
 
     public void Dispose()
     {

@@ -161,4 +161,32 @@ public class WinGetProjectionMapperTests
     [TestCase(PackageInstallerKind.Font, PackageInstallerType.Font)]
     public void MapInstallerType_MapsEveryPublicValue(PackageInstallerKind input, PackageInstallerType expected) =>
         WinGetProjectionMapper.MapInstallerType(input).Should().Be(expected);
+
+    [Test]
+    public void CopyStrings_WithNullSource_ReturnsEmptyList() =>
+        WinGetProjectionMapper.CopyStrings(null).Should().BeEmpty();
+
+    [Test]
+    public void CopyStrings_WithEmptySource_ReturnsEmptyList() =>
+        WinGetProjectionMapper.CopyStrings(new List<string>()).Should().BeEmpty();
+
+    [Test]
+    public void CopyStrings_WithNonEmptySource_PreservesEveryItemInOrder()
+    {
+        var source = new List<string> { "beta", "alpha", "beta", "gamma" };
+
+        WinGetProjectionMapper.CopyStrings(source).Should().Equal(source);
+    }
+
+    [Test]
+    public void ToNullableDate_WithDefaultValue_ReturnsNull() =>
+        WinGetProjectionMapper.ToNullableDate(default).Should().BeNull();
+
+    [Test]
+    public void ToNullableDate_WithNonDefaultValue_ReturnsSameValue()
+    {
+        var value = new DateTimeOffset(2026, 8, 21, 12, 0, 0, TimeSpan.Zero);
+
+        WinGetProjectionMapper.ToNullableDate(value).Should().Be(value);
+    }
 }

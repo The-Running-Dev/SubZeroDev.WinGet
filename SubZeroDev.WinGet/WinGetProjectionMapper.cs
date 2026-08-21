@@ -148,6 +148,22 @@ internal static class WinGetProjectionMapper
         _ => ProcessorArchitecture.Unknown
     };
 
+    internal static List<string> CopyStrings(IReadOnlyList<string>? source)
+    {
+        var count = source?.Count ?? 0;
+        var list = new List<string>(count);
+
+        for (var i = 0; i < count; i++)
+        {
+            list.Add(source![i]);
+        }
+
+        return list;
+    }
+
+    internal static DateTimeOffset? ToNullableDate(DateTimeOffset value) =>
+        value == default ? null : value;
+
     internal static PackageInstallerType MapInstallerType(PackageInstallerKind kind) => kind switch
     {
         PackageInstallerKind.Inno => PackageInstallerType.Inno,
