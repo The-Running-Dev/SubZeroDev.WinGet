@@ -10,3 +10,10 @@ runtime, not a new responsibility of the existing C# client library.
 
 Read `context.md` for established constraints and `handoff-to-opus.md` before turning
 this proposal into a maintainer-approved brief or a binding design.
+
+## Status
+
+Superseded as of 2026-08-29. The maintainer resolved every decision this handoff required, and the
+resulting draft brief is `design/self-hosted-source/00-brief.md`. The six decisions, their rejected
+alternatives, and their reversibility are recorded in `design/90-decisions.md` under that date. This
+directory stays as the origin record; it is not edited further.
