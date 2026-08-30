@@ -288,7 +288,9 @@ mapper is "an internal organization boundary, not a fakeable projection abstract
 *Alternatives considered* rejects mocking the projection because "a fake projection tests the fake".
 `design/30-slices.md` S6 repeats it as an out-of-scope line.
 
-Resolving this therefore requires a `design/10-design.md` amendment, not a contract edit. Until one
-lands, S6.1 and S6.5 are unsatisfiable for these eight members and no slice may narrow, reinterpret,
+Resolving this therefore requires a `design/10-design.md` amendment, not a contract edit. The
+2026-08-30 decision *The eight projected-parameter translations are covered by live evidence, not
+unit tests* records which amendment; it has not yet been applied. Until it is, S6.1 and S6.5 are
+unsatisfiable for these eight members and no slice may narrow, reinterpret,
 or partially satisfy them. The scaffold under *Projection mapper* remains the declared intent; it is
 not licence to materialise the members without the tests the invariants require.
