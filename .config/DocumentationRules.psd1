@@ -26,6 +26,13 @@
 
     # Path segments never scanned. Generated, vendored, and dependency trees are
     # not authored here.
+    #
+    # The last three are the gitignored research clones CLAUDE.md names: they are
+    # reference material for reading, not this repository's source, and their docs
+    # are upstream's to fix. They are absent from a CI checkout, so leaving them
+    # out of this list made the gate pass in CI and fail on any working tree that
+    # has them - 23 findings, none of them in a file this repository owns. A gate
+    # that cannot be reproduced locally is one nobody runs before pushing.
     ExcludedSegments = @(
         '.git'
         'artifacts'
@@ -33,6 +40,9 @@
         'coverage'
         'dist'
         'node_modules'
+        'UniGetUI'
+        'Winget-AutoUpdate'
+        'winget-cli'
     )
 
     # --- GeneratedFiles:start ---
