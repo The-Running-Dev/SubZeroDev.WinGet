@@ -20,126 +20,6 @@ from git history, while `/track` ignores landed slices when checking criterion d
 
 ## Outstanding
 
-## S1 — Version absence becomes falsifiable
-Delivers: A .NET consumer can distinguish a runtime that lacks the WinGet version member from a
-real activation, interop, projection, or cancellation failure instead of receiving `null` for all of
-them.
-Touches: `SubZeroDev.WinGet/WinGetClient.cs`, `SubZeroDev.WinGet.Tests/`
-Depends on: none
-Acceptance:
-  - S1.1 When the activated backend supplies a non-null, non-whitespace version,
-    `IWinGetClient.GetWinGetVersion` and the service forwarder return that value unchanged.
-  - S1.2 An `InvalidCastException` with `HResult == 0x80004002` (`E_NOINTERFACE`) while reading the
-    version member returns `null`.
-  - S1.3 An `InvalidCastException` with any other HRESULT, any `COMException`, and any activation or
-    projection failure propagate as their original typed failures rather than returning `null`.
-  - S1.4 Caller-token cancellation remains `OperationCanceledException` and is not classified as an
-    unavailable version member.
-  - S1.5 The existing public signatures remain unchanged, and the implementation adds neither a
-    `winget --version` fallback nor client-layer logging.
-  - S1.6 Reinstating the former blanket catch makes at least one new classifier regression test fail.
-Out of scope: constructing or executing a packed consumer, changing CI status policy, or changing any
-    public declaration.
-
----
-
-## S2 — A packed consumer proves the version path on hosted Windows
-Delivers: The maintainer can run one named gate that installs the built package into a real consumer
-and proves that consumer can obtain a WinGet version on GitHub-hosted Windows x64.
-Touches: `build/Build.cs`, `.github/workflows/spike-com-activation.yml`,
-         `.github/workflows/build.yml`, packed-consumer artifacts under the build output
-Depends on: S1
-Acceptance:
-  - S2.1 `PackedConsumerSmokeTest` constructs its consumer through the same implementation used by
-    `PackageTest`, restores from the produced `.nupkg`, and uses no `ProjectReference` to the library.
-  - S2.2 On Windows x64 with WinGet installed, the packed consumer calls `GetWinGetVersion` and fails
-    unless the returned value is non-null and non-whitespace.
-  - S2.3 `PackageTest` remains hermetic: it validates package structure without executing the
-    consumer, activating COM, invoking `winget.exe`, or contacting a feed.
-  - S2.4 A GitHub-hosted Windows x64 run after S1 records the exact commit and run identity and
-    observes a non-null version from the packed consumer.
-  - S2.5 The recorded run includes the observed OS, architecture, WinGet version, interactivity, and
-    elevation state; an absent prerequisite is a failed gate and licenses no runtime claim.
-  - S2.6 A `null` result or unrelated failure leaves the machine-state status non-required and stops
-    the sequence for the brief/environment decision in C23; no fallback observable or weaker
-    assertion is introduced.
-Out of scope: classifying the twelve project-reference integration tests, making a status required,
-    ARM64 runtime execution, or any mutating WinGet operation.
-
----
-
-## S3 — Cancelled operations return the cancelled result
-Delivers: A caller whose WinGet operation is cancelled by the user receives the existing cancelled
-terminal result and can distinguish it from both caller-token cancellation and other failures.
-Touches: `SubZeroDev.WinGet/WinGetClient.cs`,
-         `SubZeroDev.WinGet/PackageManagementService.cs`, `SubZeroDev.WinGet.Tests/`
-Depends on: none
-Acceptance:
-  - S3.1 A failed operation carrying an extended exception whose HRESULT is
-    `WinGetErrorCodes.InstallCancelledByUser` returns `Status == PackageOperationStatus.Cancelled`,
-    `Succeeded == false`, and preserves that HRESULT in `ExtendedErrorCode`.
-  - S3.2 The same projection status with any other HRESULT retains its existing mapped status and
-    failure data.
-  - S3.3 The service layer performs no automatic retry for a returned cancelled result.
-  - S3.4 Cancellation requested through the caller's token still throws `OperationCanceledException`
-    rather than returning a cancelled result.
-  - S3.5 No public declaration or existing retry class changes, and reverting the HRESULT
-    classification makes the new result test fail.
-Out of scope: adding a new cancellation value, changing caller-token semantics, or covering live
-    mutating operations.
-
----
-
-## S4 — Activation fallback is deterministic under unit test
-Delivers: The maintainer can prove the production activation order, fallback, caching, and failure
-behaviour without activating WinGet or constructing projected COM objects in a unit test.
-Touches: `SubZeroDev.WinGet/Com/WinGetFactory.cs`,
-         `SubZeroDev.WinGet/Com/WinGetActivationModeSelector.cs`,
-         `SubZeroDev.WinGet.Tests/`
-Depends on: none
-Acceptance:
-  - S4.1 With scripted failures, the selector attempts `Projection`, `LocalServer`, then
-    `LocalServerLowerTrust`, stops at the first success, and returns that attempt's value.
-  - S4.2 After the first success, a later create invokes only the cached mode; it does not retry the
-    earlier modes.
-  - S4.3 If the cached mode later fails, that failure propagates and no mode is reselected for that
-    factory.
-  - S4.4 If all three initial attempts fail, the caller receives `WinGetUnavailableException` with
-    every attempt failure retained, and a later independent call may attempt the sequence again.
-  - S4.5 Concurrent first callers serialize mode selection so that one successful mode becomes the
-    factory invariant and no caller observes a mixed activation sequence.
-  - S4.6 `WinGetFactory` remains the sole owner of projection constructors, CLSIDs, IIDs, and raw
-    activation flags; selector tests use inert values and scripted exceptions only.
-Out of scope: changing activation order or flags, adding retry after a cached-mode failure, or
-    replacing the owned MTA context.
-
----
-
-## S5 — Operation and request translations have one tested owner
-Delivers: The maintainer can exercise package-operation and request translations directly as unit
-tests, while production callers continue to receive the same results without activating WinGet.
-Touches: `SubZeroDev.WinGet/WinGetClient.cs`,
-         `SubZeroDev.WinGet/WinGetProjectionMapper.cs`, `SubZeroDev.WinGet.Tests/`
-Depends on: S3
-Acceptance:
-  - S5.1 `WinGetProjectionMapper` is the sole declaration owner for `FindVersionId`, operation-result
-    creation, installer-error extraction, the four operation-status mappings, and the scope, mode,
-    architecture, and installer-kind mappings declared in `design/20-contract.md`.
-  - S5.2 Production client paths call those mapper members directly and no duplicate private
-    translation remains in `WinGetClient`.
-  - S5.3 Table-driven unit tests cover every declared projection enum member and an unknown value;
-    each input produces the exact public enum value required by the current declarations.
-  - S5.4 Operation-result tests cover success, ordinary failure, installer error preservation, and
-    the cancelled-by-user result from S3.
-  - S5.5 Version selection returns the requested version when present and `null` when absent without
-    enumerating a projected collection through `foreach` or LINQ.
-  - S5.6 The mapper has no call path to `WinGetFactory`, `WinGetComContext`, network access, or
-    `winget.exe`, and no public API is added.
-Out of scope: DTO and source projection, live COM tests, service retry changes, or collection
-    traversal outside the moved operation/request translations.
-
----
-
 ## S6 — DTO and collection projections have one tested owner
 Delivers: The maintainer can verify package, details, agreement, documentation, icon, and source
 projections with deterministic unit tests, including their empty and ordered collection behaviour.
@@ -163,30 +43,6 @@ Acceptance:
     `WinGetFactory`, `WinGetComContext`, or the CLI shim, and the public surface is unchanged.
 Out of scope: changing DTO shape, adding a projection abstraction, changing service behaviour, or
     executing live COM.
-
----
-
-## S7 — The live suite has stable risk-class entry points
-Delivers: A maintainer can run the machine-dependent and remote-catalog-dependent live checks
-separately and know that a clean result did not silently omit tests.
-Touches: `SubZeroDev.WinGet.Tests/WinGetClientIntegrationTests.cs`, `build/Build.cs`,
-         repository test documentation that names the local invocation
-Depends on: none
-Acceptance:
-  - S7.1 Stable test metadata classifies exactly seven existing tests as machine-state and exactly
-    five as catalog-dependent; selection does not depend on fixture or method name substrings.
-  - S7.2 `MachineStateTest` and `CatalogIntegrationTest` assert their expected selected counts before
-    execution and fail if a test is added, removed, or misclassified without updating the contract.
-  - S7.3 `IntegrationTest` composes both risk-specific targets and selects all twelve live tests
-    exactly once; it remains a local aggregate with no CI blocking consequence of its own.
-  - S7.4 The machine-state set contains no assertion whose witness is a fixed remote package identity
-    or catalog content; the five such assertions run only in the catalog-dependent set.
-  - S7.5 The live assembly remains non-parallel, and `PackedConsumerSmokeTest` is not counted as a
-    thirteenth project-reference integration test.
-  - S7.6 The stale documented fixture-name filter is replaced by the stable target invocations, and
-    an intentionally under-selecting fixture filter no longer represents a supported clean run.
-Out of scope: workflow jobs, branch-protection settings, evidence artifacts, or changing any live
-    test into a mutating operation.
 
 ---
 
@@ -331,3 +187,9 @@ Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtim
 
 | Slice | Issue | Landed at |
 |---|---|---|
+| S1 — Version absence becomes falsifiable | #20 | `1a3d751` |
+| S2 — A packed consumer proves the version path on hosted Windows | #21 | `1a3d751` |
+| S3 — Cancelled operations return the cancelled result | #22 | `1a3d751` |
+| S4 — Activation fallback is deterministic under unit test | #23 | `1a3d751` |
+| S5 — Operation and request translations have one tested owner | #24 | `1a3d751` |
+| S7 — The live suite has stable risk-class entry points | #26 | `1a3d751` |
