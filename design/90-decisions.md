@@ -5,6 +5,9 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
+- The local documentation gate scans the gitignored research clones. `build/Test-Documentation.ps1` run from the repository root reports 12 errors and 11 warnings, all of them inside `winget-cli/`, `UniGetUI/`, and `Winget-AutoUpdate/`, and none in repository-owned Markdown. `.config/DocumentationRules.psd1` `ExcludedSegments` does not list them and the gate does not consult `.gitignore`. The Docker CI run passes because only tracked content is copied in, so the local gate cannot reproduce the CI result and a maintainer must filter its output by hand to read it.
+- `.claude/commands/contract.md` points at a `design/10-design.md` § *Record* section that does not exist. The reference gates on `design/state/` existing, which it does, but `design/state/work/` is `/track`'s tracker mirror rather than a design-record store. The instruction is a kit-template assumption that does not hold in this repository; fixing it is a change to `~/.agent-kit`, which affects every installed repository.
+
 
 ---
 
