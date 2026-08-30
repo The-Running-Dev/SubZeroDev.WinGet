@@ -188,10 +188,9 @@ materialised in S6, are declared in
 [`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs). The remaining scaffold under
 *Projection mapper* — `ToPackages`, `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`,
 `CopyDocumentations`, `CopyIcons`, `ToPackageSource`, `GetPriority` — is still declared as private
-translations in `WinGetClient.cs` and `WinGetSourceClient.cs`; each takes a concrete WinRT-projected
-type as a parameter that cannot be constructed outside live COM activation, so it is not yet known how
-to satisfy this contract's unit-test-only requirement for it. Tests reach the materialised mapper
-members only through the existing `InternalsVisibleTo` grant in
+translations in `WinGetClient.cs` and `WinGetSourceClient.cs`. Their parameter types are undetermined
+and are stated under *Unresolved*; until that is settled they may not be materialised here. Tests
+reach the materialised mapper members only through the existing `InternalsVisibleTo` grant in
 [`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj); they do not reach them
 through a constructed client, factory, context, or live COM object.
 
@@ -267,3 +266,29 @@ failure record satisfies C3.
 Claim validation failures are blocking documentation findings. A warning cannot represent a broken
 C1, C2, C5, or C20 invariant. Existing link, anchor, generated-file, and terminology semantics remain
 unchanged.
+
+## Unresolved
+
+### The eight remaining mapper signatures
+
+`design/10-design.md` does not determine the parameter types of the eight translations still declared
+as private members of [`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) and
+[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs) — `ToPackages`, `ToPackageInfo`,
+`ToPackageDetails`, `CopyAgreements`, `CopyDocumentations`, `CopyIcons`, `ToPackageSource`, and
+`GetPriority`.
+
+Each currently takes a concrete WinRT-projected type — `MatchResult`, `CatalogPackage`,
+`PackageAgreement`, `Documentation`, `Icon`, or `PackageCatalogInfo`. Those types cannot be
+constructed outside live COM activation, so C13 and S6.5 cannot both hold for them: the members
+cannot be owned by `WinGetProjectionMapper` *and* exercised by unit tests that construct no client,
+factory, context, or live COM object.
+
+The design doc forecloses the resolution rather than leaving it open. *Module boundaries* states the
+mapper is "an internal organization boundary, not a fakeable projection abstraction", and
+*Alternatives considered* rejects mocking the projection because "a fake projection tests the fake".
+`design/30-slices.md` S6 repeats it as an out-of-scope line.
+
+Resolving this therefore requires a `design/10-design.md` amendment, not a contract edit. Until one
+lands, S6.1 and S6.5 are unsatisfiable for these eight members and no slice may narrow, reinterpret,
+or partially satisfy them. The scaffold under *Projection mapper* remains the declared intent; it is
+not licence to materialise the members without the tests the invariants require.
