@@ -116,9 +116,10 @@ evidence time-bounded:
 The brief requires exactly one consumer-facing statement: that `SubZeroDev.WinGet` cannot connect to
 this source, with its reason, so absence is not mistaken for oversight. Under `design/10-design.md`'s
 Claim model that statement's strength is `contract-checked` — it rests on the IDL declaring no
-authentication type the library exposes, not on an execution. Which document owns it is an open
-question below, because the four-row canonical map that would otherwise answer it belongs to the
-sequence this brief forbids touching.
+authentication type the library exposes, not on an execution. It is owned by this sequence's own
+documentation rather than by the v0.2 canonical claim map, as decided on 2026-08-30; the cost of that
+choice is that no existing gate polices it, so it is policed by this sequence's own check or not at
+all.
 
 ## Module boundaries
 
@@ -338,7 +339,7 @@ of recorded observations, and prose is where a record goes to be forgotten.
 ## Open questions
 
 Two are empirical stop conditions — verifiable, but only by executing, and the answer changes the
-slice list rather than the design's shape. Two are maintainer questions this design cannot answer.
+slice list rather than the design's shape. One is a maintainer question this design cannot answer.
 
 **Empirical: does WAM interactive authentication complete inside Windows Sandbox?** The brief
 requires a *disposable* client to complete registration, refresh, search, show, install, upgrade and
@@ -355,14 +356,6 @@ token for a Microsoft-owned client id against whatever resource the source adver
 single-maintainer tenant can consent that client id to an app registration it owns, and what that
 registration must look like, is verifiable and is not verified here. If it cannot, the Entra ID
 decision of 2026-08-29 is not reachable by this client and returns to the maintainer.
-
-**Maintainer: which document owns the library-limitation statement?** The brief requires it in
-`docs/`, and `docs/` is governed by the v0.2 sequence's four-row canonical claim map — which this
-brief forbids touching. Either this becomes a fifth canonical subject in `design/10-design.md`, which
-edits a document the brief protects, or it lives outside that map as an operations note owned by this
-sequence. The recommendation is the second, revisited when the sequences are promoted together after
-`v0.2.0` — but it is a policy call about whether two parallel sequences share one claim registry, and
-that is not a model's to make.
 
 **Maintainer: is there a recovery objective in time, or is "it can be restored at all" the whole
 requirement?** The 2026-08-29 decision settled the backup destination and the split by provenance,
