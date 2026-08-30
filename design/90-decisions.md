@@ -5,9 +5,6 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- The local documentation gate scans the gitignored research clones. `build/Test-Documentation.ps1` run from the repository root reports 12 errors and 11 warnings, all of them inside `winget-cli/`, `UniGetUI/`, and `Winget-AutoUpdate/`, and none in repository-owned Markdown. `.config/DocumentationRules.psd1` `ExcludedSegments` does not list them and the gate does not consult `.gitignore`. The Docker CI run passes because only tracked content is copied in, so the local gate cannot reproduce the CI result and a maintainer must filter its output by hand to read it.
-
-
 ---
 
 ### 2026-08-30 — Kit sync: converged citation fix taken outright, /next and codex/PROFILES.md installed
