@@ -303,6 +303,29 @@ Reversibility: cheap | expensive
 
 The rejected alternatives are the point. Without them the next session relitigates the same choice.
 
+## Writing a design-state record
+
+**Where this repository's own `design/state/` exists**, a decision that changes it is written by
+this sequence — the citation `/reconcile`, `/contract`, and `/design` each point at instead of
+restating it:
+
+1. Append the entry to `design/90-decisions.md`, in the format above, unchanged. Nothing already
+   there is touched.
+2. Regenerate projections — `tools/Update-DesignProjection.ps1`, a real run, not `-DryRun`.
+3. Run the checker — `tools/Test-DesignState.ps1`.
+
+Step 2 before step 3 is not optional — checking before regenerating reports every projection as
+stale, which trains the reader to ignore the report.
+
+**This is the kit's sequence with its middle steps removed, and the removal is deliberate.** The
+kit's own version has three further steps — write a decision record; update the affected unit
+records, moving superseded ids from `Live` to `Archival`; name a `StatedIn` site where the same
+change writes the decision's terms into an artifact. **None of them is reachable here**, because
+this repository's `design/state/` holds only the work mirror `tools/Update-WorkMirror.ps1`
+maintains. There are no unit records and no decision records to update. Restore those steps if and
+when that model is adopted; until then they would describe work nobody can do, which is worse than
+their absence.
+
 ## House conventions
 
 - Metric units and Celsius throughout, including in comments, docs, and test fixtures.
