@@ -69,7 +69,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
             // GetSources integration test.
         for (var i = 0; i < catalogs.Count; i++)
         {
-            sources.Add(ToPackageSource(catalogs[i].Info));
+            sources.Add(WinGetProjectionMapper.ToPackageSource(catalogs[i].Info));
         }
 
         return sources;
@@ -85,7 +85,7 @@ public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
 
         var reference = PackageManager.GetPackageCatalogByName(name);
 
-        return reference is null ? null : ToPackageSource(reference.Info);
+        return reference is null ? null : WinGetProjectionMapper.ToPackageSource(reference.Info);
     }
 
     /// <inheritdoc />
@@ -208,40 +208,6 @@ public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
         return result.Status == EditPackageCatalogStatus.Ok
             ? SourceOperationResult.Success()
             : SourceOperationResult.Failure(result.Status.ToString(), result.ExtendedErrorCode?.HResult);
-    }
-
-    private static PackageSource ToPackageSource(PackageCatalogInfo info)
-    {
-        return new PackageSource(
-            Id: info.Id,
-            Name: info.Name,
-            Type: info.Type,
-            Argument: info.Argument,
-            LastUpdated: WinGetProjectionMapper.ToNullableDate(info.LastUpdateTime),
-            Origin: info.Origin switch
-            {
-                PackageCatalogOrigin.Predefined => PackageSourceOrigin.Predefined,
-                PackageCatalogOrigin.User => PackageSourceOrigin.User,
-                _ => PackageSourceOrigin.Unknown
-            },
-            TrustLevel: info.TrustLevel == PackageCatalogTrustLevel.Trusted
-                ? PackageSourceTrustLevel.Trusted
-                : PackageSourceTrustLevel.None,
-            IsExplicit: info.Explicit,
-            Priority: GetPriority(info));
-    }
-
-    private static int GetPriority(PackageCatalogInfo info)
-    {
-        try
-        {
-            // Priority is contract 29; guard against older WinGet runtimes.
-            return info.Priority;
-        }
-        catch
-        {
-            return 0;
-        }
     }
 
     public void Dispose()
