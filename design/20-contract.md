@@ -21,7 +21,7 @@ library API.
 | C10 | `Coverage` evaluates one build-owned, checked-in decimal line-coverage floor over the library, with no file, class, namespace, or COM-orchestration exclusions. The value has one decimal place, and enforcement compares exact covered- and valid-line counts against its ratio rather than comparing rounded percentages. The report may include branch coverage, but only line coverage is gated initially. | Build | Planned code enforcement. |
 | C11 | Coverage input comes from the unit-test run that excludes every NUnit `[Explicit]` test. Live-test execution must never contribute to the report compared with the floor. Because the C26 translations are licensed by live evidence rather than by unit tests, the floor is a lower bound on *unit-only* coverage and is deliberately blind to live evidence; it is not a measure of the library's proven behaviour and no document may present it as one. | Build and documentation | `[Explicit]` exclusion exists; floor, input assertions, and the documentation reading are planned. |
 | C12 | The checked-in coverage floor is set from a measured unit-only result after the required unit tests land, is raised only with the measurement that justifies it, and is lowered only with a decision-log entry. | Build and decision log | Planned code enforcement for comparison; ratchet provenance is review-enforced. |
-| C13 | Membership of `WinGetProjectionMapper` is decided by purity alone — no activation path, no I/O. It owns every such projection enum, option, result, DTO, and collection translation used by the package and source clients, and a projected parameter type never excludes a translation from it. It has no call path to `WinGetFactory`, `WinGetComContext`, COM activation, network access, or `winget.exe`. Loading projection enum and struct metadata does not by itself make its tests integration tests. | Client translation boundary | The members already declared in `WinGetProjectionMapper.cs` satisfy it; moving the eight still private in the clients, and the architecture check proving the absent dependency paths, are planned. |
+| C13 | Membership of `WinGetProjectionMapper` is decided by purity alone — no activation path, no I/O. It owns every such projection enum, option, result, DTO, and collection translation used by the package and source clients, and a projected parameter type never excludes a translation from it. It has no call path to `WinGetFactory`, `WinGetComContext`, COM activation, network access, or `winget.exe`. Loading projection enum and struct metadata does not by itself make its tests integration tests. | Client translation boundary | All members, including the eight moved in S6, are declared in `WinGetProjectionMapper.cs`; a source-level regression check in `SubZeroDev.WinGet.Tests` proves the absent dependency paths. |
 | C14 | Every CsWinRT-projected collection is traversed by index. Exposing translation functions to tests must not replace indexed loops with `foreach` or LINQ. | Client translation boundary | Enforced by production code; regression enforcement is planned. |
 | C15 | A failed operation whose extended HRESULT is `WinGetErrorCodes.InstallCancelledByUser` produces `PackageOperationStatus.Cancelled`, regardless of the projection status enum's lack of a cancelled member. Caller-token cancellation remains an `OperationCanceledException`; the two outcomes are not normalized together. | Client translation boundary | Planned code and unit-test enforcement. |
 | C16 | `GetWinGetVersion` returns `null` only when the runtime does not expose the version member through the supported activation path. Cancellation and every unrelated failure remain distinguishable and propagate according to *Error semantics*. | Client layer | Planned code and live-test enforcement. |
@@ -105,27 +105,12 @@ translation. Their inputs are ordinary .NET and public model values, so a unit t
 client, factory, context, or COM object exercises the real member and not a substitute for it.
 
 **Live-licensed.** Ten translations take a projected instance and have no constructible input outside
-an activated server. C13 owns them and C26 licenses them by live evidence. Two are already declared in
-the mapper — `FindVersionId(CatalogPackage, string)` and `GetInstallerErrorCode(InstallResult)`, both
-landed in S5 without a unit test, which is the state C26 describes rather than an omission to correct.
-The remaining eight are still private in
-[`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) and
-[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs) and move under C13:
-
-```csharp
-internal static List<PackageInfo> ToPackages(IReadOnlyList<MatchResult> matches);
-internal static PackageInfo ToPackageInfo(CatalogPackage package);
-internal static PackageDetails ToPackageDetails(CatalogPackage package);
-internal static List<PackageAgreementInfo> CopyAgreements(IReadOnlyList<PackageAgreement>? source);
-internal static List<PackageDocumentation> CopyDocumentations(IReadOnlyList<Documentation>? source);
-internal static List<PackageIconInfo> CopyIcons(IReadOnlyList<Icon>? source);
-internal static PackageSource ToPackageSource(PackageCatalogInfo info);
-internal static int GetPriority(PackageCatalogInfo info);
-```
-
-Moving one of these changes its accessibility and its declaring file, never its signature or its
-projection reading. The move is not licence to alter a reading while relocating it, and it does not by
-itself produce the named live assertions C26 requires.
+an activated server. C13 owns them and C26 licenses them by live evidence: `FindVersionId(CatalogPackage,
+string)` and `GetInstallerErrorCode(InstallResult)`, landed in S5, plus the eight moved under C13 in S6
+— `ToPackages`, `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`, `CopyDocumentations`, `CopyIcons`,
+`ToPackageSource`, and `GetPriority`. All ten are declared in
+[`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs) without a unit test, which
+is the state C26 describes rather than an omission to correct.
 
 C14, C15, and the state-dependent facts under *Product result types* remain authoritative. The mapper
 is stateless. Its callers supply already-created projection values; it never constructs a client,
@@ -182,11 +167,11 @@ Operation methods keep their existing declarations. When C15 applies they return
 
 ### Internal translation boundary
 
-The mapper's landed members are declared in
+The mapper's members, including the eight moved under C13 in S6, are declared in
 [`WinGetProjectionMapper.cs`](../SubZeroDev.WinGet/WinGetProjectionMapper.cs) and called from
 [`WinGetClient.cs`](../SubZeroDev.WinGet/WinGetClient.cs) and
-[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs); the eight translations still
-private in those two clients are named under *Types* § *Projection mapper* and move under C13.
+[`WinGetSourceClient.cs`](../SubZeroDev.WinGet/WinGetSourceClient.cs); neither client retains a
+duplicate pure mapper.
 
 Tests reach a mapper member only through the existing `InternalsVisibleTo` grant in
 [`SubZeroDev.WinGet.csproj`](../SubZeroDev.WinGet/SubZeroDev.WinGet.csproj), and never through a

@@ -179,4 +179,174 @@ internal static class WinGetProjectionMapper
         PackageInstallerKind.Font => PackageInstallerType.Font,
         _ => PackageInstallerType.Unknown
     };
+
+    // IReadOnlyList<T>'s CsWinRT-projected enumerator throws InvalidCastException ("No such
+    // interface supported") when walked via foreach/LINQ (verified empirically against WinGet
+    // COM interop 1.29.280) — indexer-based access is the reliable path, so every call site
+    // funnels through indexed for loops rather than enumerating WinRT collections directly.
+    internal static List<PackageInfo> ToPackages(IReadOnlyList<MatchResult> matches)
+    {
+        var packages = new List<PackageInfo>(matches.Count);
+
+        for (var i = 0; i < matches.Count; i++)
+        {
+            packages.Add(ToPackageInfo(matches[i].CatalogPackage));
+        }
+
+        return packages;
+    }
+
+    internal static PackageInfo ToPackageInfo(CatalogPackage package)
+    {
+        var installed = package.InstalledVersion;
+        var latest = package.DefaultInstallVersion;
+
+        return new PackageInfo(
+            Id: package.Id,
+            Name: package.Name,
+            Publisher: latest?.Publisher ?? installed?.Publisher,
+            InstalledVersion: installed?.Version,
+            AvailableVersion: latest?.Version,
+            IsInstalled: installed is not null,
+            IsUpdateAvailable: package.IsUpdateAvailable,
+            Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
+    }
+
+    internal static PackageDetails ToPackageDetails(CatalogPackage package)
+    {
+        var installed = package.InstalledVersion;
+        var latest = package.DefaultInstallVersion;
+        var versionInfo = latest ?? installed;
+
+        CatalogPackageMetadata? metadata = null;
+
+        try
+        {
+            metadata = versionInfo?.GetCatalogPackageMetadata();
+        }
+        catch
+        {
+            // Not all sources provide manifest metadata (e.g. bare ARP entries); fall through
+            // with nulls rather than failing the whole details lookup.
+        }
+
+        var availableVersions = new List<string>();
+        var versionIds = package.AvailableVersions;
+
+        for (var i = 0; i < versionIds.Count; i++)
+        {
+            var version = versionIds[i].Version;
+
+            if (!string.IsNullOrEmpty(version) && !availableVersions.Contains(version))
+            {
+                availableVersions.Add(version);
+            }
+        }
+
+        return new PackageDetails(
+            Id: package.Id,
+            Name: package.Name,
+            Publisher: metadata?.Publisher ?? versionInfo?.Publisher,
+            PublisherUrl: metadata?.PublisherUrl,
+            PublisherSupportUrl: metadata?.PublisherSupportUrl,
+            Author: metadata?.Author,
+            ShortDescription: metadata?.ShortDescription,
+            Description: metadata?.Description,
+            PackageUrl: metadata?.PackageUrl,
+            License: metadata?.License,
+            LicenseUrl: metadata?.LicenseUrl,
+            Copyright: metadata?.Copyright,
+            CopyrightUrl: metadata?.CopyrightUrl,
+            PrivacyUrl: metadata?.PrivacyUrl,
+            ReleaseNotes: metadata?.ReleaseNotes,
+            ReleaseNotesUrl: metadata?.ReleaseNotesUrl,
+            InstallationNotes: metadata?.InstallationNotes,
+            PurchaseUrl: metadata?.PurchaseUrl,
+            Tags: CopyStrings(metadata?.Tags),
+            Agreements: CopyAgreements(metadata?.Agreements),
+            Documentations: CopyDocumentations(metadata?.Documentations),
+            Icons: CopyIcons(metadata?.Icons),
+            InstalledVersion: installed?.Version,
+            AvailableVersion: latest?.Version,
+            AvailableVersions: availableVersions,
+            IsInstalled: installed is not null,
+            IsUpdateAvailable: package.IsUpdateAvailable,
+            Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
+    }
+
+    internal static List<PackageAgreementInfo> CopyAgreements(IReadOnlyList<PackageAgreement>? source)
+    {
+        var count = source?.Count ?? 0;
+        var list = new List<PackageAgreementInfo>(count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var item = source![i];
+            list.Add(new PackageAgreementInfo(item.Label, item.Text, item.Url));
+        }
+
+        return list;
+    }
+
+    internal static List<PackageDocumentation> CopyDocumentations(IReadOnlyList<Documentation>? source)
+    {
+        var count = source?.Count ?? 0;
+        var list = new List<PackageDocumentation>(count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var item = source![i];
+            list.Add(new PackageDocumentation(item.DocumentLabel, item.DocumentUrl));
+        }
+
+        return list;
+    }
+
+    internal static List<PackageIconInfo> CopyIcons(IReadOnlyList<Icon>? source)
+    {
+        var count = source?.Count ?? 0;
+        var list = new List<PackageIconInfo>(count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var item = source![i];
+            list.Add(new PackageIconInfo(item.Url, item.FileType.ToString(), item.Resolution.ToString(), item.Theme.ToString()));
+        }
+
+        return list;
+    }
+
+    internal static PackageSource ToPackageSource(PackageCatalogInfo info)
+    {
+        return new PackageSource(
+            Id: info.Id,
+            Name: info.Name,
+            Type: info.Type,
+            Argument: info.Argument,
+            LastUpdated: ToNullableDate(info.LastUpdateTime),
+            Origin: info.Origin switch
+            {
+                PackageCatalogOrigin.Predefined => PackageSourceOrigin.Predefined,
+                PackageCatalogOrigin.User => PackageSourceOrigin.User,
+                _ => PackageSourceOrigin.Unknown
+            },
+            TrustLevel: info.TrustLevel == PackageCatalogTrustLevel.Trusted
+                ? PackageSourceTrustLevel.Trusted
+                : PackageSourceTrustLevel.None,
+            IsExplicit: info.Explicit,
+            Priority: GetPriority(info));
+    }
+
+    internal static int GetPriority(PackageCatalogInfo info)
+    {
+        try
+        {
+            // Priority is contract 29; guard against older WinGet runtimes.
+            return info.Priority;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
 }
