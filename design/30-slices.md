@@ -183,6 +183,72 @@ Acceptance:
 Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtime claims, or any
     validation excluded by the brief.
 
+---
+
+## S13 — Product invariants fail the build when they regress
+Delivers: The maintainer finds out from the pull-request check itself, rather than from a reviewer
+happening to notice, when a change quietly adds to what consumers can call, points a layer at
+something it must not depend on, or sends a new operation through the command-line fallback.
+Touches: `SubZeroDev.WinGet.Tests/` (product-invariant regression tests and a checked-in
+         public-surface baseline fixture)
+Depends on: none
+Acceptance:
+  - S13.1 A checked-in baseline enumerates every public type and member the library exposes. Any
+    difference from it — an added member, a removed member, or a changed signature — fails the check
+    and names the differing member.
+  - S13.2 A negative fixture whose input adds one public member fails the check, and the
+    repository's real surface passes it; both outcomes are asserted.
+  - S13.3 The check proves the declared dependency direction has no back edge: the client layer
+    references no service type, the COM owner, factory, and activation-mode selector reference no
+    client or service type, and the projection mapper references none of the three. A scripted back
+    edge in a negative fixture fails the check.
+  - S13.4 `IWinGetCliClient` declares exactly the pin, export, and import members it declares today,
+    and `winget.exe` process creation occurs in the CLI shim implementation and nowhere else; an
+    added interface member or a process start outside the shim fails the check.
+  - S13.5 The checks run inside the existing hermetic required check and hold C7: they activate no
+    COM, start no process, contact no network, and read only compiled metadata and repository source.
+  - S13.6 Changing the baseline requires editing the checked-in file in the same commit as the
+    surface change; the check has no command-line override, environment override, or auto-accept mode.
+Out of scope: adding or removing public surface, changing the dependency graph to satisfy the check,
+    widening the CLI-shim exception, moving the check out of the hermetic job, or introducing a
+    third-party architecture-testing dependency without a decision-log entry.
+
+---
+
+## S14 — Live runs name the translations they license
+Delivers: The maintainer can read, from a live run's own record, exactly which package and source
+translations that run checked and which it did not, so a green pull-request check is never mistaken
+for evidence about the ones only a live run can exercise.
+Touches: `SubZeroDev.WinGet.Tests/WinGetClientIntegrationTests.cs`,
+         `.github/workflows/build.yml`, CI evidence artifacts
+Depends on: S8, plus the `/contract` amendment raising `CatalogIntegrationTest`'s asserted count
+            to six (`design/90-decisions.md`, 2026-08-31)
+Acceptance:
+  - S14.1 Each of the eight live-licensed translations reachable read-only — `ToPackages`,
+    `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`, `CopyDocumentations`, `CopyIcons`,
+    `ToPackageSource`, and `GetPriority` — is covered by at least one live assertion that names the
+    member it licenses and fails when that member returns a wrong projection reading.
+  - S14.2 Each named assertion compares at least one field the translation copies against an
+    expected value. A non-null or non-empty check alone does not count as naming the member.
+  - S14.3 The eight assertions above are added inside the existing twelve live tests, and the only
+    test added is S14.7's. `MachineStateTest` still selects exactly seven and
+    `CatalogIntegrationTest` selects exactly six, and both still fail before execution on any other
+    count.
+  - S14.4 Each live job's evidence record lists the translations its passing assertions licensed and
+    records in its non-assertions the live-licensed translations that run did not check.
+  - S14.5 Where the witness package's manifest supplies no agreements, documentation, or icons, the
+    run records a non-assertion naming the missing witness rather than a passing assertion over an
+    empty collection.
+  - S14.6 The hermetic job's evidence record explicitly disclaims every live-licensed translation in
+    its non-assertions, and no document reads a green hermetic check as evidence about one.
+  - S14.7 One catalog-dependent live test calls `Download` with a pinned version and asserts that the
+    resolved version equals the requested one, naming `FindVersionId` as the translation it licenses.
+    The test cleans up whatever it writes and asserts nothing about installed machine state.
+Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upgrade — a binding
+    non-goal, so it stays obliged by C26 and licensed by nothing; any live test beyond S14.7's;
+    exercising install, upgrade, uninstall, repair, or import to reach a translation; and any fake,
+    stub, or reflection substitute for a projected type.
+
 ## Landed
 
 | Slice | Issue | Landed at |
