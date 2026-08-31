@@ -128,6 +128,10 @@ Acceptance:
   - S10.7 The `runtime-version-floor` subject has a canonical owner stating that `GetWinGetVersion`
     requires WinGet 1.12 or newer and returns `null` below it, per C25; no document asserts a
     library-wide minimum WinGet version.
+  - S10.8 Every document stating the enforced coverage floor states it as a lower bound on unit-only
+    coverage that is blind to live evidence, per C11, and the gate fails a negative fixture presenting
+    the floor as a measure of the library's proven, tested, or verified behaviour. This is a gate rule
+    over any document, not a sixth claim subject; C1's five subjects are unchanged.
 Out of scope: the documentation redesign, generated claim manifests, changing routes or information
     architecture, or promoting a claim from wording alone.
 
@@ -248,6 +252,42 @@ Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upg
     non-goal, so it stays obliged by C26 and licensed by nothing; any live test beyond S14.7's;
     exercising install, upgrade, uninstall, repair, or import to reach a translation; and any fake,
     stub, or reflection substitute for a projected type.
+
+---
+
+## S15 — Every live check proves which WinGet it ran against
+Delivers: The maintainer can tell from the build alone that every live check ran against the WinGet
+build this library is compiled against, rather than whatever version the runner happened to ship that
+week. A newly added live check that would quietly skip installing it is stopped by a failing check
+instead of being noticed months later, or never.
+Touches: `.github/workflows/build.yml`, a workflow-composition check under
+         `SubZeroDev.WinGet.Tests/` or `build/`, `SubZeroDev.WinGet/SubZeroDev.WinGet.csproj`
+         (read only), CI evidence artifacts
+Depends on: none. Land before S8, whose new catalog job this check constrains; S8 would otherwise add
+            a live job that does not constitute its runtime, and a later slice would repair it.
+Acceptance:
+  - S15.1 The pinned WinGet version the workflow installs is compared against the
+    `Microsoft.WindowsPackageManager.ComInterop` version the library project declares; the check fails
+    and names both values when they differ, per C24. A fixture pair that differs fails the check, and
+    the repository's real pair passes it.
+  - S15.2 The check fails when a job invoking a live target — the machine-state, catalog-dependent, or
+    packed-consumer target named under C8 and C9 — has no pinned-WinGet install step ordered before
+    that invocation. A fixture job invoking a live target with no install step, and one whose install
+    step is ordered after the invocation, each fail; the repository's real workflow passes.
+  - S15.3 Each job invoking a live target records the App Installer version observed immediately
+    before and immediately after the pinned install. An absent observation is recorded as unobserved;
+    no value is carried over from another step, another job, or an earlier run.
+  - S15.4 The check fails when a live-target step would execute despite its job's pinned install
+    having failed, so a failed install ends the job at the failed precondition and licenses no claim.
+    A fixture job whose live step runs regardless of the install step's outcome fails the check.
+  - S15.5 The check runs inside the existing hermetic required check and holds C7: it activates no
+    COM, starts no process, contacts no network, and reads only repository files.
+  - S15.6 The check has no command-line override, environment override, or list of exempt jobs.
+    Adding a live job that skips the pinned install requires deleting the check, not configuring
+    past it.
+Out of scope: choosing or changing which WinGet version is pinned, installing WinGet anywhere other
+    than the hosted live jobs, adding or removing a live job, making any status required, ARM64
+    runtime claims, and asserting anything about the live results themselves.
 
 ## Landed
 
