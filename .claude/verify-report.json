@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Test, coverage, architecture, and package",
+    "status": "DidNotRun",
+    "reason": "Local equivalent is `nuke Test Coverage ArchitectureTest PackageTest --configuration Release` via ./build.ps1. The .NET SDK is not installed in this container (`command -v dotnet` returns nothing), and the library targets net8.0-windows10.0.26100, which does not build on this Linux host. Flagged at .github/workflows/build.yml:69."
+  },
+  {
+    "name": "Validate Markdown links, terminology, and generated files",
+    "status": "DidNotRun",
+    "reason": "Local equivalent is ./build/Test-Documentation.ps1. Neither pwsh nor powershell is installed in this container (`command -v pwsh` and `command -v powershell` both return nothing). Flagged at .github/workflows/docs-ci.yml:42."
+  },
+  {
+    "name": "Build documentation",
+    "status": "DidNotRun",
+    "reason": "Local equivalent is ./docs.ps1 -BuildOnly, which needs both PowerShell and Docker. Docker is present at /usr/bin/docker, but PowerShell is not installed, so the script cannot be invoked. Flagged at .github/workflows/docs-ci.yml:65."
+  }
+]
