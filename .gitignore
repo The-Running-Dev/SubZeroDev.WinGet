@@ -12,6 +12,10 @@ obj/
 ## VS Code
 .vscode/
 
+## Isolated worktrees created by the Agent tool's isolation:"worktree" option - local
+## tooling state for a background agent's own checkout, not repository content.
+.claude/worktrees/
+
 ## Local CI (act) and pack output
 .act-artifacts/
 artifacts/
