@@ -108,7 +108,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
         var result = await FindPackagesAsync(catalog, options, cancellationToken);
 
-        return ToPackages(result.Matches);
+        return WinGetProjectionMapper.ToPackages(result.Matches);
     }
 
     /// <inheritdoc />
@@ -122,7 +122,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         // No selectors and no filters selects the entire catalog.
         var result = await FindPackagesAsync(catalog, Factory.CreateFindPackagesOptions(), cancellationToken);
 
-        return ToPackages(result.Matches);
+        return WinGetProjectionMapper.ToPackages(result.Matches);
     }
 
     /// <inheritdoc />
@@ -144,7 +144,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
     {
         var package = await FindById(packageId, cancellationToken);
 
-        return package is null ? null : ToPackageInfo(package);
+        return package is null ? null : WinGetProjectionMapper.ToPackageInfo(package);
     }
 
     /// <inheritdoc />
@@ -155,7 +155,7 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
     {
         var package = await FindById(packageId, cancellationToken);
 
-        return package is null ? null : ToPackageDetails(package);
+        return package is null ? null : WinGetProjectionMapper.ToPackageDetails(package);
     }
 
     /// <inheritdoc />
@@ -640,142 +640,6 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         };
 
         progress.Report(new PackageOperationProgress(state, info.RepairCompletionProgress * 100, state.ToString()));
-    }
-
-    // IReadOnlyList<T>'s CsWinRT-projected enumerator throws InvalidCastException ("No such
-    // interface supported") when walked via foreach/LINQ (verified empirically against WinGet
-    // COM interop 1.29.280) — indexer-based access is the reliable path, so every call site
-    // funnels through indexed for loops rather than enumerating WinRT collections directly.
-    private static List<PackageInfo> ToPackages(IReadOnlyList<MatchResult> matches)
-    {
-        var packages = new List<PackageInfo>(matches.Count);
-
-        for (var i = 0; i < matches.Count; i++)
-        {
-            packages.Add(ToPackageInfo(matches[i].CatalogPackage));
-        }
-
-        return packages;
-    }
-
-    private static PackageInfo ToPackageInfo(CatalogPackage package)
-    {
-        var installed = package.InstalledVersion;
-        var latest = package.DefaultInstallVersion;
-
-        return new PackageInfo(
-            Id: package.Id,
-            Name: package.Name,
-            Publisher: latest?.Publisher ?? installed?.Publisher,
-            InstalledVersion: installed?.Version,
-            AvailableVersion: latest?.Version,
-            IsInstalled: installed is not null,
-            IsUpdateAvailable: package.IsUpdateAvailable,
-            Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
-    }
-
-    private static PackageDetails ToPackageDetails(CatalogPackage package)
-    {
-        var installed = package.InstalledVersion;
-        var latest = package.DefaultInstallVersion;
-        var versionInfo = latest ?? installed;
-
-        CatalogPackageMetadata? metadata = null;
-
-        try
-        {
-            metadata = versionInfo?.GetCatalogPackageMetadata();
-        }
-        catch
-        {
-            // Not all sources provide manifest metadata (e.g. bare ARP entries); fall through
-            // with nulls rather than failing the whole details lookup.
-        }
-
-        var availableVersions = new List<string>();
-        var versionIds = package.AvailableVersions;
-
-        for (var i = 0; i < versionIds.Count; i++)
-        {
-            var version = versionIds[i].Version;
-
-            if (!string.IsNullOrEmpty(version) && !availableVersions.Contains(version))
-            {
-                availableVersions.Add(version);
-            }
-        }
-
-        return new PackageDetails(
-            Id: package.Id,
-            Name: package.Name,
-            Publisher: metadata?.Publisher ?? versionInfo?.Publisher,
-            PublisherUrl: metadata?.PublisherUrl,
-            PublisherSupportUrl: metadata?.PublisherSupportUrl,
-            Author: metadata?.Author,
-            ShortDescription: metadata?.ShortDescription,
-            Description: metadata?.Description,
-            PackageUrl: metadata?.PackageUrl,
-            License: metadata?.License,
-            LicenseUrl: metadata?.LicenseUrl,
-            Copyright: metadata?.Copyright,
-            CopyrightUrl: metadata?.CopyrightUrl,
-            PrivacyUrl: metadata?.PrivacyUrl,
-            ReleaseNotes: metadata?.ReleaseNotes,
-            ReleaseNotesUrl: metadata?.ReleaseNotesUrl,
-            InstallationNotes: metadata?.InstallationNotes,
-            PurchaseUrl: metadata?.PurchaseUrl,
-            Tags: WinGetProjectionMapper.CopyStrings(metadata?.Tags),
-            Agreements: CopyAgreements(metadata?.Agreements),
-            Documentations: CopyDocumentations(metadata?.Documentations),
-            Icons: CopyIcons(metadata?.Icons),
-            InstalledVersion: installed?.Version,
-            AvailableVersion: latest?.Version,
-            AvailableVersions: availableVersions,
-            IsInstalled: installed is not null,
-            IsUpdateAvailable: package.IsUpdateAvailable,
-            Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
-    }
-
-    private static List<PackageAgreementInfo> CopyAgreements(IReadOnlyList<PackageAgreement>? source)
-    {
-        var count = source?.Count ?? 0;
-        var list = new List<PackageAgreementInfo>(count);
-
-        for (var i = 0; i < count; i++)
-        {
-            var item = source![i];
-            list.Add(new PackageAgreementInfo(item.Label, item.Text, item.Url));
-        }
-
-        return list;
-    }
-
-    private static List<PackageDocumentation> CopyDocumentations(IReadOnlyList<Documentation>? source)
-    {
-        var count = source?.Count ?? 0;
-        var list = new List<PackageDocumentation>(count);
-
-        for (var i = 0; i < count; i++)
-        {
-            var item = source![i];
-            list.Add(new PackageDocumentation(item.DocumentLabel, item.DocumentUrl));
-        }
-
-        return list;
-    }
-
-    private static List<PackageIconInfo> CopyIcons(IReadOnlyList<Icon>? source)
-    {
-        var count = source?.Count ?? 0;
-        var list = new List<PackageIconInfo>(count);
-
-        for (var i = 0; i < count; i++)
-        {
-            var item = source![i];
-            list.Add(new PackageIconInfo(item.Url, item.FileType.ToString(), item.Resolution.ToString(), item.Theme.ToString()));
-        }
-
-        return list;
     }
 
     private async Task<TResult> AwaitOperation<TResult, TProgress>(
