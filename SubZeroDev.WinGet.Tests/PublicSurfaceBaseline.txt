@@ -1,0 +1,251 @@
+Abstractions/IPackageManagementService.cs|Task<CliOperationResult> Export(string filePath, bool includeVersions = false, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<CliOperationResult> Pin(string packageId, string? version = null, bool blocking = false, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<CliOperationResult> Unpin(string packageId, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<IReadOnlyList<PackageInfo>> GetInstalled(CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<IReadOnlyList<PackageInfo>> Search(string query, string? sourceName = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageDetails?> GetDetails(string packageId, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<PackageOperationResult> Update(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default);
+Abstractions/IPackageManagementService.cs|public interface IPackageManagementService
+Abstractions/IPackageSourceService.cs|Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default);
+Abstractions/IPackageSourceService.cs|public interface IPackageSourceService
+Abstractions/IWinGetCliClient.cs|Task<CliOperationResult> AddPin(string packageId, string? version = null, bool blocking = false, bool pinInstalledVersion = false, CancellationToken cancellationToken = default);
+Abstractions/IWinGetCliClient.cs|Task<CliOperationResult> Export(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetCliClient.cs|Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default);
+Abstractions/IWinGetCliClient.cs|Task<CliOperationResult> RemovePin(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default);
+Abstractions/IWinGetCliClient.cs|Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default);
+Abstractions/IWinGetCliClient.cs|public interface IWinGetCliClient
+Abstractions/IWinGetClient.cs|Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<IReadOnlyList<PackageInfo>> GetInstalledPackages(CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<IReadOnlyList<PackageInfo>> Search(string query, int limit, string? sourceName = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageDetails?> GetPackageDetails(string packageId, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<PackageOperationResult> Upgrade(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default);
+Abstractions/IWinGetClient.cs|public interface IWinGetClient
+Abstractions/IWinGetSourceClient.cs|Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default);
+Abstractions/IWinGetSourceClient.cs|public interface IWinGetSourceClient
+Models/OperationRequests.cs|public DownloadRequest(string downloadDirectory) => DownloadDirectory = downloadDirectory;
+Models/OperationRequests.cs|public PackageArchitecture Architecture { get; init; } = PackageArchitecture.Default;
+Models/OperationRequests.cs|public PackageArchitecture Architecture { get; init; } = PackageArchitecture.Default;
+Models/OperationRequests.cs|public PackageInstallerKind InstallerType { get; init; } = PackageInstallerKind.Default;
+Models/OperationRequests.cs|public PackageInstallerKind InstallerType { get; init; } = PackageInstallerKind.Default;
+Models/OperationRequests.cs|public PackageOperationMode Mode { get; init; } = PackageOperationMode.Silent;
+Models/OperationRequests.cs|public PackageOperationMode Mode { get; init; } = PackageOperationMode.Silent;
+Models/OperationRequests.cs|public PackageOperationMode Mode { get; init; } = PackageOperationMode.Silent;
+Models/OperationRequests.cs|public PackageScope Scope { get; init; } = PackageScope.Any;
+Models/OperationRequests.cs|public PackageScope Scope { get; init; } = PackageScope.Any;
+Models/OperationRequests.cs|public PackageScope Scope { get; init; } = PackageScope.Any;
+Models/OperationRequests.cs|public PackageScope Scope { get; init; } = PackageScope.Any;
+Models/OperationRequests.cs|public bool AcceptPackageAgreements { get; init; } = true;
+Models/OperationRequests.cs|public bool AcceptPackageAgreements { get; init; } = true;
+Models/OperationRequests.cs|public bool AcceptPackageAgreements { get; init; } = true;
+Models/OperationRequests.cs|public bool AllowHashMismatch { get; init; }
+Models/OperationRequests.cs|public bool AllowHashMismatch { get; init; }
+Models/OperationRequests.cs|public bool AllowHashMismatch { get; init; }
+Models/OperationRequests.cs|public bool AllowUpgradeToUnknownVersion { get; init; }
+Models/OperationRequests.cs|public bool Force { get; init; }
+Models/OperationRequests.cs|public bool Force { get; init; }
+Models/OperationRequests.cs|public bool Force { get; init; }
+Models/OperationRequests.cs|public bool SkipDependencies { get; init; }
+Models/OperationRequests.cs|public bool SkipDependencies { get; init; }
+Models/OperationRequests.cs|public bool SkipMicrosoftStoreLicense { get; init; }
+Models/OperationRequests.cs|public sealed record DownloadRequest
+Models/OperationRequests.cs|public sealed record InstallRequest
+Models/OperationRequests.cs|public sealed record RepairRequest
+Models/OperationRequests.cs|public sealed record UninstallRequest
+Models/OperationRequests.cs|public string DownloadDirectory { get; init; }
+Models/OperationRequests.cs|public string? AdditionalArguments { get; init; }
+Models/OperationRequests.cs|public string? CorrelationData { get; init; }
+Models/OperationRequests.cs|public string? CorrelationData { get; init; }
+Models/OperationRequests.cs|public string? CorrelationData { get; init; }
+Models/OperationRequests.cs|public string? CorrelationData { get; init; }
+Models/OperationRequests.cs|public string? Locale { get; init; }
+Models/OperationRequests.cs|public string? LogOutputPath { get; init; }
+Models/OperationRequests.cs|public string? LogOutputPath { get; init; }
+Models/OperationRequests.cs|public string? LogOutputPath { get; init; }
+Models/OperationRequests.cs|public string? OverrideArguments { get; init; }
+Models/OperationRequests.cs|public string? PreferredInstallLocation { get; init; }
+Models/OperationRequests.cs|public string? Version { get; init; }
+Models/OperationRequests.cs|public string? Version { get; init; }
+Models/PackageDetails.cs|public sealed record PackageAgreementInfo(string? Label, string? Text, string? Url);
+Models/PackageDetails.cs|public sealed record PackageDetails( string Id, string Name, string? Publisher, string? PublisherUrl, string? PublisherSupportUrl, string? Author, string? ShortDescription, string? Description, string? PackageUrl, string? License, string? LicenseUrl, string? Copyright, string? CopyrightUrl, string? PrivacyUrl, string? ReleaseNotes, string? ReleaseNotesUrl, string? InstallationNotes, string? PurchaseUrl, IReadOnlyList<string> Tags, IReadOnlyList<PackageAgreementInfo> Agreements, IReadOnlyList<PackageDocumentation> Documentations, IReadOnlyList<PackageIconInfo> Icons, string? InstalledVersion, string? AvailableVersion, IReadOnlyList<string> AvailableVersions, bool IsInstalled, bool IsUpdateAvailable, string Source);
+Models/PackageDetails.cs|public sealed record PackageDocumentation(string? Label, string? Url);
+Models/PackageDetails.cs|public sealed record PackageIconInfo(string? Url, string? FileType, string? Resolution, string? Theme);
+Models/PackageEnums.cs|enum value Any
+Models/PackageEnums.cs|enum value Arm
+Models/PackageEnums.cs|enum value Arm64
+Models/PackageEnums.cs|enum value Burn
+Models/PackageEnums.cs|enum value Default
+Models/PackageEnums.cs|enum value Default
+Models/PackageEnums.cs|enum value Default
+Models/PackageEnums.cs|enum value Exe
+Models/PackageEnums.cs|enum value Font
+Models/PackageEnums.cs|enum value Inno
+Models/PackageEnums.cs|enum value Interactive
+Models/PackageEnums.cs|enum value MSStore
+Models/PackageEnums.cs|enum value Msi
+Models/PackageEnums.cs|enum value Msix
+Models/PackageEnums.cs|enum value Nullsoft
+Models/PackageEnums.cs|enum value Portable
+Models/PackageEnums.cs|enum value Silent
+Models/PackageEnums.cs|enum value System
+Models/PackageEnums.cs|enum value SystemOrUnknown
+Models/PackageEnums.cs|enum value Unknown
+Models/PackageEnums.cs|enum value User
+Models/PackageEnums.cs|enum value UserOrUnknown
+Models/PackageEnums.cs|enum value Wix
+Models/PackageEnums.cs|enum value X64
+Models/PackageEnums.cs|enum value X86
+Models/PackageEnums.cs|enum value Zip
+Models/PackageEnums.cs|public enum PackageArchitecture
+Models/PackageEnums.cs|public enum PackageInstallerKind
+Models/PackageEnums.cs|public enum PackageOperationMode
+Models/PackageEnums.cs|public enum PackageScope
+Models/PackageInfo.cs|public sealed record PackageInfo( string Id, string Name, string? Publisher, string? InstalledVersion, string? AvailableVersion, bool IsInstalled, bool IsUpdateAvailable, string Source);
+Models/PackageOperationProgress.cs|enum value Completed
+Models/PackageOperationProgress.cs|enum value Downloading
+Models/PackageOperationProgress.cs|enum value Failed
+Models/PackageOperationProgress.cs|enum value Installing
+Models/PackageOperationProgress.cs|enum value PostOperation
+Models/PackageOperationProgress.cs|enum value Queued
+Models/PackageOperationProgress.cs|enum value Repairing
+Models/PackageOperationProgress.cs|enum value Uninstalling
+Models/PackageOperationProgress.cs|public enum PackageOperationState
+Models/PackageOperationProgress.cs|public sealed record PackageOperationProgress( PackageOperationState State, double PercentComplete, string? StatusMessage, ulong BytesDownloaded = 0, ulong BytesRequired = 0);
+Models/PackageOperationResult.cs|enum value BlockedByPolicy
+Models/PackageOperationResult.cs|enum value Cancelled
+Models/PackageOperationResult.cs|enum value CatalogError
+Models/PackageOperationResult.cs|enum value DownloadError
+Models/PackageOperationResult.cs|enum value InstallError
+Models/PackageOperationResult.cs|enum value InternalError
+Models/PackageOperationResult.cs|enum value InvalidOptions
+Models/PackageOperationResult.cs|enum value ManifestError
+Models/PackageOperationResult.cs|enum value NoApplicableInstallers
+Models/PackageOperationResult.cs|enum value NoApplicableRepairer
+Models/PackageOperationResult.cs|enum value NoApplicableUpgrade
+Models/PackageOperationResult.cs|enum value Ok
+Models/PackageOperationResult.cs|enum value PackageAgreementsNotAccepted
+Models/PackageOperationResult.cs|enum value PackageNotFound
+Models/PackageOperationResult.cs|enum value RepairError
+Models/PackageOperationResult.cs|enum value UninstallError
+Models/PackageOperationResult.cs|enum value Unknown
+Models/PackageOperationResult.cs|public enum PackageOperationStatus
+Models/PackageOperationResult.cs|public sealed record PackageOperationResult( bool Succeeded, PackageOperationStatus Status, string? ErrorMessage, int? ExtendedErrorCode, uint? InstallerErrorCode, bool RebootRequired)
+Models/PackageOperationResult.cs|public static PackageOperationResult Failure( PackageOperationStatus status, string errorMessage, int? extendedErrorCode = null, uint? installerErrorCode = null) =>
+Models/PackageOperationResult.cs|public static PackageOperationResult Success(bool rebootRequired = false) =>
+Models/PackagePin.cs|enum value Blocking
+Models/PackagePin.cs|enum value Gating
+Models/PackagePin.cs|enum value Pinning
+Models/PackagePin.cs|public enum PackagePinKind
+Models/PackagePin.cs|public sealed record CliOperationResult(bool Succeeded, int ExitCode, string Output, string Error)
+Models/PackagePin.cs|public sealed record PackagePin( string Id, string Name, string Version, PackagePinKind Kind, string Source);
+Models/PackagePin.cs|public string ExitCodeHex => $"0x{ExitCode:X8}";
+Models/PackageSource.cs|enum value None
+Models/PackageSource.cs|enum value Predefined
+Models/PackageSource.cs|enum value Trusted
+Models/PackageSource.cs|enum value Unknown
+Models/PackageSource.cs|enum value User
+Models/PackageSource.cs|public PackageSourceTrustLevel TrustLevel { get; init; } = PackageSourceTrustLevel.None;
+Models/PackageSource.cs|public bool IsExplicit { get; init; }
+Models/PackageSource.cs|public enum PackageSourceOrigin
+Models/PackageSource.cs|public enum PackageSourceTrustLevel
+Models/PackageSource.cs|public int Priority { get; init; }
+Models/PackageSource.cs|public sealed record AddPackageSourceRequest(string Name, string Uri)
+Models/PackageSource.cs|public sealed record PackageSource( string Id, string Name, string Type, string Argument, DateTimeOffset? LastUpdated, PackageSourceOrigin Origin, PackageSourceTrustLevel TrustLevel, bool IsExplicit, int Priority);
+Models/PackageSource.cs|public sealed record SourceOperationResult(bool Succeeded, string? ErrorMessage, int? ExtendedErrorCode)
+Models/PackageSource.cs|public static SourceOperationResult Failure(string errorMessage, int? extendedErrorCode = null) =>
+Models/PackageSource.cs|public static SourceOperationResult Success() => new(true, null, null);
+Models/PackageSource.cs|public string Type { get; init; } = "Microsoft.PreIndexed.Package";
+Models/PackageSource.cs|public string? CustomHeader { get; init; }
+PackageManagementService.cs|public Task<CliOperationResult> Export(string filePath, bool includeVersions = false, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<CliOperationResult> Pin(string packageId, string? version = null, bool blocking = false, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<CliOperationResult> Unpin(string packageId, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<IReadOnlyList<PackageInfo>> GetInstalled(CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<PackageDetails?> GetDetails(string packageId, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<IReadOnlyList<PackageInfo>> Search(string query, string? sourceName = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public async Task<PackageOperationResult> Update(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+PackageManagementService.cs|public sealed class PackageManagementService( IWinGetClient winGetClient, IWinGetCliClient cliClient, ILogger<PackageManagementService> logger)
+PackageSourceService.cs|public Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default)
+PackageSourceService.cs|public Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default)
+PackageSourceService.cs|public async Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+PackageSourceService.cs|public async Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+PackageSourceService.cs|public async Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+PackageSourceService.cs|public async Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
+PackageSourceService.cs|public sealed class PackageSourceService(IWinGetSourceClient sourceClient, ILogger<PackageSourceService> logger)
+ServiceCollectionExtensions.cs|public static IServiceCollection AddPackageManagement(this IServiceCollection services)
+ServiceCollectionExtensions.cs|public static class ServiceCollectionExtensions
+WinGetCliClient.cs|public Task<CliOperationResult> AddPin(string packageId, string? version = null, bool blocking = false, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+WinGetCliClient.cs|public Task<CliOperationResult> Export(string filePath, bool includeVersions = false, string? sourceName = null, CancellationToken cancellationToken = default)
+WinGetCliClient.cs|public Task<CliOperationResult> Import(string filePath, bool ignoreUnavailable = false, bool ignoreVersions = false, CancellationToken cancellationToken = default)
+WinGetCliClient.cs|public Task<CliOperationResult> RemovePin(string packageId, bool pinInstalledVersion = false, CancellationToken cancellationToken = default)
+WinGetCliClient.cs|public async Task<IReadOnlyList<PackagePin>> GetPins(CancellationToken cancellationToken = default)
+WinGetCliClient.cs|public sealed class WinGetCliClient : IWinGetCliClient
+WinGetClient.cs|public Task<IReadOnlyList<PackageInfo>> GetAvailableUpgrades(CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<IReadOnlyList<PackageInfo>> GetInstalledPackages(CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<IReadOnlyList<PackageInfo>> Search(string query, int limit, string? sourceName = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageDetails?> GetPackageDetails(string packageId, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageInfo?> GetPackage(string packageId, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageOperationResult> Download(string packageId, DownloadRequest request, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageOperationResult> Install(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageOperationResult> Repair(string packageId, RepairRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageOperationResult> Uninstall(string packageId, UninstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<PackageOperationResult> Upgrade(string packageId, InstallRequest? request = null, IProgress<PackageOperationProgress>? progress = null, CancellationToken cancellationToken = default)
+WinGetClient.cs|public Task<string?> GetWinGetVersion(CancellationToken cancellationToken = default)
+WinGetClient.cs|public WinGetClient()
+WinGetClient.cs|public sealed class WinGetClient : IWinGetClient, IDisposable
+WinGetClient.cs|public void Dispose()
+WinGetErrorCodes.cs|public const int CommandRequiresAdmin = unchecked((int)0x8A150019);
+WinGetErrorCodes.cs|public const int InstallAlreadyInstalled = unchecked((int)0x8A15010D);
+WinGetErrorCodes.cs|public const int InstallCancelledByUser = unchecked((int)0x8A15010C);
+WinGetErrorCodes.cs|public const int InstallDowngrade = unchecked((int)0x8A15010E);
+WinGetErrorCodes.cs|public const int InstallerProhibitsElevation = unchecked((int)0x8A150056);
+WinGetErrorCodes.cs|public const int NoManifestFound = unchecked((int)0x8A150017);
+WinGetErrorCodes.cs|public const int PackageAlreadyInstalled = unchecked((int)0x8A150061);
+WinGetErrorCodes.cs|public const int PackageIsPinned = unchecked((int)0x8A150068);
+WinGetErrorCodes.cs|public const int RebootRequiredToFinish = unchecked((int)0x8A150109);
+WinGetErrorCodes.cs|public const int UpdateNotApplicable = unchecked((int)0x8A15002B);
+WinGetErrorCodes.cs|public const int UpgradeVersionNotNewer = unchecked((int)0x8A15004F);
+WinGetErrorCodes.cs|public const int UpgradeVersionUnknown = unchecked((int)0x8A150050);
+WinGetErrorCodes.cs|public static class WinGetErrorCodes
+WinGetSourceClient.cs|public Task<IReadOnlyList<PackageSource>> GetSources(CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public Task<PackageSource?> GetSource(string name, CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public Task<SourceOperationResult> AddSource(AddPackageSourceRequest request, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public Task<SourceOperationResult> RefreshSource(string name, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public Task<SourceOperationResult> RemoveSource(string name, bool preserveData = false, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public Task<SourceOperationResult> UpdateSource(string name, bool? isExplicit = null, int? priority = null, CancellationToken cancellationToken = default)
+WinGetSourceClient.cs|public WinGetSourceClient()
+WinGetSourceClient.cs|public sealed class WinGetSourceClient : IWinGetSourceClient, IDisposable
+WinGetSourceClient.cs|public void Dispose()
+WinGetUnavailableException.cs|public sealed class WinGetUnavailableException(string message, Exception? innerException = null)
