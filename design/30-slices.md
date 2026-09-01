@@ -14,6 +14,10 @@ does not observe a non-null version, the sequence stops at the brief/environment
 `## Outstanding` is the authoritative specification for work that has not landed. `/slices` appends
 new slices at the next unused number; slice and criterion ids are never renumbered or reused.
 
+A criterion that a later decision makes unsatisfiable is struck from its slice's `Acceptance:` list
+and named on a `Retired:` line pointing at the decision that struck it. Its id stays a gap and is
+never reused, so an existing issue's checkbox still refers to what it always referred to.
+
 Once a slice's issue is closed, retire its full body to the `## Landed` index, preserving its id,
 name, issue, and the commit at which its body was last authoritative. The body remains recoverable
 from git history, while `/track` ignores landed slices when checking criterion drift.
@@ -21,8 +25,10 @@ from git history, while `/track` ignores landed slices when checking criterion d
 ## Outstanding
 
 ## S6 — DTO and collection projections have one tested owner
-Delivers: The maintainer can verify package, details, agreement, documentation, icon, and source
-projections with deterministic unit tests, including their empty and ordered collection behaviour.
+Delivers: The maintainer gets one place where every package, details, agreement, documentation,
+icon, and source projection lives, with automated checks that keep that place free of COM activation
+and free of the collection traversal that fails at runtime — so nobody has to guess which layer
+translated a value, or discover by hand that a second copy of a translation drifted from the first.
 Touches: `SubZeroDev.WinGet/WinGetClient.cs`, `SubZeroDev.WinGet/WinGetSourceClient.cs`,
          `SubZeroDev.WinGet/WinGetProjectionMapper.cs`, `SubZeroDev.WinGet.Tests/`
 Depends on: S5
@@ -30,17 +36,14 @@ Acceptance:
   - S6.1 Every remaining pure DTO, source, date, and collection translation declared for
     `WinGetProjectionMapper` in `design/20-contract.md` is owned there and called by both production
     clients; the clients retain no duplicate pure mapper.
-  - S6.2 Given representative projection values, package summaries, package details, agreements,
-    documentation entries, icons, and source records preserve the declared fields and input order in
-    plain .NET model values.
-  - S6.3 Null optional projected collections produce the existing empty/null public result required
-    by the model, while non-empty collections preserve every item exactly once.
   - S6.4 Every CsWinRT-projected collection in the mapper is traversed by index; an automated
     regression check rejects `foreach` or LINQ traversal over those parameters.
   - S6.5 Unit tests reach the mapper through the existing internals grant and do not construct a
     client, factory, owner context, network connection, or `winget.exe` process.
   - S6.6 An architecture check verifies that the completed mapper has no dependency path to
     `WinGetFactory`, `WinGetComContext`, or the CLI shim, and the public surface is unchanged.
+Retired: S6.2 and S6.3, as unsatisfiable under `design/20-contract.md` C26 — see
+    `design/90-decisions.md`, 2026-09-01. The ids stay gaps and are never reused.
 Out of scope: changing DTO shape, adding a projection abstraction, changing service behaviour, or
     executing live COM.
 
