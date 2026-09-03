@@ -192,36 +192,6 @@ Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtim
 
 ---
 
-## S13 — Product invariants fail the build when they regress
-Delivers: The maintainer finds out from the pull-request check itself, rather than from a reviewer
-happening to notice, when a change quietly adds to what consumers can call, points a layer at
-something it must not depend on, or sends a new operation through the command-line fallback.
-Touches: `SubZeroDev.WinGet.Tests/` (product-invariant regression tests and a checked-in
-         public-surface baseline fixture)
-Depends on: none
-Acceptance:
-  - S13.1 A checked-in baseline enumerates every public type and member the library exposes. Any
-    difference from it — an added member, a removed member, or a changed signature — fails the check
-    and names the differing member.
-  - S13.2 A negative fixture whose input adds one public member fails the check, and the
-    repository's real surface passes it; both outcomes are asserted.
-  - S13.3 The check proves the declared dependency direction has no back edge: the client layer
-    references no service type, the COM owner, factory, and activation-mode selector reference no
-    client or service type, and the projection mapper references none of the three. A scripted back
-    edge in a negative fixture fails the check.
-  - S13.4 `IWinGetCliClient` declares exactly the pin, export, and import members it declares today,
-    and `winget.exe` process creation occurs in the CLI shim implementation and nowhere else; an
-    added interface member or a process start outside the shim fails the check.
-  - S13.5 The checks run inside the existing hermetic required check and hold C7: they activate no
-    COM, start no process, contact no network, and read only compiled metadata and repository source.
-  - S13.6 Changing the baseline requires editing the checked-in file in the same commit as the
-    surface change; the check has no command-line override, environment override, or auto-accept mode.
-Out of scope: adding or removing public surface, changing the dependency graph to satisfy the check,
-    widening the CLI-shim exception, moving the check out of the hermetic job, or introducing a
-    third-party architecture-testing dependency without a decision-log entry.
-
----
-
 ## S14 — Live runs name the translations they license
 Delivers: The maintainer can read, from a live run's own record, exactly which package and source
 translations that run checked and which it did not, so a green pull-request check is never mistaken
@@ -302,3 +272,5 @@ Out of scope: choosing or changing which WinGet version is pinned, installing Wi
 | S4 — Activation fallback is deterministic under unit test | #23 | `1a3d751` |
 | S5 — Operation and request translations have one tested owner | #24 | `1a3d751` |
 | S7 — The live suite has stable risk-class entry points | #26 | `1a3d751` |
+| S13 — Product invariants fail the build when they regress | #67 | `894c99f` |
+| S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
