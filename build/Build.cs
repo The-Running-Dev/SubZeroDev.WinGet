@@ -216,6 +216,9 @@ class Build : NukeBuild
     Target IntegrationTest => _ => _
         .DependsOn(MachineStateTest, CatalogIntegrationTest);
 
+    // S8.4/S8.6: a trx logger plus a detailed console logger give the hosted job a retained,
+    // per-test record - not just a pass/fail job outcome - so a partial failure keeps evidence
+    // for every assertion that did pass instead of collapsing to one binary result.
     Target MachineStateTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
@@ -226,7 +229,10 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild()
-                .SetFilter($"Category={MachineStateCategory}"));
+                .SetFilter($"Category={MachineStateCategory}")
+                .SetLoggers("trx")
+                .SetResultsDirectory(TestResultsDirectory / "MachineState")
+                .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
         });
 
     Target CatalogIntegrationTest => _ => _
@@ -239,7 +245,10 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild()
-                .SetFilter($"Category={CatalogIntegrationCategory}"));
+                .SetFilter($"Category={CatalogIntegrationCategory}")
+                .SetLoggers("trx")
+                .SetResultsDirectory(TestResultsDirectory / "CatalogIntegration")
+                .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
         });
 
     Target Coverage => _ => _
