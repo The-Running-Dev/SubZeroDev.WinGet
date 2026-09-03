@@ -54,7 +54,13 @@ Mocked unit tests — zero COM dependency, run anywhere in ~200ms. They cover th
 
 12 tests marked NUnit `[Explicit]` (excluded from plain `dotnet test`) exercise the **real** COM API and the **real** winget.exe on the machine. Stable NUnit categories split them into seven `MachineState` checks and five `CatalogIntegration` checks; each risk-specific target verifies its selected count before it executes. The catalog class contains the assertions whose witness is a `Microsoft.VisualStudioCode` or `git` result in the remote catalog.
 
-They are **deliberately read-only** — no install/upgrade/uninstall — because they run against whatever machine executes them. Live coverage of the mutating operations is a tracked roadmap item pending a disposable, side-effect-free test package.
+They are **deliberately read-only** — no install/upgrade/uninstall — because they run against whatever machine executes them.
+
+<!-- claim:operation-coverage
+strength: unvalidated
+evidence: MachineStateTest, CatalogIntegrationTest
+-->
+Read-only package and source operations — search, get, list installed, list available upgrades, get manifest details (agreements, documentation, icons), list/get sources, and a pinned-version download — are executed live by the twelve tests above and by `WinGetProjectionMapper`'s ten live-licensed translations they exercise. Mutating operations — install, upgrade, uninstall, repair, source add/remove/refresh, pin add/remove, export/import — remain unvalidated against the real API. Live coverage of the mutating operations is a tracked roadmap item pending a disposable, side-effect-free test package.
 
 ## Coverage
 
@@ -68,7 +74,7 @@ dotnet test SubZeroDev.WinGet.sln --collect:"XPlat Code Coverage"
 #                      declared in build/_build.csproj - no global tool install needed)
 ```
 
-Current numbers (measured 2026-07-22 on net8): unit-only **27.7% line** (290 of 1045); merged with a live integration run **54% line** (565 of 1045). Everything unit-testable sits at or near 100% — `PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, plus the models, CLI argument builders, and pin parsing. The uncovered remainder is COM-operation internals that only execute during real mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50%).
+`Coverage` gates on a checked-in **47.9% line** floor (591 of 1232 unit-only lines, one tenth of a percentage point below the measured 48.0% result the floor was set from). That floor is a **lower bound on unit-only coverage** collected by `Test` alone — it excludes every NUnit `[Explicit]` live test by construction, so a live run can never inflate it. It is not a measure of the library's proven, tested, or verified behavior: ten `WinGetProjectionMapper` translations are deliberately licensed by live evidence rather than a unit test (see [operation coverage](#live-integration-tests) above and [Architecture](architecture.md#hosting-caveats)), and their correctness is invisible to this number either way.
 
 Method coverage isn't quoted here: ReportGenerator 5.5.x gates that metric behind sponsorship, so this repo's tooling can't produce it.
 

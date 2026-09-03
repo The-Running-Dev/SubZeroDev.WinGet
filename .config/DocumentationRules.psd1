@@ -76,4 +76,40 @@
     ExcludedFiles = @(
         'CHANGELOG.md'
     )
+
+    # C1/C2: the five claim subjects, their single canonical owner (design/10-design.md
+    # § Claim), and the vocabulary of build/live gate names a Claim's `Evidence:` line may
+    # cite to justify its `Strength:`. `Scope` is the closed set of documents this repository's
+    # support claims live in or reference each other from (the Persisted schemas row in
+    # design/20-contract.md); a strength-assertion sentence outside a subject's own owner is
+    # checked only inside that scope; there's no story here for prose about strength written
+    # in an unrelated document.
+    Claims = @{
+        Owners = @{
+            'consumer-architecture'  = 'README.md'
+            'managed-assembly-shape' = 'README.md'
+            'hosting-context'        = 'docs/docs/troubleshooting.md'
+            'operation-coverage'     = 'docs/docs/testing.md'
+            'runtime-version-floor'  = 'docs/docs/getting-started.md'
+        }
+        Scope = @(
+            'README.md'
+            'docs/docs/index.md'
+            'docs/docs/getting-started.md'
+            'docs/docs/architecture.md'
+            'docs/docs/testing.md'
+            'docs/docs/troubleshooting.md'
+            'SPECIFICATION.md'
+        )
+        # Ranked low-to-high; a claimed Strength needs at least one cited token whose
+        # MaxStrength is the same rank or higher (C2's "sufficient for that strength").
+        EvidenceTokens = @(
+            @{ Token = 'Test'; MaxStrength = 'contract-checked' }
+            @{ Token = 'ArchitectureTest'; MaxStrength = 'contract-checked' }
+            @{ Token = 'PackageTest'; MaxStrength = 'contract-checked' }
+            @{ Token = 'MachineStateTest'; MaxStrength = 'executed' }
+            @{ Token = 'CatalogIntegrationTest'; MaxStrength = 'executed' }
+            @{ Token = 'PackedConsumerSmokeTest'; MaxStrength = 'executed' }
+        )
+    }
 }

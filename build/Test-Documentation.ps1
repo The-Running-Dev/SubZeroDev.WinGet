@@ -482,6 +482,254 @@ function Test-DocumentationTerminology {
     }
 }
 
+function Test-DocumentationCoverageFloorScope {
+    <#
+    .SYNOPSIS
+    C11/S10.8: the checked-in coverage floor is a lower bound on unit-only coverage, blind to
+    live evidence, and no document may present it as a measure of the library's proven, tested,
+    or verified behaviour. This is a gate rule over any document, not a sixth Claim subject.
+
+    .DESCRIPTION
+    Flags a line that mentions the coverage floor alongside a proven/tested/verified claim about
+    the library without also carrying the disclaiming vocabulary ('unit-only', 'unit only',
+    'lower bound', or 'blind') on the same line. Line-scoped, like Terminology above: a paragraph
+    that makes both the claim and the disclaimer needs to say so in one place, not split the
+    disclaimer into a sentence a reader - or this rule - might not reach.
+
+    Checked only over $Settings.Claims.Scope, the same consumer-facing document set the Claim
+    rules below use. design/90-decisions.md and design/20-contract.md are this system's own
+    definition of 'proven'/'verified'/'tested' evidence and legitimately use that vocabulary
+    densely when discussing the floor itself; they are not a support claim a package consumer
+    reads, and scanning them here would flag the design record, not a drifted document.
+    #>
+    param (
+        [Parameter(Mandatory)]
+        [System.IO.FileInfo] $File,
+
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]] $MaskedLine,
+
+        [Parameter(Mandatory)]
+        [string] $Root,
+
+        [Parameter(Mandatory)]
+        [hashtable] $Settings
+    )
+
+    $relativePath = Get-RelativeDocumentationPath -FullPath $File.FullName -Root $Root
+
+    if (-not $Settings.Contains('Claims') -or @($Settings.Claims.Scope) -notcontains $relativePath) {
+        return
+    }
+
+    $floorPattern = '(?i)\bcoverage\b.{0,40}\bfloor\b|\bfloor\b.{0,40}\bcoverage\b'
+    $claimPattern = '(?i)\b(proves?|proven|tested|verified)\b'
+    $disclaimerPattern = '(?i)unit-only|unit only|lower bound|blind'
+
+    for ($index = 0; $index -lt $MaskedLine.Count; $index++) {
+        $line = $MaskedLine[$index]
+        if ([regex]::IsMatch($line, $floorPattern) -and
+            [regex]::IsMatch($line, $claimPattern) -and
+            -not [regex]::IsMatch($line, $disclaimerPattern)) {
+            New-DocumentationFinding `
+                -RelativePath $relativePath `
+                -Line ($index + 1) `
+                -Column 1 `
+                -Severity 'Error' `
+                -Rule 'CoverageFloorScope' `
+                -Message (
+                    'The coverage floor is presented alongside a proven/tested/verified claim ' +
+                    "without stating it's a unit-only lower bound blind to live evidence (C11)."
+                )
+        }
+    }
+}
+
+function Test-DocumentationClaim {
+    <#
+    .SYNOPSIS
+    Validates the authored support-claim records against C1/C2 (design/20-contract.md):
+    one canonical owner per subject, a valid strength, evidence sufficient for that
+    strength, and no restatement of a strength outside its owner.
+
+    .DESCRIPTION
+    A Claim is declared as an HTML comment so it renders invisibly in both GitHub and
+    Docusaurus:
+
+        <!-- claim:consumer-architecture
+        strength: contract-checked
+        evidence: ArchitectureTest, PackageTest
+        -->
+
+    Ownership, strength, and evidence-sufficiency are checked structurally against
+    $Settings.Claims; this never fetches a live run to confirm the reference is
+    accurate (Public surface § Build and workflow commands), only that it names a
+    recognized gate capable of the claimed strength.
+    #>
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [System.IO.FileInfo[]] $File,
+
+        [Parameter(Mandatory)]
+        [string] $Root,
+
+        [Parameter(Mandatory)]
+        [hashtable] $Settings
+    )
+
+    if (-not $Settings.Contains('Claims')) {
+        return
+    }
+
+    $claims = $Settings.Claims
+    $owners = $claims.Owners
+    $scope = @($claims.Scope)
+    $strengthRank = @{ 'unvalidated' = 0; 'contract-checked' = 1; 'executed' = 2 }
+
+    # S10.3: docs/docs/index.md is a rendering of README.md (GeneratedFiles, checked
+    # separately by Test-GeneratedDocumentationFile), not a second authored owner - so it
+    # carries the same <!-- claim: --> blocks as README.md by construction and must not be
+    # scanned as if it declared them itself.
+    $generatedPaths = if ($Settings.Contains('GeneratedFiles')) {
+        @($Settings.GeneratedFiles | ForEach-Object { $_.Path })
+    } else {
+        @()
+    }
+
+    $blockPattern = '(?ms)<!--\s*claim:(?<subject>[a-z0-9-]+)\s*(?<body>.*?)-->'
+    $strengthLinePattern = '(?im)^\s*strength:\s*(?<value>\S+)\s*$'
+    $evidenceLinePattern = '(?im)^\s*evidence:\s*(?<value>.*)$'
+
+    # C2's strength vocabulary asserted in prose rather than through the block above -
+    # e.g. "ARM64 support remains unvalidated" typed directly into a document that does
+    # not own that subject. Only checked in files that own no Claim at all (Owners'
+    # values): an owner file legitimately uses this vocabulary for its own subject, and
+    # disambiguating "its own subject" from "someone else's" in free text is exactly the
+    # aspirational-wording problem this gate exists to catch, not solve by guessing.
+    $restatementPattern = '(?i)\b(?:is|are|remain|remains|stays|stay)\s+(?:executed|contract-checked|unvalidated)\b'
+    $ownerFiles = @($owners.Values | Sort-Object -Unique)
+
+    $subjectLocations = @{}
+
+    foreach ($f in $File) {
+        $relativePath = Get-RelativeDocumentationPath -FullPath $f.FullName -Root $Root
+        if ($scope -notcontains $relativePath -or $generatedPaths -contains $relativePath) {
+            continue
+        }
+
+        $raw = [IO.File]::ReadAllText($f.FullName) -replace "`r`n?", "`n"
+
+        foreach ($match in [regex]::Matches($raw, $blockPattern)) {
+            $subject = $match.Groups['subject'].Value
+            $body = $match.Groups['body'].Value
+            $line = ($raw.Substring(0, $match.Index) -split "`n").Count
+
+            if (-not $subjectLocations.ContainsKey($subject)) {
+                $subjectLocations[$subject] = @()
+            }
+            $subjectLocations[$subject] += $relativePath
+
+            $expectedOwner = if ($owners.ContainsKey($subject)) { $owners[$subject] } else { $null }
+            $isMisplaced = (-not $expectedOwner) -or ($relativePath -ne $expectedOwner)
+            $isRepeated = @($subjectLocations[$subject] | Where-Object { $_ -eq $relativePath }).Count -gt 1
+
+            if ($isMisplaced -or $isRepeated) {
+                New-DocumentationFinding `
+                    -RelativePath $relativePath `
+                    -Line $line `
+                    -Column 1 `
+                    -Severity 'Error' `
+                    -Rule 'ClaimDuplicateOwner' `
+                    -Message (
+                        "Claim subject '$subject' is declared here, but its single canonical " +
+                        "owner is $(if ($expectedOwner) { "'$expectedOwner'" } else { 'unassigned' })."
+                    )
+                continue
+            }
+
+            $strengthMatch = [regex]::Match($body, $strengthLinePattern)
+            $strength = if ($strengthMatch.Success) { $strengthMatch.Groups['value'].Value.ToLowerInvariant() } else { $null }
+
+            if (-not $strength -or -not $strengthRank.ContainsKey($strength)) {
+                New-DocumentationFinding `
+                    -RelativePath $relativePath `
+                    -Line $line `
+                    -Column 1 `
+                    -Severity 'Error' `
+                    -Rule 'ClaimInvalidStrength' `
+                    -Message (
+                        "Claim subject '$subject' has strength " +
+                        "$(if ($strength) { "'$strength'" } else { '(missing)' }), " +
+                        "not one of: $($strengthRank.Keys -join ', ')."
+                    )
+                continue
+            }
+
+            $evidenceMatch = [regex]::Match($body, $evidenceLinePattern)
+            $evidenceText = if ($evidenceMatch.Success) { $evidenceMatch.Groups['value'].Value.Trim() } else { '' }
+
+            if ($strength -ne 'unvalidated' -and [string]::IsNullOrWhiteSpace($evidenceText)) {
+                New-DocumentationFinding `
+                    -RelativePath $relativePath `
+                    -Line $line `
+                    -Column 1 `
+                    -Severity 'Error' `
+                    -Rule 'ClaimMissingEvidence' `
+                    -Message "Claim subject '$subject' claims '$strength' but cites no evidence."
+                continue
+            }
+
+            if ($strength -ne 'unvalidated') {
+                $bestRank = -1
+                foreach ($token in $claims.EvidenceTokens) {
+                    $tokenPattern = '(?<![\w-])' + [regex]::Escape($token.Token) + '(?![\w-])'
+                    if ([regex]::IsMatch($evidenceText, $tokenPattern) -and $strengthRank.ContainsKey($token.MaxStrength)) {
+                        if ($strengthRank[$token.MaxStrength] -gt $bestRank) {
+                            $bestRank = $strengthRank[$token.MaxStrength]
+                        }
+                    }
+                }
+
+                if ($bestRank -lt $strengthRank[$strength]) {
+                    New-DocumentationFinding `
+                        -RelativePath $relativePath `
+                        -Line $line `
+                        -Column 1 `
+                        -Severity 'Error' `
+                        -Rule 'ClaimInsufficientEvidence' `
+                        -Message (
+                            "Claim subject '$subject' claims '$strength' but its evidence " +
+                            "('$evidenceText') names no gate capable of that strength."
+                        )
+                }
+            }
+        }
+
+        if ($ownerFiles -notcontains $relativePath) {
+            $lines = $raw -split "`n"
+            $masked = Get-MaskedDocumentationLine -Line $lines -MaskLinkTarget
+
+            for ($index = 0; $index -lt $masked.Count; $index++) {
+                foreach ($restated in [regex]::Matches($masked[$index], $restatementPattern)) {
+                    New-DocumentationFinding `
+                        -RelativePath $relativePath `
+                        -Line ($index + 1) `
+                        -Column ($restated.Index + 1) `
+                        -Severity 'Error' `
+                        -Rule 'ClaimRestatement' `
+                        -Message (
+                            "'$($restated.Value)' restates a claim's strength in a document " +
+                            'that owns no Claim subject. Link to the canonical statement instead.'
+                        )
+                }
+            }
+        }
+    }
+}
+
 function Test-GeneratedDocumentationFile {
     <#
     .SYNOPSIS
@@ -585,12 +833,25 @@ $findings = @(
             -Root $repositoryRoot `
             -Cache $anchorCache
 
+        $maskedProse = Get-MaskedDocumentationLine -Line $lines -MaskLinkTarget
+
         Test-DocumentationTerminology `
             -File $file `
-            -MaskedLine (Get-MaskedDocumentationLine -Line $lines -MaskLinkTarget) `
+            -MaskedLine $maskedProse `
+            -Root $repositoryRoot `
+            -Settings $settings
+
+        Test-DocumentationCoverageFloorScope `
+            -File $file `
+            -MaskedLine $maskedProse `
             -Root $repositoryRoot `
             -Settings $settings
     }
+
+    Test-DocumentationClaim `
+        -File $documentationFiles `
+        -Root $repositoryRoot `
+        -Settings $settings
 )
 
 if ($findings.Count -gt 0) {

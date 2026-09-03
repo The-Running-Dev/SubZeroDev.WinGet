@@ -237,11 +237,16 @@ original normative text above.
   `ConfigureAwait(false)`; COM-client flows retain the owner context. This is
   intentionally not a claim that projected objects are agile or may cross
   arbitrary worker threads.
-- The package consumer contract is verified without executing live COM. A
-  read-only Windows x64 packed-consumer smoke test, Windows UI responsiveness
-  coverage for search/details/source operations, and real ARM64 hardware
-  execution remain open. Therefore the AnyCPU managed package shape is
-  provisional and ARM64 support is limited to build/package-contract evidence.
+- The package consumer contract's build/publish shape is verified without
+  executing live COM (`ArchitectureTest`, `PackageTest`). A later slice added a
+  read-only Windows x64 packed-consumer smoke test (`PackedConsumerSmokeTest`)
+  that builds, publishes, and runs a real packed consumer, observing a non-null
+  WinGet version back on a GitHub-hosted Windows x64 runner — see the
+  [README's architecture configuration](README.md#architecture-configuration)
+  for the current evidence behind the managed AnyCPU package shape and each
+  supported architecture. Windows UI responsiveness coverage for
+  search/details/source operations and real ARM64 hardware execution remain
+  open.
 - Repository `ProjectReference` executable and test consumers remain an
   exception: they need a direct `Microsoft.WindowsPackageManager.ComInterop`
   reference because NuGet `buildTransitive` assets are not applied through a
@@ -251,10 +256,10 @@ original normative text above.
 
 | # | Item |
 |---|---|
-| 1 | **Elevation behavior for mutating ops is still untested** — does a non-elevated caller installing a machine-scope package get a clean failure, a UAC prompt, or silent user-scope fallback? The activation chain is built for elevated hosts, but no mutating op has been run elevated. |
-| 2 | **Windows Service / SYSTEM hosting unverified.** The factory's fallback chain and the WindowsApps winget.exe glob exist precisely for this, but no test has run under LocalSystem. Also note Winget-AutoUpdate's finding: SYSTEM-context installs may need winget's own settings.json patched to machine scope. |
-| 3 | Minimum supported WinGet/App Installer version and a compatibility matrix (interop pinned at 1.29.280; contract-13+ members like `PackageManager.Version` are guarded, most others are not). |
-| 4 | ARM64 declared but never built/run on hardware. |
+| 1 | **Elevation behavior for mutating ops is still untested** — does a non-elevated caller installing a machine-scope package get a clean failure, a UAC prompt, or silent user-scope fallback? The activation chain is built for elevated hosts, but no mutating op has been run elevated. See [Troubleshooting → Running under SYSTEM / as a Windows Service](docs/docs/troubleshooting.md#running-under-system-as-a-windows-service) for the canonical hosting-context statement. |
+| 2 | **Windows Service / SYSTEM hosting unverified.** The factory's fallback chain and the WindowsApps winget.exe glob exist precisely for this, but no test has run under LocalSystem. Also note Winget-AutoUpdate's finding: SYSTEM-context installs may need winget's own settings.json patched to machine scope. Same canonical statement as item 1. |
+| 3 | A general WinGet/App Installer compatibility matrix beyond `GetWinGetVersion` (interop pinned at `1.29.280`; contract-13+ members like `PackageManager.Version` are guarded, most others are not). `GetWinGetVersion` itself has a documented floor — see [Getting Started → Runtime version floor](docs/docs/getting-started.md#runtime-version-floor) — scoped to that one member; no library-wide minimum WinGet version is asserted. |
+| 4 | ARM64 declared but never built/run on hardware — see the [README's architecture configuration](README.md#architecture-configuration) for what is checked and by which runs. |
 | 5 | Live mutating-operation coverage using a disposable test package. |
 | 6 | **First GitHub Packages publish is done** — `0.0.1-8` was pushed to the feed on the 2026-07-22 merge, which exposed that GitVersion derives the version from git history and ignores the `.csproj` `<Version>`. [`GitVersion.yml`](GitVersion.yml) now pins `next-version: 0.1.0`. Verified behaviour: an untagged commit on main publishes a distinct prerelease `0.1.0-<n>`; tagging a commit (`v0.1.0`) publishes the stable `0.1.0`. **No stable version has been released yet** — that needs a tag. Per-branch `deployment-mode` overrides were tested and make no difference; an untagged commit is always a prerelease. |
 | 7 | First **NuGet.org** publish (separate from GitHub Packages): set the `NUGET_API_KEY` secret and run the workflow with `push_to_nuget`. Publishes the `.csproj`-pinned version. |
