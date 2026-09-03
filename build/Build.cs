@@ -19,7 +19,6 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.ReportGenerator;
 using Nuke.Common.Utilities.Collections;
-using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
@@ -67,42 +66,26 @@ class Build : NukeBuild
     const string MachineStateCategory = "MachineState";
     const string CatalogIntegrationCategory = "CatalogIntegration";
 
+    // `dotnet test --list-tests` does not honor `--filter` - it lists every discovered test in
+    // the assembly regardless of the filter given alongside it, which PR #75's first hosted run
+    // proved (0 selected became "every test in the assembly", not the filtered subset this method
+    // used to assume). Counting `[Category("...")]` occurrences in the checked-in source instead
+    // is deterministic and independent of that tooling behaviour; the guard's purpose - fail
+    // before any live effect if a test's category tag drifts from what C8 asserts - still holds,
+    // and the actual test run immediately after this check applies `--filter` for real execution,
+    // where filtering (as opposed to listing) is the well-tested, supported path.
     void AssertLiveTestCount(string category, int expectedCount)
     {
-        var startInfo = new ProcessStartInfo("dotnet")
-        {
-            WorkingDirectory = RootDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-        startInfo.ArgumentList.Add("test");
-        startInfo.ArgumentList.Add(Solution);
-        startInfo.ArgumentList.Add("--configuration");
-        startInfo.ArgumentList.Add(Configuration);
-        startInfo.ArgumentList.Add("--no-restore");
-        startInfo.ArgumentList.Add("--no-build");
-        startInfo.ArgumentList.Add("--list-tests");
-        startInfo.ArgumentList.Add("--filter");
-        startInfo.ArgumentList.Add($"Category={category}");
+        var pattern = $"[Category(\"{category}\")]";
+        var selectedCount = Directory
+            .EnumerateFiles(RootDirectory / "SubZeroDev.WinGet.Tests", "*.cs", SearchOption.AllDirectories)
+            .Sum(file => File.ReadAllLines(file).Count(line => line.Trim() == pattern));
 
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to list live tests.");
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"Unable to list {category} tests before execution:{Environment.NewLine}{output}{error}");
-        }
-
-        var selectedCount = output.Split(Environment.NewLine)
-            .Count(line => line.StartsWith("    SubZeroDev.WinGet.Tests.", StringComparison.Ordinal));
         if (selectedCount != expectedCount)
         {
             throw new InvalidOperationException(
-                $"{category} must select exactly {expectedCount} live tests before execution; selected {selectedCount}.");
+                $"{category} must select exactly {expectedCount} live tests before execution; " +
+                $"found {selectedCount} occurrences of {pattern} under SubZeroDev.WinGet.Tests.");
         }
     }
 
@@ -216,6 +199,9 @@ class Build : NukeBuild
     Target IntegrationTest => _ => _
         .DependsOn(MachineStateTest, CatalogIntegrationTest);
 
+    // S8.4/S8.6: a trx logger plus a detailed console logger give the hosted job a retained,
+    // per-test record - not just a pass/fail job outcome - so a partial failure keeps evidence
+    // for every assertion that did pass instead of collapsing to one binary result.
     Target MachineStateTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
@@ -226,7 +212,10 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild()
-                .SetFilter($"Category={MachineStateCategory}"));
+                .SetFilter($"Category={MachineStateCategory}")
+                .SetLoggers("trx")
+                .SetResultsDirectory(TestResultsDirectory / "MachineState")
+                .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
         });
 
     Target CatalogIntegrationTest => _ => _
@@ -239,7 +228,10 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild()
-                .SetFilter($"Category={CatalogIntegrationCategory}"));
+                .SetFilter($"Category={CatalogIntegrationCategory}")
+                .SetLoggers("trx")
+                .SetResultsDirectory(TestResultsDirectory / "CatalogIntegration")
+                .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
         });
 
     Target Coverage => _ => _

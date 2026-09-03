@@ -88,9 +88,13 @@ jobs:
           name: coverage-report
           path: coverage/Cobertura.xml
 
-  # This is intentionally not a required status until C23 has been satisfied by a
-  # successful hosted run. It consumes the freshly packed package, not a project reference.
-  packed-consumer-smoke:
+  # S8.1/S8.3: MachineStateTest and PackedConsumerSmokeTest share one job and one required
+  # pull-request status, per C8. Not yet marked required in branch protection - that setting
+  # change is S8.3's and is made by the maintainer, not by this file - but C23's precondition
+  # is now satisfied: a hosted run (33671049835, commit 44afa873, 2026-09-02) recorded the
+  # packed consumer observing a non-null WinGet version (1.29.280) after this job's pinned
+  # install step ran.
+  machine-state:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: windows-latest
 
@@ -122,8 +126,8 @@ jobs:
           }
 
           # C4 requires the environment fact to be observed rather than inferred from a
-          # successful call. Capture it here, where it exists whether or not the smoke target
-          # later succeeds - the previous shape read the version out of the consumer's own
+          # successful call. Capture it here, where it exists whether or not the checks below
+          # later succeed - the previous shape read the version out of the consumer's own
           # stdout, so the run that most needed it was the one run that never recorded it.
           "before=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
 
@@ -189,34 +193,38 @@ jobs:
 
           "after=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
 
-      - name: Run packed consumer smoke test
-        id: smoke
+      # One Nuke invocation for both targets (Nuke de-duplicates Restore/Compile within it,
+      # same reasoning as the hermetic job). SetLoggers("trx") plus the detailed console logger
+      # in build/Build.cs give this a per-test retained record, not just a job-level pass/fail
+      # (S8.4/S8.6).
+      - name: Run machine-state and packed-consumer checks
+        id: checks
         shell: pwsh
         run: |
-          nuke PackedConsumerSmokeTest --configuration Release 2>&1 |
-            Tee-Object -FilePath packed-consumer-smoke.log
+          nuke MachineStateTest PackedConsumerSmokeTest --configuration Release 2>&1 |
+            Tee-Object -FilePath machine-state.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Record packed-consumer evidence
+      - name: Record machine-state evidence
         if: always()
         shell: pwsh
         env:
           PREREQUISITE_OUTCOME: ${{ steps.prerequisite.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
-          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          CHECKS_OUTCOME: ${{ steps.checks.outcome }}
           APP_INSTALLER_BEFORE: ${{ steps.prerequisite.outputs.before }}
           APP_INSTALLER_AFTER: ${{ steps.install.outputs.after }}
         run: |
           $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
           $principal = [Security.Principal.WindowsPrincipal]::new($identity)
           $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-          $version = if (Test-Path packed-consumer-smoke.log) {
-            Select-String -Path packed-consumer-smoke.log -Pattern '^WinGet version:' |
+          $version = if (Test-Path machine-state.log) {
+            Select-String -Path machine-state.log -Pattern '^WinGet version:' |
               Select-Object -Last 1 | ForEach-Object Line
           }
 
           @(
-            '## Packed consumer smoke evidence',
+            '## Machine-state evidence',
             "Commit: $env:GITHUB_SHA",
             "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
             "OS: $([Environment]::OSVersion.VersionString)",
@@ -227,9 +235,156 @@ jobs:
             "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
             "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
             "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
-            "Smoke target: $env:SMOKE_OUTCOME",
-            "Observed $($version ?? 'WinGet version: (not observed)')"
+            "MachineStateTest (7 tests, C8) + PackedConsumerSmokeTest: $env:CHECKS_OUTCOME",
+            "Observed $($version ?? 'WinGet version: (not observed)')",
+            'Configured-source state (C4) is asserted by GetSources_ReturnsTheConfiguredSources and GetSource_ForWinget_ReturnsIt within the checks above; per-test outcomes are in the retained log and trx artifact, not restated here.'
           ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload machine-state evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: machine-state-evidence
+          path: |
+            machine-state.log
+            TestResults/MachineState/**
+
+  # S8.1/S8.7: CatalogIntegrationTest runs in its own job so a catalog outage or a changed
+  # remote witness fails only this status and never erases the machine-state job's separately
+  # passing evidence. Deliberately not required by branch protection (S8.3) - catalog drift in
+  # Microsoft's live service must never itself block a merge.
+  catalog:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Install Nuke
+        run: |
+          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Check WinGet prerequisite
+        id: prerequisite
+        shell: pwsh
+        run: |
+          $package = Get-AppxPackage Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue
+          if ($null -eq $package) {
+            throw 'WinGet/App Installer is not installed on this runner.'
+          }
+
+          "before=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+
+      - name: Install pinned WinGet
+        id: install
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+
+          $base = "https://github.com/microsoft/winget-cli/releases/download/v$env:WINGET_VERSION"
+          $work = (New-Item -ItemType Directory -Force -Path (Join-Path $env:RUNNER_TEMP 'winget-pin')).FullName
+
+          foreach ($asset in 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
+                             'DesktopAppInstaller_Dependencies.zip') {
+            $file = Join-Path $work $asset
+            Invoke-WebRequest "$base/$asset" -OutFile $file
+
+            $sidecar = Join-Path $work ([IO.Path]::GetFileNameWithoutExtension($asset) + '.txt')
+            Invoke-WebRequest "$base/$([IO.Path]::GetFileName($sidecar))" -OutFile $sidecar
+
+            $expected = (Get-Content -Path $sidecar -Raw).Trim()
+            $actual = (Get-FileHash -Path $file -Algorithm SHA256).Hash
+
+            if ($actual -ne $expected) {
+              throw "$asset hash mismatch: expected $expected, got $actual."
+            }
+          }
+
+          Expand-Archive -Path (Join-Path $work 'DesktopAppInstaller_Dependencies.zip') `
+                         -DestinationPath (Join-Path $work 'dependencies') -Force
+
+          $dependencies = @(Get-ChildItem -Path (Join-Path $work 'dependencies') -Recurse -Include *.appx, *.msix |
+            Where-Object { $_.FullName -match '[\\/]x64[\\/]' })
+
+          $arguments = @{
+            Path = Join-Path $work 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+            ForceUpdateFromAnyVersion = $true
+          }
+
+          if ($dependencies.Count -gt 0) { $arguments.DependencyPath = $dependencies.FullName }
+
+          Add-AppxPackage @arguments
+
+          $package = Get-AppxPackage Microsoft.DesktopAppInstaller
+          if ($null -eq $package) {
+            throw 'App Installer is absent after installing the pinned build.'
+          }
+
+          "after=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+
+      - name: Run catalog-integration checks
+        id: checks
+        shell: pwsh
+        run: |
+          nuke CatalogIntegrationTest --configuration Release 2>&1 |
+            Tee-Object -FilePath catalog.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Record catalog evidence
+        if: always()
+        shell: pwsh
+        env:
+          PREREQUISITE_OUTCOME: ${{ steps.prerequisite.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          CHECKS_OUTCOME: ${{ steps.checks.outcome }}
+          APP_INSTALLER_BEFORE: ${{ steps.prerequisite.outputs.before }}
+          APP_INSTALLER_AFTER: ${{ steps.install.outputs.after }}
+        run: |
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+          $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          $version = if (Test-Path catalog.log) {
+            Select-String -Path catalog.log -Pattern '^WinGet version:' |
+              Select-Object -Last 1 | ForEach-Object Line
+          }
+
+          @(
+            '## Catalog-integration evidence',
+            "Commit: $env:GITHUB_SHA",
+            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
+            "OS: $([Environment]::OSVersion.VersionString)",
+            "Architecture: $([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)",
+            "Interactive: $([Environment]::UserInteractive)",
+            "Elevated: $elevated",
+            "WinGet prerequisite: $env:PREREQUISITE_OUTCOME",
+            "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
+            "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
+            "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
+            "CatalogIntegrationTest (5 tests, C8): $env:CHECKS_OUTCOME",
+            "Observed $($version ?? 'WinGet version: (not observed)')",
+            'Remote-catalog reachability (C4) is the fact these five tests assert against the configured winget/msstore sources; per-test outcomes are in the retained log and trx artifact.'
+          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload catalog evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-evidence
+          path: |
+            catalog.log
+            TestResults/CatalogIntegration/**
 
   # Builds and releases the package. Three ways in, all gated on `build` so nothing
   # publishes unless tests pass:
