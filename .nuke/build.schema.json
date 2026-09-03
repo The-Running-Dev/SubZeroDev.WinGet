@@ -29,6 +29,7 @@
         "Clean",
         "Compile",
         "Coverage",
+        "CoverageGateTest",
         "IntegrationTest",
         "MachineStateTest",
         "Pack",
