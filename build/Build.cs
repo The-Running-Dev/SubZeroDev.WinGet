@@ -101,8 +101,13 @@ class Build : NukeBuild
             .Count(line => line.StartsWith("    SubZeroDev.WinGet.Tests.", StringComparison.Ordinal));
         if (selectedCount != expectedCount)
         {
+            // Diagnostic-only: this method has never run against a hosted CI invocation before
+            // S8 wired MachineStateTest/CatalogIntegrationTest into build.yml, so a mismatch here
+            // needs the raw --list-tests output to root-cause rather than a second blind guess.
             throw new InvalidOperationException(
-                $"{category} must select exactly {expectedCount} live tests before execution; selected {selectedCount}.");
+                $"{category} must select exactly {expectedCount} live tests before execution; selected {selectedCount}." +
+                $"{Environment.NewLine}Raw `dotnet test --list-tests --filter Category={category}` output:" +
+                $"{Environment.NewLine}{output}");
         }
     }
 
