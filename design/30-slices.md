@@ -24,31 +24,6 @@ from git history, while `/track` ignores landed slices when checking criterion d
 
 ## Outstanding
 
-## S6 — DTO and collection projections have one tested owner
-Delivers: The maintainer gets one place where every package, details, agreement, documentation,
-icon, and source projection lives, with automated checks that keep that place free of COM activation
-and free of the collection traversal that fails at runtime — so nobody has to guess which layer
-translated a value, or discover by hand that a second copy of a translation drifted from the first.
-Touches: `SubZeroDev.WinGet/WinGetClient.cs`, `SubZeroDev.WinGet/WinGetSourceClient.cs`,
-         `SubZeroDev.WinGet/WinGetProjectionMapper.cs`, `SubZeroDev.WinGet.Tests/`
-Depends on: S5
-Acceptance:
-  - S6.1 Every remaining pure DTO, source, date, and collection translation declared for
-    `WinGetProjectionMapper` in `design/20-contract.md` is owned there and called by both production
-    clients; the clients retain no duplicate pure mapper.
-  - S6.4 Every CsWinRT-projected collection in the mapper is traversed by index; an automated
-    regression check rejects `foreach` or LINQ traversal over those parameters.
-  - S6.5 Unit tests reach the mapper through the existing internals grant and do not construct a
-    client, factory, owner context, network connection, or `winget.exe` process.
-  - S6.6 An architecture check verifies that the completed mapper has no dependency path to
-    `WinGetFactory`, `WinGetComContext`, or the CLI shim, and the public surface is unchanged.
-Retired: S6.2 and S6.3, as unsatisfiable under `design/20-contract.md` C26 — see
-    `design/90-decisions.md`, 2026-09-01. The ids stay gaps and are never reused.
-Out of scope: changing DTO shape, adding a projection abstraction, changing service behaviour, or
-    executing live COM.
-
----
-
 ## S8 — Pull requests record live evidence without contaminating the hermetic check
 Delivers: For every pull request, the maintainer can see separately whether local WinGet behaviour,
 the packed consumer, and Microsoft's current catalog passed, with the machine-state result enforced
@@ -226,42 +201,6 @@ Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upg
     exercising install, upgrade, uninstall, repair, or import to reach a translation; and any fake,
     stub, or reflection substitute for a projected type.
 
----
-
-## S15 — Every live check proves which WinGet it ran against
-Delivers: The maintainer can tell from the build alone that every live check ran against the WinGet
-build this library is compiled against, rather than whatever version the runner happened to ship that
-week. A newly added live check that would quietly skip installing it is stopped by a failing check
-instead of being noticed months later, or never.
-Touches: `.github/workflows/build.yml`, a workflow-composition check under
-         `SubZeroDev.WinGet.Tests/` or `build/`, `SubZeroDev.WinGet/SubZeroDev.WinGet.csproj`
-         (read only), CI evidence artifacts
-Depends on: none. Land before S8, whose new catalog job this check constrains; S8 would otherwise add
-            a live job that does not constitute its runtime, and a later slice would repair it.
-Acceptance:
-  - S15.1 The pinned WinGet version the workflow installs is compared against the
-    `Microsoft.WindowsPackageManager.ComInterop` version the library project declares; the check fails
-    and names both values when they differ, per C24. A fixture pair that differs fails the check, and
-    the repository's real pair passes it.
-  - S15.2 The check fails when a job invoking a live target — the machine-state, catalog-dependent, or
-    packed-consumer target named under C8 and C9 — has no pinned-WinGet install step ordered before
-    that invocation. A fixture job invoking a live target with no install step, and one whose install
-    step is ordered after the invocation, each fail; the repository's real workflow passes.
-  - S15.3 Each job invoking a live target records the App Installer version observed immediately
-    before and immediately after the pinned install. An absent observation is recorded as unobserved;
-    no value is carried over from another step, another job, or an earlier run.
-  - S15.4 The check fails when a live-target step would execute despite its job's pinned install
-    having failed, so a failed install ends the job at the failed precondition and licenses no claim.
-    A fixture job whose live step runs regardless of the install step's outcome fails the check.
-  - S15.5 The check runs inside the existing hermetic required check and holds C7: it activates no
-    COM, starts no process, contacts no network, and reads only repository files.
-  - S15.6 The check has no command-line override, environment override, or list of exempt jobs.
-    Adding a live job that skips the pinned install requires deleting the check, not configuring
-    past it.
-Out of scope: choosing or changing which WinGet version is pinned, installing WinGet anywhere other
-    than the hosted live jobs, adding or removing a live job, making any status required, ARM64
-    runtime claims, and asserting anything about the live results themselves.
-
 ## Landed
 
 | Slice | Issue | Landed at |
@@ -271,6 +210,7 @@ Out of scope: choosing or changing which WinGet version is pinned, installing Wi
 | S3 — Cancelled operations return the cancelled result | #22 | `1a3d751` |
 | S4 — Activation fallback is deterministic under unit test | #23 | `1a3d751` |
 | S5 — Operation and request translations have one tested owner | #24 | `1a3d751` |
+| S6 — DTO and collection projections have one tested owner | #25 | `ee7d660` |
 | S7 — The live suite has stable risk-class entry points | #26 | `1a3d751` |
 | S13 — Product invariants fail the build when they regress | #67 | `894c99f` |
 | S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
