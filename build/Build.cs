@@ -19,7 +19,6 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.ReportGenerator;
 using Nuke.Common.Utilities.Collections;
-using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
@@ -67,47 +66,26 @@ class Build : NukeBuild
     const string MachineStateCategory = "MachineState";
     const string CatalogIntegrationCategory = "CatalogIntegration";
 
+    // `dotnet test --list-tests` does not honor `--filter` - it lists every discovered test in
+    // the assembly regardless of the filter given alongside it, which PR #75's first hosted run
+    // proved (0 selected became "every test in the assembly", not the filtered subset this method
+    // used to assume). Counting `[Category("...")]` occurrences in the checked-in source instead
+    // is deterministic and independent of that tooling behaviour; the guard's purpose - fail
+    // before any live effect if a test's category tag drifts from what C8 asserts - still holds,
+    // and the actual test run immediately after this check applies `--filter` for real execution,
+    // where filtering (as opposed to listing) is the well-tested, supported path.
     void AssertLiveTestCount(string category, int expectedCount)
     {
-        var startInfo = new ProcessStartInfo("dotnet")
-        {
-            WorkingDirectory = RootDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-        startInfo.ArgumentList.Add("test");
-        startInfo.ArgumentList.Add(Solution);
-        startInfo.ArgumentList.Add("--configuration");
-        startInfo.ArgumentList.Add(Configuration);
-        startInfo.ArgumentList.Add("--no-restore");
-        startInfo.ArgumentList.Add("--no-build");
-        startInfo.ArgumentList.Add("--list-tests");
-        startInfo.ArgumentList.Add("--filter");
-        startInfo.ArgumentList.Add($"Category={category}");
+        var pattern = $"[Category(\"{category}\")]";
+        var selectedCount = Directory
+            .EnumerateFiles(RootDirectory / "SubZeroDev.WinGet.Tests", "*.cs", SearchOption.AllDirectories)
+            .Sum(file => File.ReadAllLines(file).Count(line => line.Trim() == pattern));
 
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to list live tests.");
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"Unable to list {category} tests before execution:{Environment.NewLine}{output}{error}");
-        }
-
-        var selectedCount = output.Split(Environment.NewLine)
-            .Count(line => line.StartsWith("    SubZeroDev.WinGet.Tests.", StringComparison.Ordinal));
         if (selectedCount != expectedCount)
         {
-            // Diagnostic-only: this method has never run against a hosted CI invocation before
-            // S8 wired MachineStateTest/CatalogIntegrationTest into build.yml, so a mismatch here
-            // needs the raw --list-tests output to root-cause rather than a second blind guess.
             throw new InvalidOperationException(
-                $"{category} must select exactly {expectedCount} live tests before execution; selected {selectedCount}." +
-                $"{Environment.NewLine}Raw `dotnet test --list-tests --filter Category={category}` output:" +
-                $"{Environment.NewLine}{output}");
+                $"{category} must select exactly {expectedCount} live tests before execution; " +
+                $"found {selectedCount} occurrences of {pattern} under SubZeroDev.WinGet.Tests.");
         }
     }
 
