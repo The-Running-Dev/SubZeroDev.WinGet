@@ -66,6 +66,11 @@ class Build : NukeBuild
     const string MachineStateCategory = "MachineState";
     const string CatalogIntegrationCategory = "CatalogIntegration";
 
+    // S9.1: measured from the unit-only Coverage report on main at commit f063212
+    // (591 covered / 1232 valid lines = 47.97077922...%, which rounds to 48.0% at one
+    // decimal place), 0.1 percentage point below that one-decimal measured result, per C12.
+    const decimal CoverageFloorPercent = 47.9m;
+
     // `dotnet test --list-tests` does not honor `--filter` - it lists every discovered test in
     // the assembly regardless of the filter given alongside it, which PR #75's first hosted run
     // proved (0 selected became "every test in the assembly", not the filtered subset this method
@@ -234,12 +239,63 @@ class Build : NukeBuild
                 .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
         });
 
+    // S9: gates on the unit-only report ReportGenerator just produced. Test is the only
+    // dependency (S9.4) - MachineStateTest/CatalogIntegrationTest never collect coverage,
+    // so a live run cannot contribute files or counts to what this evaluates.
     Target Coverage => _ => _
         .DependsOn(Test)
-        .Executes(() => ReportGenerator(s => s
-            .SetReports(TestResultsDirectory / "**/coverage.cobertura.xml")
-            .SetTargetDirectory(CoverageDirectory)
-            .SetReportTypes(ReportTypes.MarkdownSummaryGithub, ReportTypes.Cobertura)));
+        .Executes(() =>
+        {
+            ReportGenerator(s => s
+                .SetReports(TestResultsDirectory / "**/coverage.cobertura.xml")
+                .SetTargetDirectory(CoverageDirectory)
+                .SetReportTypes(ReportTypes.MarkdownSummaryGithub, ReportTypes.Cobertura));
+
+            var (coveredLines, validLines) = CoverageGate.ReadLineCounts(CoverageDirectory / "Cobertura.xml");
+            CoverageGate.Assert(coveredLines, validLines, CoverageFloorPercent);
+        });
+
+    // S9.2/S9.6: exercises the exact comparison CoverageGate.Assert performs, independent of a
+    // real test run - a boundary case that passes, one line below it that fails, and the
+    // full-range extremes. Restoring report-only behaviour (e.g. the comparison itself always
+    // passing) makes AssertFails fail here, which is what S9.6 requires of the negative case;
+    // this does not, by itself, catch the Coverage target ceasing to call CoverageGate.Assert
+    // at all, since that wiring lives in the Coverage target above, not in this gate math. Kept
+    // out of the default CI target chain, matching the other hand-rolled Build.cs checks
+    // (ArchitectureTest/PackageTest) - it needs no live Windows toolchain and is cheap to run
+    // before pushing a Coverage change.
+    Target CoverageGateTest => _ => _
+        .Executes(() =>
+        {
+            void AssertPasses(int covered, int valid, decimal floor)
+            {
+                if (!CoverageGate.Evaluate(covered, valid, floor).Passed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {covered}/{valid} to pass at floor {floor}, but it failed.");
+                }
+            }
+
+            void AssertFails(int covered, int valid, decimal floor)
+            {
+                if (CoverageGate.Evaluate(covered, valid, floor).Passed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {covered}/{valid} to fail at floor {floor}, but it passed.");
+                }
+            }
+
+            // Exactly at the boundary passes; one line below it fails.
+            AssertPasses(479, 1000, 47.9m);
+            AssertFails(478, 1000, 47.9m);
+
+            // Range extremes.
+            AssertPasses(1000, 1000, 47.9m);
+            AssertFails(0, 1000, 47.9m);
+
+            // The checked-in floor itself, against the exact counts it was measured from.
+            AssertPasses(591, 1232, CoverageFloorPercent);
+        });
 
     // Packs at the version pinned in SubZeroDev.WinGet.csproj. Reached transitively by
     // PublishNuGet (the manual NuGet.org release). The GitHub Packages release path does
