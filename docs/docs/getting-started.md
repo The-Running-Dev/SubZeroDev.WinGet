@@ -10,7 +10,8 @@ sidebar_position: 3
 
 - Windows 10/11 with **WinGet (App Installer)** installed
 - .NET 8 or newer — the package targets `net8.0-windows10.0.26100`, so net8/net9/net10 apps can all consume it
-- An explicit **x64** or **ARM64** consumer architecture. ARM64 payload selection is checked in CI, but ARM64 hardware execution has not yet been validated.
+- An explicit **x64** or **ARM64** consumer architecture. See the [README's architecture configuration](https://github.com/The-Running-Dev/SubZeroDev.WinGet#architecture-configuration) for what each is checked against.
+- WinGet 1.12 or newer if your code calls `GetWinGetVersion` — see [below](#runtime-version-floor).
 
 ## Installation
 
@@ -41,7 +42,7 @@ The package provides its own transitive build target. For an explicitly supporte
 </PropertyGroup>
 ```
 
-Use `win-arm64` and `ARM64` for an ARM64 application. Do not leave the architecture as `AnyCPU`: the package fails that ambiguous configuration rather than selecting a mismatched native DLL. The managed library is AnyCPU provisionally; Windows x64 packed-consumer runtime validation is still pending, and ARM64 has not run on real ARM64 hardware.
+Use `win-arm64` and `ARM64` for an ARM64 application. Do not leave the architecture as `AnyCPU`: the package fails that ambiguous configuration rather than selecting a mismatched native DLL. See the [README's architecture configuration](https://github.com/The-Running-Dev/SubZeroDev.WinGet#architecture-configuration) for what's checked, and by which runs, for the managed AnyCPU assembly and each supported architecture.
 
 :::note Repository project references
 
@@ -90,6 +91,16 @@ foreach (var package in results)
     Console.WriteLine($"{package.Id} — {package.Name} ({package.AvailableVersion})");
 }
 ```
+
+## Runtime version floor
+
+<!-- claim:runtime-version-floor
+strength: executed
+evidence: PackedConsumerSmokeTest, Test
+-->
+`GetWinGetVersion` requires a WinGet runtime exposing COM contract 13, first shipped in WinGet 1.12; below that it returns `null` instead of failing. `Test` covers the classifier that converts exactly `InvalidCastException` with HRESULT `0x80004002` to `null` and nothing else. `PackedConsumerSmokeTest` observed a non-null version (`1.29.280`) from a real packed consumer on a GitHub-hosted Windows x64 runner after installing that pinned build.
+
+This floor is scoped to this one member, not a library-wide minimum: earlier live runs against WinGet `1.11.510` — below the floor — passed the rest of the twelve-test live suite. See [Architecture → Hosting caveats](architecture.md#hosting-caveats), [Building & Testing → Live integration tests](testing.md#live-integration-tests), and [Troubleshooting](troubleshooting.md) for what remains unvalidated elsewhere.
 
 ## Error handling
 

@@ -78,13 +78,23 @@ Read-only examples (search, installed, upgrades, details, sources, pins, export,
 
 - Windows 10/11 with **WinGet (App Installer)** installed
 - .NET 8 or newer — the package targets `net8.0-windows10.0.26100`, so it also runs on net9/net10 apps
-- An explicit supported architecture: **x64** or **ARM64**. The package supplies the matching native WinGet DLL and WinMD; ARM64 hardware execution has not yet been validated.
+- An explicit supported architecture: **x64** or **ARM64**. The package supplies the matching native WinGet DLL and WinMD; see [Architecture configuration](#architecture-configuration) for what each is checked against.
 
 ### Architecture configuration
 
 A package consumer needs only `SubZeroDev.WinGet`. Its transitive build target supplies the matching x64 or ARM64 `Microsoft.Management.Deployment.dll` and WinMD to build and publish output. Select the architecture explicitly with `RuntimeIdentifier` (`win-x64` or `win-arm64`) or `PlatformTarget`/`Platform` (`x64` or `ARM64`); ambiguous `AnyCPU` and unsupported platforms fail at build time.
 
-The library's managed assembly is IL-only AnyCPU, but that package shape remains provisional until a Windows x64 packed-consumer runtime smoke test passes. ARM64 payload selection is contract-tested, but ARM64 hardware runtime validation remains open.
+<!-- claim:consumer-architecture
+strength: contract-checked
+evidence: ArchitectureTest, PackageTest, MachineStateTest, PackedConsumerSmokeTest
+-->
+Both architectures are package-contract-checked: `ArchitectureTest` verifies the PE shape of each executable/test host, and `PackageTest` verifies that the packed consumer's build/publish output selects the correct native DLL and WinMD for its `RuntimeIdentifier`/`Platform`. Windows x64 selection is additionally executed live — `MachineStateTest` and `PackedConsumerSmokeTest` run against a real packed consumer on a GitHub-hosted Windows x64 runner. ARM64 selection has the same package-contract checks but has not run on ARM64 hardware.
+
+<!-- claim:managed-assembly-shape
+strength: contract-checked
+evidence: ArchitectureTest, PackageTest, PackedConsumerSmokeTest
+-->
+The library's managed assembly is IL-only AnyCPU. `ArchitectureTest` and `PackageTest` verify that shape and the packed layout for both architectures. On Windows x64, `PackedConsumerSmokeTest` goes further: it builds, publishes, and runs a real packed consumer against the AnyCPU assembly and observes a non-null WinGet version back, so that package shape is confirmed rather than left open. ARM64 has the same package-contract checks but no hardware execution.
 
 If you consume the repository project through a `ProjectReference` instead of the packed NuGet package, retain a direct `Microsoft.WindowsPackageManager.ComInterop` reference on the executable project. Its build assets do not flow through `ProjectReference`.
 

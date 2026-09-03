@@ -48,7 +48,13 @@ Not an error. `winget list` (and therefore the installed catalog) includes softw
 
 ## Running under SYSTEM / as a Windows Service
 
+<!-- claim:hosting-context
+strength: unvalidated
+evidence:
+-->
+Elevation, Windows Service, and SYSTEM hosting are unvalidated: no elevated, Service, or SYSTEM host has actually run this library's operations. The COM activation fallback chain (WinRT projection → `CoCreateInstance` local server → local server with lower-trust registration, [Architecture](architecture.md#layers)) and the CLI shim's App-Execution-Alias fallback are unit-tested in isolation, but that is coverage of the fallback mechanism, not evidence that a live elevated or SYSTEM run succeeds end to end.
+
 Two known considerations, both inherited from WinGet itself:
 
 - There is no App Execution Alias in service contexts — the library's CLI shim already falls back to locating winget.exe in the `WindowsApps` package directory.
-- WinGet's install-scope preference in profile-less contexts can behave unexpectedly; enterprise deployments patch winget's own `settings.json` to default to machine scope. Validate your specific service-hosting scenario before production — this path is not yet covered by the library's test suite.
+- WinGet's install-scope preference in profile-less contexts can behave unexpectedly; enterprise deployments patch winget's own `settings.json` to default to machine scope. Validate your specific service-hosting scenario before production.
