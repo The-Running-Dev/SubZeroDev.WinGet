@@ -35,6 +35,7 @@
         "Pack",
         "PackageTest",
         "PackedConsumerSmokeTest",
+        "PublicationConfirmationTest",
         "PublishGitHubPackages",
         "PublishNuGet",
         "Restore",

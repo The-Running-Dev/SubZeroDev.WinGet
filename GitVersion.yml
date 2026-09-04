@@ -4,10 +4,14 @@
 # Without `next-version` it inferred 0.0.1 and published 0.0.1-<n>, which is why this
 # file exists: it sets the base version GitVersion works toward.
 #
-# Resulting behaviour (verified against GitVersion 6.8.2):
+# `v0.1.0` is already tagged and published (design/90-decisions.md, 2026-08-20); `v0.2.0`
+# is the next stable release this repository is preparing (S11/S12), so next-version is
+# raised past the existing tag rather than left pointing at it.
 #
-#   untagged commit on main  ->  0.1.0-<commits-since-version-source>   (prerelease)
-#   commit tagged v0.1.0     ->  0.1.0                                  (stable)
+# Resulting behaviour (verified against GitVersion 6.8.2, before this raise):
+#
+#   untagged commit on main  ->  <next-version>-<commits-since-version-source>   (prerelease)
+#   commit tagged v<next-version>  ->  <next-version>                            (stable)
 #
 # So every push to main publishes a distinct prerelease, and tagging a commit
 # publishes the stable version. Per-branch `deployment-mode` overrides were tried and
@@ -15,4 +19,4 @@
 #
 # After cutting a stable release, bump next-version below (and the .csproj <Version>,
 # which the manual NuGet.org path uses) to the next version being worked toward.
-next-version: 0.1.0
+next-version: 0.2.0

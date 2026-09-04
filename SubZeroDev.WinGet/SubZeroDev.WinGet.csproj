@@ -15,7 +15,7 @@
 
   <PropertyGroup Label="NuGet package">
     <PackageId>SubZeroDev.WinGet</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Ben Richards</Authors>
     <Description>A C# client library for the WinGet COM API (Microsoft.Management.Deployment): search, install, upgrade, uninstall, download, repair, source management, pins, and export/import — with no console output parsing and no COM/WinRT types in the public surface.</Description>
     <PackageTags>winget;package-management;windows;com;package-manager;app-installer</PackageTags>

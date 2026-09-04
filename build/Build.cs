@@ -65,6 +65,21 @@ class Build : NukeBuild
 
     const string MachineStateCategory = "MachineState";
     const string CatalogIntegrationCategory = "CatalogIntegration";
+    const string PackageId = "SubZeroDev.WinGet";
+
+    // S11.3: identity fields for a confirmation record. Only meaningful inside a GitHub Actions
+    // job - PublishGitHubPackages/PublishNuGet are release-job-only targets, never run locally
+    // against a real feed, so a placeholder here would never actually reach a report.
+    static string RunUrl =>
+        $"{Environment.GetEnvironmentVariable("GITHUB_SERVER_URL")}/{Environment.GetEnvironmentVariable("GITHUB_REPOSITORY")}" +
+        $"/actions/runs/{Environment.GetEnvironmentVariable("GITHUB_RUN_ID")} " +
+        $"(attempt {Environment.GetEnvironmentVariable("GITHUB_RUN_ATTEMPT")})";
+
+    static string CommitSha =>
+        Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "(unknown - not running in GitHub Actions)";
+
+    static string RefName =>
+        Environment.GetEnvironmentVariable("GITHUB_REF_NAME") ?? "(unknown - not running in GitHub Actions)";
 
     // S9.1: measured from the unit-only Coverage report on main at commit f063212
     // (591 covered / 1232 valid lines = 47.97077922...%, which rounds to 48.0% at one
@@ -314,17 +329,35 @@ class Build : NukeBuild
                 .SetOutputDirectory(ArtifactsDirectory));
         });
 
+    // S11.1/S11.2/C21: a successful push, or --skip-duplicate reporting nothing to do, is not
+    // itself evidence the intended version is live - both targets confirm it back from the
+    // feed they just pushed to before the target is allowed to succeed.
     Target PublishNuGet => _ => _
         .DependsOn(Pack)
         .Requires(() => NugetApiKey)
-        .Executes(() => ArtifactsDirectory.GlobFiles("*.nupkg")
-            .ForEach(package => DotNetNuGetPush(s => s
+        .Executes(async () =>
+        {
+            var package = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+            var version = PublicationConfirmation.ReadPackedVersion(package);
+
+            DotNetNuGetPush(s => s
                 .SetTargetPath(package)
                 .SetSource("https://api.nuget.org/v3/index.json")
                 .SetApiKey(NugetApiKey)
                 // Original workflow used the (invalid) plural "--skip-duplicates" here;
                 // this is the correct singular flag - see PR description.
-                .EnableSkipDuplicate())));
+                .EnableSkipDuplicate());
+
+            using var http = new HttpClient();
+            var result = await PublicationConfirmation.Confirm(
+                destination: "NuGet.org",
+                tag: RefName,
+                commit: CommitSha,
+                runUrl: RunUrl,
+                intendedVersion: version,
+                fetchVersions: ct => PublicationConfirmation.FetchNuGetOrgVersions(http, PackageId, ct));
+            PublicationConfirmation.Assert(result);
+        });
 
     // Deliberately independent of Compile/Pack: like the original publish-github-packages
     // job, this does its own from-scratch `dotnet pack` (implicit restore+build) at the
@@ -332,7 +365,7 @@ class Build : NukeBuild
     Target PublishGitHubPackages => _ => _
         .Requires(() => GithubToken)
         .Requires(() => GithubRepositoryOwner)
-        .Executes(() =>
+        .Executes(async () =>
         {
             ArtifactsDirectory.CreateOrCleanDirectory();
             DotNetPack(s => s
@@ -342,10 +375,79 @@ class Build : NukeBuild
                 .SetVersion(GitVersion.SemVer)
                 .SetOutputDirectory(ArtifactsDirectory));
 
-            ArtifactsDirectory.GlobFiles("*.nupkg").ForEach(package => DotNetNuGetPush(s => s
+            var package = ArtifactsDirectory.GlobFiles("*.nupkg").Single();
+            var version = PublicationConfirmation.ReadPackedVersion(package);
+
+            DotNetNuGetPush(s => s
                 .SetTargetPath(package)
                 .SetSource($"https://nuget.pkg.github.com/{GithubRepositoryOwner}/index.json")
                 .SetApiKey(GithubToken)
-                .EnableSkipDuplicate()));
+                .EnableSkipDuplicate());
+
+            using var http = new HttpClient();
+            var result = await PublicationConfirmation.Confirm(
+                destination: "GitHub Packages",
+                tag: RefName,
+                commit: CommitSha,
+                runUrl: RunUrl,
+                intendedVersion: version,
+                fetchVersions: ct => PublicationConfirmation.FetchGitHubPackagesVersions(
+                    http, GithubRepositoryOwner, PackageId, GithubToken, ct));
+            PublicationConfirmation.Assert(result);
+        });
+
+    // S11.4: exercises PublicationConfirmation.Evaluate/Assert directly, independent of a real
+    // feed - a positive match, a missing version, and a mismatched one - the same shape as
+    // CoverageGateTest above. Kept out of the default CI target chain for the same reason.
+    Target PublicationConfirmationTest => _ => _
+        .Executes(() =>
+        {
+            void AssertConfirms(string intended, params string[] observed)
+            {
+                var result = PublicationConfirmation.Evaluate(
+                    "TestFeed", "v0.2.0", "abc123", "https://example.invalid/run/1", intended, observed);
+                if (!result.Confirmed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {intended} to be confirmed by [{string.Join(", ", observed)}], but it was not.");
+                }
+
+                PublicationConfirmation.Assert(result);
+            }
+
+            void AssertDoesNotConfirm(string intended, params string[] observed)
+            {
+                var result = PublicationConfirmation.Evaluate(
+                    "TestFeed", "v0.2.0", "abc123", "https://example.invalid/run/1", intended, observed);
+                if (result.Confirmed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {intended} not to be confirmed by [{string.Join(", ", observed)}], but it was.");
+                }
+
+                try
+                {
+                    PublicationConfirmation.Assert(result);
+                    throw new InvalidOperationException(
+                        $"Expected Assert to throw for {intended} against [{string.Join(", ", observed)}].");
+                }
+                catch (InvalidOperationException)
+                {
+                    // Expected: Assert throws when the intended version was not confirmed.
+                }
+            }
+
+            // A push followed by an exact-match observation confirms.
+            AssertConfirms("0.2.0", "0.1.0", "0.2.0");
+
+            // A push followed by a missing observation - the feed has not shown the version
+            // at all - does not confirm.
+            AssertDoesNotConfirm("0.2.0", "0.1.0", "0.1.1");
+            AssertDoesNotConfirm("0.2.0");
+
+            // A push followed by a mismatched observation - a prerelease suffix or different
+            // casing - does not confirm; only an exact string match does.
+            AssertDoesNotConfirm("0.2.0", "0.2.0-1");
+            AssertDoesNotConfirm("0.2.0", "0.2.0-rc1");
         });
 }
