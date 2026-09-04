@@ -24,97 +24,6 @@ from git history, while `/track` ignores landed slices when checking criterion d
 
 ## Outstanding
 
-## S8 — Pull requests record live evidence without contaminating the hermetic check
-Delivers: For every pull request, the maintainer can see separately whether local WinGet behaviour,
-the packed consumer, and Microsoft's current catalog passed, with the machine-state result enforced
-without turning catalog drift into a merge blocker.
-Touches: `.github/workflows/build.yml`, `build/Build.cs`,
-         `SubZeroDev.WinGet.Tests/WinGetClientIntegrationTests.cs`, CI evidence artifacts,
-         repository branch-protection configuration
-Depends on: S2, S7
-Acceptance:
-  - S8.1 Pull requests run `MachineStateTest` and `PackedConsumerSmokeTest` together in one
-    machine-state job and run `CatalogIntegrationTest` in a separate catalog job; both jobs retain
-    normal failing outcomes.
-  - S8.2 The existing hermetic job remains required and has an automated negative dependency check
-    proving it does not activate COM, run either live-test class, execute `winget.exe`, or contact a
-    package feed.
-  - S8.3 After S2's non-null hosted observation, branch protection requires the machine-state job in
-    addition to the hermetic job and does not require the catalog job.
-  - S8.4 Each live job records the exact commit, run identity, binary outcome, non-empty asserted
-    facts, explicit non-assertions, and the environment facts required by C4 in a retained artifact.
-  - S8.5 A GitHub-hosted Windows x64 run records all twelve project-reference integration tests green
-    at their asserted seven/five counts and records the packed-consumer smoke separately.
-  - S8.6 Partial success retains evidence for each passing assertion without becoming an all-suite
-    pass; an empty input that makes an implication vacuously true is surfaced and licenses no claim.
-  - S8.7 A catalog outage or changed witness fails only the catalog job and does not erase separately
-    passing machine-state evidence.
-Out of scope: ARM64 runtime claims, elevation, service/SYSTEM hosting, mutating-operation coverage, or
-    swallowing a live failure to make a workflow green.
-
----
-
-## S9 — Unit coverage has an exact ratcheting floor
-Delivers: A maintainer gets a unit-only coverage gate that fails a regression at a checked-in floor
-instead of merely reporting a percentage that no workflow enforces.
-Touches: `build/Build.cs`, coverage test fixtures under `build/` or `tools/`,
-         `.github/workflows/build.yml`
-Depends on: S4, S6
-Acceptance:
-  - S9.1 After the S4–S6 unit tests land, the slice records the measured unit-only covered-line and
-    valid-line counts and declares one private build-owned decimal floor exactly 0.1 percentage point
-    below the one-decimal measured result.
-  - S9.2 `Coverage` compares the exact integer counts against that decimal ratio; a synthetic report
-    one line below the boundary fails and reports the counts and floor, while a report at the boundary
-    passes.
-  - S9.3 The gated report covers the whole library with no file, class, namespace, or COM-orchestration
-    exclusions and is produced only by the unit run that excludes every `[Explicit]` test.
-  - S9.4 Live targets cannot contribute files or counts to the report evaluated by the floor.
-  - S9.5 The floor has one decimal place, is constrained to `0..100`, and has no command-line override
-    or separate data file.
-  - S9.6 Restoring report-only coverage makes the new negative gate test fail; lowering the checked-in
-    floor requires a decision-log entry, while an increase carries its justifying measurement.
-Out of scope: branch-coverage enforcement, per-file thresholds, exclusions that improve the displayed
-    ratio, or an aspirational floor chosen before measurement.
-
----
-
-## S10 — Support claims point to the evidence that licenses them
-Delivers: A package consumer can tell which architecture, package-shape, hosting, and operation claims
-were executed, contract-checked, or remain unvalidated without comparing contradictory documents.
-Touches: `README.md`, `docs/docs/index.md`, `docs/docs/getting-started.md`,
-         `docs/docs/architecture.md`, `docs/docs/testing.md`,
-         `docs/docs/troubleshooting.md`, `SPECIFICATION.md`,
-         `build/Test-Documentation.ps1`, documentation-gate tests
-Depends on: S2, S8, S9
-Acceptance:
-  - S10.1 The five claim subjects have exactly the canonical owners assigned by C1, and each canonical
-    statement names one valid strength plus the evidence sufficient for that strength.
-  - S10.2 Windows x64 execution evidence is not presented as ARM64 evidence; ARM64 is stated only as
-    build/package-contract support, while elevation, service/SYSTEM hosting, and mutating-operation
-    live coverage remain `unvalidated`.
-  - S10.3 Getting Started, Architecture, and the specification link or explicitly refer to the
-    canonical statements instead of restating their assertion or strength; the generated homepage
-    remains a projection of the README rather than a second authored owner.
-  - S10.4 The documentation gate fails separate negative fixtures for a duplicate owner, invalid
-    strength, missing evidence reference, evidence insufficient for the claimed strength, and a
-    non-canonical restatement.
-  - S10.5 The documentation gate passes the repository's real documents, including the regenerated
-    homepage, only after every support claim matches evidence produced by the exact referenced run.
-  - S10.6 Existing link, anchor, generated-file, warning, and terminology checks retain their current
-    behaviour.
-  - S10.7 The `runtime-version-floor` subject has a canonical owner stating that `GetWinGetVersion`
-    requires WinGet 1.12 or newer and returns `null` below it, per C25; no document asserts a
-    library-wide minimum WinGet version.
-  - S10.8 Every document stating the enforced coverage floor states it as a lower bound on unit-only
-    coverage that is blind to live evidence, per C11, and the gate fails a negative fixture presenting
-    the floor as a measure of the library's proven, tested, or verified behaviour. This is a gate rule
-    over any document, not a sixth claim subject; C1's five subjects are unchanged.
-Out of scope: the documentation redesign, generated claim manifests, changing routes or information
-    architecture, or promoting a claim from wording alone.
-
----
-
 ## S11 — Publishing succeeds only after both feeds confirm the intended version
 Delivers: The maintainer can publish a release and have each publishing target fail unless its feed
 can be queried back for the exact version, so a skipped duplicate or green push command is not
@@ -212,5 +121,8 @@ Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upg
 | S5 — Operation and request translations have one tested owner | #24 | `1a3d751` |
 | S6 — DTO and collection projections have one tested owner | #25 | `ee7d660` |
 | S7 — The live suite has stable risk-class entry points | #26 | `1a3d751` |
+| S8 — Pull requests record live evidence without contaminating the hermetic check | #27 | `7b4ee09` |
+| S9 — Unit coverage has an exact ratcheting floor | #28 | `a9eeff3` |
+| S10 — Support claims point to the evidence that licenses them | #29 | `5194a4c` |
 | S13 — Product invariants fail the build when they regress | #67 | `894c99f` |
 | S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
