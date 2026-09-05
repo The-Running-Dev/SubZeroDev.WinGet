@@ -5,18 +5,31 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- **A release publishes on hermetic evidence alone; give the tagged commit its own live evidence.**
-  `.github/workflows/build.yml` scopes the `machine-state` and `catalog` jobs to `pull_request`, and
-  the `release` job declares `needs: build`. Combined with squash merge, no commit on `main` — tag
-  included — can carry its own machine-state run, so publishing waits on the hermetic check only and
-  a machine-state regression landing after the cited pull-request run reaches both feeds unseen. The
-  2026-09-05 entry below routed S12 around this by tree identity and deferred the fix; the
-  2026-09-05 entry *A release's live evidence is carried by tree identity* states the substitution
-  and its cost, and does not close it. The work is a workflow-composition change — run
-  `machine-state` for `push` and tag events, add it to `release`'s `needs`, and decide whether
-  `catalog` joins it given that it is deliberately non-required — plus whatever contract row makes
-  the tree-identity reading checkable rather than per-release judgement. **This needs a slice authored
-  by `/slices` and a contract amendment from `/contract`; `/reconcile` authored neither.**
+---
+
+### 2026-09-05 — S12.6 is ticked as vacuously satisfied rather than struck, and S12 retires
+Context: `/track` found S12 landed (`77bb631`, `v0.2.0` tagged, both feeds confirmed) but its issue
+#31 still open on one unticked box, S12.6 — "If only one feed confirms the package, that feed remains
+published state but the slice and release criterion remain incomplete; neither tag is moved and no
+replacement version is invented." Both feeds confirmed, so the antecedent is false. The criterion is
+a guard against a partial publish, not a step to perform, so it can only ever be ticked by a *failed*
+release: leaving it unticked keeps #31 open permanently, and keeps S12 under `## Outstanding` where
+every future `/track` re-reports it. Retirement to `## Landed` is gated on the issue closing, so one
+box blocked both.
+Chosen: tick S12.6 as vacuously satisfied, close #31, and retire S12's body to the `## Landed` index
+at `77bb631`. The tick is recorded as a vacuous truth in a comment on #31 and here, rather than left
+to look like an executed assertion — which is the only real cost, since it slightly weakens what a
+ticked box means in a repository where ticking is a trusted doneness signal.
+Rejected: striking S12.6 as unsatisfiable with a `Retired:` line, the shape already used for S6.2 and
+S6.3 on 2026-09-01. More rigorous, and genuinely tempting for symmetry — but the two cases are not
+alike. S6.2/S6.3 demanded work a later rule *forbade*, so they could never be satisfied by any run;
+S12.6 is satisfiable, just only by a release that goes wrong, and striking a guard that did its job
+records it as broken rather than as passed. Rejected: leaving #31 open until a future partial publish
+ticks it, because that makes an issue's open state mean "this release failed in a way it did not"
+and defers S12's retirement indefinitely. Rejected: correcting S12.1's "all five catalog tests" (it
+is six) while editing #31 — a criterion's wording outside the agent fence is not rewritten by a sync,
+and retiring the body removed the document-side copy anyway; the issue keeps its historical text.
+Reversibility: cheap for the tracker — reopen #31 and untick. The `## Landed` row is one line.
 
 ---
 

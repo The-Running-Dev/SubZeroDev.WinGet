@@ -24,29 +24,6 @@ from git history, while `/track` ignores landed slices when checking criterion d
 
 ## Outstanding
 
-## S12 — The proven release is cut and observed on both feeds
-Delivers: A package consumer can install the immutable `v0.2.0` release from either intended feed,
-and the maintainer has run evidence tying both published packages to the exact tested commit.
-Touches: git tag `v0.2.0`, GitHub Actions run history and evidence artifacts,
-         GitHub Packages, NuGet.org, release references in canonical repository documentation
-Depends on: S8, S10, S11
-Acceptance:
-  - S12.1 The exact release commit has green required hermetic and machine-state statuses, a recorded
-    green catalog result for all five catalog tests, and the evidence artifacts required by C3–C4.
-  - S12.2 One immutable `v0.2.0` tag is created at that commit and pushed once; `v0.1.0` still resolves
-    to its original published commit.
-  - S12.3 The tag workflow executes `PublishGitHubPackages`, and positive feed confirmation observes
-    `SubZeroDev.WinGet` version `0.2.0` tied to the tagged commit.
-  - S12.4 `PublishNuGet` executes against the same tagged commit, and positive NuGet.org confirmation
-    observes `SubZeroDev.WinGet` version `0.2.0`.
-  - S12.5 The release record references the tag, commit, both workflow runs, both feed confirmations,
-    asserted facts, and explicit non-assertions; no document claims success before both confirmations
-    exist.
-  - S12.6 If only one feed confirms the package, that feed remains published state but the slice and
-    release criterion remain incomplete; neither tag is moved and no replacement version is invented.
-Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtime claims, or any
-    validation excluded by the brief.
-
 ## Landed
 
 | Slice | Issue | Landed at |
@@ -65,3 +42,4 @@ Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtim
 | S14 — Live runs name the translations they license | #68 | `693fce9` |
 | S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
 | S11 — Publishing succeeds only after both feeds confirm the intended version | #30 | `089814b` |
+| S12 — The proven release is cut and observed on both feeds | #31 | `77bb631` |
