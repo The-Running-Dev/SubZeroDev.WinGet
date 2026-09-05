@@ -1,0 +1,18 @@
+{
+  "manifestHash": "179d4b3abcea4544d7ab4a3865f279995819b79d8159dd17fa4280aa4715900a",
+  "generated": "2026-09-05",
+  "gates": [
+    {
+      "name": "Test, coverage, architecture, and package",
+      "command": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release"
+    },
+    {
+      "name": "Validate Markdown links, terminology, and generated files",
+      "command": "./build/Test-Documentation.ps1"
+    },
+    {
+      "name": "Build documentation",
+      "command": "./docs.ps1 -BuildOnly"
+    }
+  ]
+}
