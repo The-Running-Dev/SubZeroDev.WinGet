@@ -5,19 +5,6 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- **A release publishes on hermetic evidence alone; give the tagged commit its own live evidence.**
-  `.github/workflows/build.yml` scopes the `machine-state` and `catalog` jobs to `pull_request`, and
-  the `release` job declares `needs: build`. Combined with squash merge, no commit on `main` — tag
-  included — can carry its own machine-state run, so publishing waits on the hermetic check only and
-  a machine-state regression landing after the cited pull-request run reaches both feeds unseen. The
-  2026-09-05 entry below routed S12 around this by tree identity and deferred the fix; the
-  2026-09-05 entry *A release's live evidence is carried by tree identity* states the substitution
-  and its cost, and does not close it. The work is a workflow-composition change — run
-  `machine-state` for `push` and tag events, add it to `release`'s `needs`, and decide whether
-  `catalog` joins it given that it is deliberately non-required — plus whatever contract row makes
-  the tree-identity reading checkable rather than per-release judgement. **This needs a slice authored
-  by `/slices` and a contract amendment from `/contract`; `/reconcile` authored neither.**
-
 ---
 
 ### 2026-09-05 — A release's live evidence is carried by tree identity, and the design says so
