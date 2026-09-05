@@ -7,6 +7,49 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-05 — `v0.2.0` is tagged and cut; both feeds positively confirm it (S12)
+Context: S12's Depends on (S8, S10, S11) were all landed, leaving S12 as the sole `## Outstanding`
+slice. S12.1 requires "the exact release commit" to carry green required hermetic and machine-state
+statuses and a recorded green catalog result, but `.github/workflows/build.yml`'s `machine-state`
+and `catalog` jobs run only on `pull_request` (`if: github.event_name == 'pull_request'`), never on
+`push`, and this repository merges by squash — so `main`'s tip commit is never the same SHA the
+pull-request checks ran against, and no commit that ever exists on `main` can carry its own
+machine-state/catalog run. Confirmed on PR #90: `headRefOid` `2d3e048` (what CI checked) differs
+from `mergeCommit.oid` `089814b` (what landed). `git diff 089814b..3b99a93` (main's tip at the time
+of tagging) touched only `.claude/session-costs.tsv` and `design/state/` mirror files — no product,
+build, or workflow code — so the tree PR #90's checks ran against is identical to the tagged commit.
+Chosen: read S12.1's "exact release commit" evidence by tree identity rather than literal SHA
+identity: cite PR #90's pre-squash-head run (33951825604 — `build`, `machine-state`, `catalog` all
+green; six-of-six catalog tests passed; `machine-state-evidence`/`catalog-evidence`/`coverage-report`
+artifacts present and unexpired) as licensing `3b99a93`, the commit `v0.2.0` was cut at. The tag was
+pushed as `v0.2.0` → `3b99a93` (annotated). The tag push's own `Build` run (33960128193) failed once
+on the `build` job's `Dispose_CancelsAnInFlightRegistrationOnTheOwnerThread` timing out — the same
+flaky test PR #86 already widened the timeout budget for, not a regression in the tagged tree — and
+was re-run to green; its `release` job then published GitHub Packages and printed `Publication
+confirmed: GitHub Packages 0.2.0 (tag/ref v0.2.0, commit 3b99a93…, run …33960128193 (attempt 2))`. A
+second, manually dispatched `workflow_dispatch` run with `push_to_nuget: true` against the `v0.2.0`
+ref (33960655434) built and published to NuGet.org cleanly on the first attempt, printing
+`Publication confirmed: NuGet.org 0.2.0 (tag/ref v0.2.0, commit 3b99a93…, run …33960655434 (attempt
+1))`. `v0.1.0` was not moved. Non-assertion: this release record does not re-run or re-derive
+machine-state/catalog evidence for `3b99a93` itself — none exists and none can, under the current
+`pull_request`-only trigger — it only asserts that the tree tagged is the tree PR #90's checks
+covered.
+Rejected: Waiting for a workflow change that runs `machine-state`/`catalog` against `push`/tag events
+or the post-squash `main` tip before cutting `v0.2.0` — rejected because that is a `build.yml` change
+outside S12's `Touches` list, and this session was not authorized to fold a contract/workflow change
+into a release slice; the gap is real and is left for a future slice rather than routed around
+silently here. Treating S12.1 as blocked/unsatisfiable and stopping the slice — declined by the
+maintainer in favor of the tree-identity reading, since the tree in question is provably identical
+and the alternative indefinitely blocks every future release on a CI-composition gap unrelated to
+the code being released.
+Reversibility: expensive. The tag, both published packages, and the confirmation runs are one-way
+doors — `v0.2.0` is never moved or reused (S12.2/S12.6), and neither GitHub Packages nor NuGet.org
+allow deleting a published version outright. The open CI-composition gap this decision routes around
+is cheap to fix later (a workflow-trigger change) but does not retroactively produce evidence for
+`3b99a93` itself.
+
+---
+
 ### 2026-09-01 — S6.2 and S6.3 are struck as unsatisfiable, not carried forward as a coverage gap
 Context: S6 is the last slice whose issue (#25) is open, and the only two unticked boxes on it are S6.2 and S6.3. Both name the projections that take a WinRT-projected parameter — package summaries, package details, agreements, documentation entries, icons, and source records, which are `ToPackages`, `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`, `CopyDocumentations`, `CopyIcons` and `ToPackageSource` in `SubZeroDev.WinGet/WinGetProjectionMapper.cs`. `design/20-contract.md` C26 now says those members are owned under C13 and licensed by live evidence, that no fake projection, stub-backed read accessor, or reflection substitute may stand in for them, and — in terms — that "its absence of a unit test is not a coverage gap to be closed". S6.2 and S6.3 ask for exactly the unit tests C26 forbids, and there is no non-conflicting reading of them: every mapper member taking a plain .NET input is already owned and unit-tested under S6.1, so the members these two criteria can still be about are precisely the C26 ones. The pair is older than the rule that killed it — both were written in `661c785`, before the 2026-08-30 entry *The eight projected-parameter translations are covered by live evidence, not unit tests* and the 2026-08-30 entry *The mapper's ownership line and its unit-test line are separate* settled the question — and neither of those entries went back to amend them. An implementing session hit the conflict and stopped, which is the correct behaviour and the reason this is being decided rather than worked around.
 Chosen: strike S6.2 and S6.3 from S6's `Acceptance:` list, leaving their ids as permanent gaps, and name the strike on a `Retired:` line in the slice body pointing here. S6's `Delivers:` is rewritten, because the sentence that promised "deterministic unit tests, including their empty and ordered collection behaviour" is the sentence that generated the stale pair, and leaving it would generate the pair again on the next re-read. The intent the two criteria carried is not lost, and it is worth being exact about where each half went rather than waving at S14. The field-preservation half is carried forward by S14.1 and S14.2, which require a live assertion naming each of the eight and comparing at least one copied field against an expected value. The empty-collection half is deliberately *not* carried forward: S14.5 requires a run whose witness package supplies no agreements, documentation or icons to record a non-assertion naming the missing witness rather than a passing assertion over an empty collection, so the design has already chosen to leave that behaviour unlicensed rather than assert it weakly. The order-and-exactly-once half is held structurally rather than by assertion, by landed S6.4: every projected collection is traversed by an indexed loop and an automated check rejects `foreach` or LINQ over those parameters, and an append-in-index-order loop is what order preservation and exactly-once are. That residue — no runtime assertion anywhere that a projected collection came back in manifest order — is known and retained, not overlooked.
