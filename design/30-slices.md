@@ -74,42 +74,6 @@ Acceptance:
 Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtime claims, or any
     validation excluded by the brief.
 
----
-
-## S14 — Live runs name the translations they license
-Delivers: The maintainer can read, from a live run's own record, exactly which package and source
-translations that run checked and which it did not, so a green pull-request check is never mistaken
-for evidence about the ones only a live run can exercise.
-Touches: `SubZeroDev.WinGet.Tests/WinGetClientIntegrationTests.cs`,
-         `.github/workflows/build.yml`, CI evidence artifacts
-Depends on: S8, plus the `/contract` amendment raising `CatalogIntegrationTest`'s asserted count
-            to six (`design/90-decisions.md`, 2026-08-31)
-Acceptance:
-  - S14.1 Each of the eight live-licensed translations reachable read-only — `ToPackages`,
-    `ToPackageInfo`, `ToPackageDetails`, `CopyAgreements`, `CopyDocumentations`, `CopyIcons`,
-    `ToPackageSource`, and `GetPriority` — is covered by at least one live assertion that names the
-    member it licenses and fails when that member returns a wrong projection reading.
-  - S14.2 Each named assertion compares at least one field the translation copies against an
-    expected value. A non-null or non-empty check alone does not count as naming the member.
-  - S14.3 The eight assertions above are added inside the existing twelve live tests, and the only
-    test added is S14.7's. `MachineStateTest` still selects exactly seven and
-    `CatalogIntegrationTest` selects exactly six, and both still fail before execution on any other
-    count.
-  - S14.4 Each live job's evidence record lists the translations its passing assertions licensed and
-    records in its non-assertions the live-licensed translations that run did not check.
-  - S14.5 Where the witness package's manifest supplies no agreements, documentation, or icons, the
-    run records a non-assertion naming the missing witness rather than a passing assertion over an
-    empty collection.
-  - S14.6 The hermetic job's evidence record explicitly disclaims every live-licensed translation in
-    its non-assertions, and no document reads a green hermetic check as evidence about one.
-  - S14.7 One catalog-dependent live test calls `Download` with a pinned version and asserts that the
-    resolved version equals the requested one, naming `FindVersionId` as the translation it licenses.
-    The test cleans up whatever it writes and asserts nothing about installed machine state.
-Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upgrade — a binding
-    non-goal, so it stays obliged by C26 and licensed by nothing; any live test beyond S14.7's;
-    exercising install, upgrade, uninstall, repair, or import to reach a translation; and any fake,
-    stub, or reflection substitute for a projected type.
-
 ## Landed
 
 | Slice | Issue | Landed at |
@@ -125,4 +89,5 @@ Out of scope: `GetInstallerErrorCode`, whose only call paths are install and upg
 | S9 — Unit coverage has an exact ratcheting floor | #28 | `a9eeff3` |
 | S10 — Support claims point to the evidence that licenses them | #29 | `5194a4c` |
 | S13 — Product invariants fail the build when they regress | #67 | `894c99f` |
+| S14 — Live runs name the translations they license | #68 | `693fce9` |
 | S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
