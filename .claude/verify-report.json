@@ -3,7 +3,7 @@
     {
       "name": "Test, coverage, architecture, and package",
       "status": "Passed",
-      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release: Restore Succeeded 0:02, Compile Succeeded 0:03, Pack Succeeded 0:01, Test Succeeded 0:08, Coverage Succeeded <1sec, ArchitectureTest Succeeded 0:04, PackageTest Succeeded 1:01. Total 1:22. Build succeeded on 9/5/2026 3:35:35 PM. 233 unit tests passed, 0 failed, 13 skipped (Explicit live tests)."
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release: Restore Succeeded 0:02, Compile Succeeded 0:06, Pack Succeeded 0:02, Test Succeeded 0:10, Coverage Succeeded 0:01, ArchitectureTest Succeeded 0:06, PackageTest Succeeded 1:08. Total 1:37. Build succeeded on 9/5/2026 4:01:19 PM."
     },
     {
       "name": "Validate Markdown links, terminology, and generated files",
@@ -13,7 +13,7 @@
     {
       "name": "Build documentation",
       "status": "Passed",
-      "detail": "pwsh -File ./docs.ps1 -BuildOnly: Generated docs/docs/index.md from README.md. Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest) ... Built 'subzerodev-winget-docs'. (build-only). The regenerated docs/docs/index.md was byte-identical to the checked-in copy (git diff showed 0 lines changed, only a CRLF-normalization warning) and was reverted with git checkout -- to leave the tree clean."
+      "detail": "pwsh -File ./docs.ps1 -BuildOnly: Built 'subzerodev-winget-docs' successfully via Docker (cached layers, base image ghcr.io/the-running-dev/docs-template:latest). The regenerated docs/docs/index.md was byte-identical to the checked-in copy (0 diff lines, only a CRLF-normalization warning) and was reverted with git checkout -- to leave the tree clean."
     }
   ]
 }
