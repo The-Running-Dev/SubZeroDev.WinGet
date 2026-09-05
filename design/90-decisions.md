@@ -7,6 +7,36 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-05 — The tree-identity substitution is superseded by direct machine-state evidence (S16)
+Context: the 2026-09-05 entry below, *A release's live evidence is carried by tree identity, and the
+design says so*, recorded that publishing waited on the hermetic check alone while `machine-state`
+and `catalog` were scoped to pull requests, so no tagged commit ever carried its own live evidence —
+the release instead cited a pull-request run by tree identity, admissible only while a diff showed
+no product, build, or workflow path had changed since. Issue #96 named the gap directly: a
+machine-state regression introduced after the cited run and before the tag would reach both feeds
+unseen, and closing it was a workflow-composition change, not a documentation one.
+Chosen: S16 makes that change. `machine-state` and `catalog` lost their pull-request-only `if:`, so
+both now run for a push to `main`, a `v*` tag push, and a `workflow_dispatch`, alongside a pull
+request; `release` gained `machine-state` in its `needs`. A tagged commit now carries its own
+machine-state result before `release` runs, and a failure there leaves publishing unrun — the
+tree-identity argument is retired, not merely superseded in one release's favor. `catalog` was
+deliberately kept out of `release`'s `needs`, unchanged from its existing non-required status: a
+catalog outage or a changed remote witness must never itself block a merge or a publish, so a
+catalog-dependent regression can still reach a feed unseen. The new cost this creates is the
+converse of the old one: a WinGet-install failure or a hosted-runner outage can now block
+publication of a release whose code is itself sound, where previously only the hermetic check could
+block it.
+Rejected: adding `catalog` to `release`'s `needs` as well, which would close the catalog gap too but
+was rejected because S8.1/S8.7 already chose non-required status for `catalog` specifically so that
+Microsoft's live-service drift can never block a merge — extending that same drift to blocking a
+publish contradicts the reason `catalog` was split out in the first place, and is a separate decision
+this slice's `Out of scope` line does not authorize. Also rejected: leaving the tree-identity
+argument in place and merely tightening its diff check, which would still leave every tagged commit's
+live evidence one step removed from the commit itself.
+Reversibility: cheap — reverting `release`'s `needs` and the two jobs' `if:` conditions restores the
+prior scoping; the tree-identity argument would need to be restated from this entry and #96's if a
+regression made the reversion necessary.
+
 ### 2026-09-05 — S12.6 is ticked as vacuously satisfied rather than struck, and S12 retires
 Context: `/track` found S12 landed (`77bb631`, `v0.2.0` tagged, both feeds confirmed) but its issue
 #31 still open on one unticked box, S12.6 — "If only one feed confirms the package, that feed remains

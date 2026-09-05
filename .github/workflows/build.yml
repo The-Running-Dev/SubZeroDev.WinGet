@@ -110,8 +110,12 @@ jobs:
   # version (1.29.280) after this job's pinned install step ran, and the Main ruleset was then
   # updated (2026-09-03) to require this job's status. That requirement lives in repository
   # settings, not in this file.
+  #
+  # S16.1/S16.2: carries no event condition, so it runs for a pull request, a push to main, a
+  # `v*` tag push, and a `workflow_dispatch` alike - every event `release` can reach - and
+  # `release` declares `needs: [build, machine-state]` below. A `needs:` on a skipped job blocks
+  # its dependent, so a narrower `if:` here would make publishing unreachable rather than gated.
   machine-state:
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: windows-latest
 
     steps:
@@ -272,8 +276,12 @@ jobs:
   # remote witness fails only this status and never erases the machine-state job's separately
   # passing evidence. Deliberately not required by branch protection (S8.3) - catalog drift in
   # Microsoft's live service must never itself block a merge.
+  #
+  # S16.3: carries no event condition either, and records its own evidence for a push, a tag
+  # push, and a `workflow_dispatch` alike, same as machine-state - but deliberately absent from
+  # `release`'s `needs`: a catalog failure on a tag is a recorded red job and does not stop
+  # publication, per the non-required status above.
   catalog:
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: windows-latest
 
     steps:
@@ -417,8 +425,9 @@ jobs:
             catalog.log
             TestResults/CatalogIntegration/**
 
-  # Builds and releases the package. Three ways in, all gated on `build` so nothing
-  # publishes unless tests pass:
+  # Builds and releases the package. Three ways in, all gated on `build` AND `machine-state`
+  # (S16.2) so nothing publishes unless both the hermetic checks and the tagged commit's own
+  # live machine-state run pass:
   #   push to main   -> GitHub Packages, PRERELEASE version (0.1.0-<n>)
   #   push tag v*    -> GitHub Packages, STABLE version (0.1.0)
   #   workflow_dispatch with push_to_nuget -> NuGet.org
@@ -426,7 +435,7 @@ jobs:
   # Pull requests never reach this job — they run the full non-publishing verification
   # suite above, including architecture and package-contract checks.
   release:
-    needs: build
+    needs: [build, machine-state]
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_to_nuget == true) }}
     runs-on: windows-latest
 

@@ -233,19 +233,16 @@ projected-parameter translations. A catalog outage may leave valid machine-state
 empty input that makes an implication vacuously true records no evidence for that assertion and makes
 the absent witness visible.
 
-**A release is cut.** The hermetic check gates publishing directly: it is the only check the release
-job depends on, and it is the only one that runs for a tag. The machine-state and catalog jobs are
-scoped to pull requests, and squash merge gives `main` a tip whose SHA no live job has ever seen, so
-**no tagged commit can carry its own live evidence** and none is waited for.
-
-The live half of a release's evidence is therefore carried by *tree identity* rather than commit
-identity: the release cites the pull-request run whose pre-squash head has a tree identical to the
-tagged commit's, and the citation is admissible only while that identity is demonstrated — a diff
-between the two commits touching no product, build, or workflow path. Anything else is a gap in the
-evidence, not a weaker grade of it. This is a substitution with a real cost, stated here rather than
-improvised per release: a machine-state regression introduced between the cited run and the tag is
-invisible to every gate that fires, and the required status that would have caught it is required
-only on the pull request. Closing that gap is a workflow-composition change, not a documentation one.
+**A release is cut.** The hermetic check and the machine-state status both gate publishing: `release`
+declares `needs: [build, machine-state]`, and neither job carries an event condition narrower than
+`release`'s own, so a pull request, a push to `main`, a `v*` tag push, and a `workflow_dispatch` all
+reach `machine-state` the same way they reach `build`. A tagged commit therefore carries its own
+machine-state result before `release` runs, and a failure there leaves publishing unrun. The catalog
+job runs unconditionally for the same events and records its own evidence, but stays out of
+`release`'s `needs` — a catalog outage or a changed remote witness must never itself block a merge
+or a publish, so a catalog-dependent regression can still reach a feed unseen. Gating on
+`machine-state` also means a WinGet-install or hosted-runner failure can now block publication of a
+release whose code is itself sound.
 
 Publishing then derives the intended version, pushes, and retrieves or queries each intended feed to
 confirm that exact version. A green push command or skipped duplicate without retrieval is not a
