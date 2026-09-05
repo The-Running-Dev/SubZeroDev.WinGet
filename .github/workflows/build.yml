@@ -435,15 +435,33 @@ jobs:
       # Automatic release on every push to main. Version comes from GitVersion (resolved
       # by Nuke's GitVersion component). Auth uses the built-in GITHUB_TOKEN — no secret
       # needed — and --skip-duplicate makes re-pushing an unchanged version harmless.
+      # C21/S11.1: the target itself fails unless it positively confirms the exact pushed
+      # version back from the feed - push success or a skipped duplicate is not enough. The
+      # "Publication confirmed:" line PublicationConfirmation.Report writes is appended to the
+      # run summary, matching how machine-state/catalog evidence is recorded elsewhere in this
+      # workflow.
       - name: Release to GitHub Packages
         if: ${{ github.event_name == 'push' }}
-        run: nuke PublishGitHubPackages --github-token "${{ secrets.GITHUB_TOKEN }}" --github-repository-owner "${{ github.repository_owner }}"
+        shell: pwsh
+        run: |
+          nuke PublishGitHubPackages --github-token "${{ secrets.GITHUB_TOKEN }}" --github-repository-owner "${{ github.repository_owner }}" 2>&1 |
+            Tee-Object -FilePath publish-github-packages.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Select-String -Path publish-github-packages.log -Pattern '^Publication confirmed:' |
+            ForEach-Object Line | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
       # Manual, opt-in release to NuGet.org. Requires the NUGET_API_KEY secret and
-      # publishes the version pinned in the .csproj.
+      # publishes the version pinned in the .csproj. Same S11.2 confirmation requirement as
+      # GitHub Packages above.
       - name: Release to NuGet.org
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}"
+        shell: pwsh
+        run: |
+          nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}" 2>&1 |
+            Tee-Object -FilePath publish-nuget.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Select-String -Path publish-nuget.log -Pattern '^Publication confirmed:' |
+            ForEach-Object Line | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
