@@ -355,7 +355,14 @@ class Build : NukeBuild
                 commit: CommitSha,
                 runUrl: RunUrl,
                 intendedVersion: version,
-                fetchVersions: ct => PublicationConfirmation.FetchNuGetOrgVersions(http, PackageId, ct));
+                fetchVersions: ct => PublicationConfirmation.FetchNuGetOrgVersions(http, PackageId, ct),
+                // A 2026-09-05 hosted run observed a successful push still absent from the
+                // flat-container index after the default 5x15s (75s) budget - NuGet.org's own
+                // indexing latency for a newly pushed version routinely exceeds that. GitHub
+                // Packages confirmed the same shape of push within seconds (default budget kept
+                // there), so this widening is NuGet.org-specific, not a blanket increase.
+                pollInterval: TimeSpan.FromSeconds(30),
+                maxAttempts: 20);
             PublicationConfirmation.Assert(result);
         });
 
