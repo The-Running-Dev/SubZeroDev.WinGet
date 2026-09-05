@@ -1,4 +1,5 @@
 using FluentAssertions;
+using SubZeroDev.WinGet.Models;
 
 namespace SubZeroDev.WinGet.Tests;
 
@@ -45,6 +46,11 @@ public class WinGetClientIntegrationTests
 
         results.Should().NotBeEmpty();
         results.Should().Contain(p => p.Id == "Microsoft.VisualStudioCode");
+
+        // Licenses ToPackages/ToPackageInfo (S14): the winget source's own catalog name is
+        // copied into Source rather than a fallback or empty value.
+        var match = results.First(p => p.Id == "Microsoft.VisualStudioCode");
+        match.Source.Should().Be("winget");
     }
 
     [Test]
@@ -85,6 +91,11 @@ public class WinGetClientIntegrationTests
         package.Should().NotBeNull();
         package!.Id.Should().Be("Microsoft.VisualStudioCode");
         package.Name.Should().Contain("Visual Studio Code");
+
+        // Licenses ToPackageInfo (S14): the winget source's own catalog name is copied into
+        // Source rather than the "winget" literal fallback ToPackageInfo uses when neither
+        // version carries a catalog reference.
+        package.Source.Should().Be("winget");
     }
 
     [Test]
@@ -111,6 +122,73 @@ public class WinGetClientIntegrationTests
         (details.ShortDescription ?? details.Description).Should().NotBeNullOrWhiteSpace();
         details.AvailableVersions.Should().NotBeEmpty();
         details.Tags.Should().NotBeEmpty();
+
+        // Licenses CopyAgreements/CopyDocumentations/CopyIcons (S14): this witness's manifest is
+        // not guaranteed to carry any of the three, so an empty collection records a named
+        // non-assertion (S14.5) rather than a passing assertion over nothing. A non-empty
+        // collection is asserted against the exact fields the mapper copies.
+        AssertCopiedOrNonAssertion("CopyAgreements", details.Agreements,
+            a => { a.Label.Should().NotBeNullOrWhiteSpace(); a.Url.Should().StartWith("https://"); });
+        AssertCopiedOrNonAssertion("CopyDocumentations", details.Documentations,
+            d => { d.Label.Should().NotBeNullOrWhiteSpace(); d.Url.Should().StartWith("https://"); });
+        AssertCopiedOrNonAssertion("CopyIcons", details.Icons,
+            i =>
+            {
+                i.Url.Should().StartWith("https://");
+                i.FileType.Should().BeOneOf("Unknown", "Ico", "Png", "Jpeg");
+            });
+    }
+
+    // S14.5: records "Non-assertion: <member> - ..." to the detailed console log (captured by
+    // the CI job's Tee-Object'd log, the same evidence path the "WinGet version:" line already
+    // uses) instead of silently accepting an empty collection as a pass.
+    private static void AssertCopiedOrNonAssertion<T>(string memberName, IReadOnlyList<T> items, Action<T> assertFirst)
+    {
+        if (items.Count == 0)
+        {
+            TestContext.Out.WriteLine(
+                $"Non-assertion: {memberName} - witness Microsoft.VisualStudioCode's manifest supplies none to assert against.");
+            return;
+        }
+
+        assertFirst(items[0]);
+    }
+
+    // S14.7: the only read-only path to FindVersionId - Download is the one mutating-looking
+    // operation this suite exercises, but it writes only to a throwaway temp directory this
+    // test owns and cleans up; nothing about installed machine state is asserted or touched.
+    [Test]
+    [Category("CatalogIntegration")]
+    public async Task Download_ForAnOlderPinnedVersion_ResolvesThatExactVersion()
+    {
+        var details = await _client.GetPackageDetails("Microsoft.VisualStudioCode");
+        details.Should().NotBeNull();
+
+        var pinnedVersion = details!.AvailableVersions.FirstOrDefault(v => v != details.AvailableVersion);
+        pinnedVersion.Should().NotBeNull(
+            "the assertion below needs a version other than the default install version to request");
+
+        var downloadDirectory = Directory.CreateTempSubdirectory("subzerodev-winget-download-test-").FullName;
+
+        try
+        {
+            var result = await _client.Download(
+                "Microsoft.VisualStudioCode",
+                new DownloadRequest(downloadDirectory) { Version = pinnedVersion, AcceptPackageAgreements = true });
+
+            result.Succeeded.Should().BeTrue(result.ErrorMessage ?? "(no error message)");
+
+            // Licenses FindVersionId (S14.7): WinGet's download-only path names the saved
+            // installer after the resolved package version - a FindVersionId that ignored the
+            // requested version and resolved the default install version instead would download
+            // and name the file after a different version than the one pinned here.
+            var downloadedFiles = Directory.EnumerateFiles(downloadDirectory, "*", SearchOption.AllDirectories);
+            downloadedFiles.Should().Contain(f => Path.GetFileName(f).Contains(pinnedVersion!, StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(downloadDirectory, recursive: true);
+        }
     }
 }
 
@@ -154,6 +232,13 @@ public class WinGetSourceClientIntegrationTests
         source.Should().NotBeNull();
         source!.Name.Should().Be("winget");
         source.Type.Should().NotBeNullOrWhiteSpace();
+
+        // Licenses ToPackageSource/GetPriority (S14): the built-in winget source is
+        // Microsoft-predefined and trusted, and a freshly configured runner has not had its
+        // default priority changed from 0.
+        source.Origin.Should().Be(PackageSourceOrigin.Predefined);
+        source.TrustLevel.Should().Be(PackageSourceTrustLevel.Trusted);
+        source.Priority.Should().Be(0);
     }
 }
 

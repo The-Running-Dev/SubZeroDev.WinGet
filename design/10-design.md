@@ -222,7 +222,7 @@ non-canonical restatements; it does not fetch external evidence during a documen
 **A pull request is opened.** The existing required hermetic check runs unit tests, exact coverage-floor
 enforcement, architecture assertions, and package-contract verification. Separately, the required
 machine-state status constitutes its runtime, then runs the seven machine-state tests plus the
-packed-consumer smoke. A third, non-required status runs the five catalog-dependent tests. All three
+packed-consumer smoke. A third, non-required status runs the six catalog-dependent tests. All three
 record results against the same commit; one cannot substitute for another.
 
 **Live behaviour is interpreted.** A live target first records its environment — including the pinned

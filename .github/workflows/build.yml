@@ -82,6 +82,22 @@ jobs:
       - name: Append coverage summary
         run: Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
 
+      # S14.6/C27: this required check never activates WinGet COM (C7), so it is blind to every
+      # C26 live-licensed translation by construction. Recorded explicitly so a green hermetic
+      # check is never read as evidence about one - the machine-state and catalog jobs' own
+      # evidence records are the only place any of them are licensed.
+      - name: Record hermetic evidence
+        if: always()
+        shell: pwsh
+        run: |
+          @(
+            '## Hermetic evidence',
+            "Commit: $env:GITHUB_SHA",
+            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
+            'This required check never activates WinGet COM, queries a network catalog, or invokes the WinGet CLI binary (C7).',
+            'Non-assertion: every C26 live-licensed translation - ToPackages, ToPackageInfo, ToPackageDetails, CopyAgreements, CopyDocumentations, CopyIcons, ToPackageSource, GetPriority, FindVersionId, GetInstallerErrorCode - is licensed by nothing here. A regression in one is detectable only by the machine-state or catalog job whose named assertion covers it (or, for GetInstallerErrorCode, by nothing while install/upgrade live coverage remains a non-goal).'
+          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
@@ -237,7 +253,10 @@ jobs:
             "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
             "MachineStateTest (7 tests, C8) + PackedConsumerSmokeTest: $env:CHECKS_OUTCOME",
             "Observed $($version ?? 'WinGet version: (not observed)')",
-            'Configured-source state (C4) is asserted by GetSources_ReturnsTheConfiguredSources and GetSource_ForWinget_ReturnsIt within the checks above; per-test outcomes are in the retained log and trx artifact, not restated here.'
+            'Configured-source state (C4) is asserted by GetSources_ReturnsTheConfiguredSources and GetSource_ForWinget_ReturnsIt within the checks above; per-test outcomes are in the retained log and trx artifact, not restated here.',
+            # S14.4: this job's own share of the ten C26 live-licensed translations.
+            'Licensed here: ToPackageSource, GetPriority (via GetSource_ForWinget_ReturnsIt).',
+            'Non-assertion: ToPackages, ToPackageInfo, ToPackageDetails, CopyAgreements, CopyDocumentations, CopyIcons, FindVersionId are not reached by this job - see the catalog job''s evidence. GetInstallerErrorCode is reachable only from Install/Upgrade, a binding non-goal (C26), and is licensed by nothing.'
           ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
       - name: Upload machine-state evidence artifact
@@ -360,6 +379,15 @@ jobs:
               Select-Object -Last 1 | ForEach-Object Line
           }
 
+          # S14.4/S14.5: the log carries whichever CopyAgreements/CopyDocumentations/CopyIcons
+          # ran into an empty witness collection this run (TestContext.WriteLine, captured by
+          # this job's Tee-Object'd log the same way the WinGet version line above is) - read
+          # those back rather than asserting statically that every run licenses all three.
+          $nonAssertions = if (Test-Path catalog.log) {
+            Select-String -Path catalog.log -Pattern '^\s*Non-assertion:' |
+              ForEach-Object { $_.Line.Trim() } | Select-Object -Unique
+          }
+
           @(
             '## Catalog-integration evidence',
             "Commit: $env:GITHUB_SHA",
@@ -372,10 +400,13 @@ jobs:
             "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
             "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
             "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
-            "CatalogIntegrationTest (5 tests, C8): $env:CHECKS_OUTCOME",
+            "CatalogIntegrationTest (6 tests, C8): $env:CHECKS_OUTCOME",
             "Observed $($version ?? 'WinGet version: (not observed)')",
-            'Remote-catalog reachability (C4) is the fact these five tests assert against the configured winget/msstore sources; per-test outcomes are in the retained log and trx artifact.'
-          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+            'Remote-catalog reachability (C4) is the fact these six tests assert against the configured winget/msstore sources; per-test outcomes are in the retained log and trx artifact.',
+            # S14.4: this job's own share of the ten C26 live-licensed translations.
+            'Licensed here: ToPackages, ToPackageInfo, ToPackageDetails, FindVersionId, plus whichever of CopyAgreements/CopyDocumentations/CopyIcons the witness''s manifest actually populated this run (see Non-assertion lines below for the rest).',
+            'Non-assertion: ToPackageSource, GetPriority are not reached by this job - see the machine-state job''s evidence. GetInstallerErrorCode is reachable only from Install/Upgrade, a binding non-goal (C26), and is licensed by nothing.'
+          ) + $nonAssertions | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
       - name: Upload catalog evidence artifact
         if: always()

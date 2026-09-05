@@ -120,8 +120,8 @@ GitHub requires authentication even for public-feed reads — use a personal acc
 dotnet build SubZeroDev.WinGet.sln
 dotnet test  SubZeroDev.WinGet.sln                                    # mocked unit tests, no COM
 ./build.ps1 MachineStateTest                 # 7 local-machine live checks, read-only, needs WinGet
-./build.ps1 CatalogIntegrationTest           # 5 remote-catalog live checks, read-only, needs WinGet
-./build.ps1 IntegrationTest                  # all 12 live checks
+./build.ps1 CatalogIntegrationTest           # 6 remote-catalog live checks, read-only, needs WinGet
+./build.ps1 IntegrationTest                  # all 13 live checks
 ```
 
 The integration tests are `[Explicit]`, read-only by design, and run against the machine's real WinGet catalog.
