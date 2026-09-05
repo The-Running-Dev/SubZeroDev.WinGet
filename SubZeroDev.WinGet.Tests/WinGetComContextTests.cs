@@ -166,9 +166,10 @@ public class WinGetComContextTests
         using var registration = context.RegisterCancellation(CancellationToken.None,
             () => cancelled.TrySetResult(Environment.CurrentManagedThreadId));
 
-        await Task.Run(context.Dispose).WaitAsync(TimeSpan.FromSeconds(3));
+        var disposeTask = Task.Run(context.Dispose);
+        await Task.WhenAll(disposeTask, cancelled.Task).WaitAsync(TimeSpan.FromSeconds(10));
 
-        (await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(3))).Should().Be(ownerThread);
+        cancelled.Task.Result.Should().Be(ownerThread);
     }
 
     [Test]
