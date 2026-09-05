@@ -52,11 +52,21 @@ static class PublicationConfirmation
 
     // S11.3: names the tag/ref, commit, destination, intended and observed version, and run
     // identity. Result never carries a token or API key, so there is nothing here that could
-    // expose one.
-    public static void Report(Result result) =>
+    // expose one. Only a genuinely confirmed result is reported as "Publication confirmed:" -
+    // that exact prefix is what the workflow greps into the job summary (build.yml), so an
+    // unconfirmed result must never produce that line. Assert already carries the observed/
+    // intended mismatch into the thrown exception for the unconfirmed case.
+    public static void Report(Result result)
+    {
+        if (!result.Confirmed)
+        {
+            return;
+        }
+
         Console.WriteLine(
             $"Publication confirmed: {result.Destination} {result.IntendedVersion} " +
             $"(tag/ref {result.Tag}, commit {result.Commit}, run {result.RunUrl}).");
+    }
 
     // Reads the version a `dotnet pack` run actually produced, rather than trusting a second,
     // independently-typed copy of it - the nupkg's own nuspec is the one place that fact is
