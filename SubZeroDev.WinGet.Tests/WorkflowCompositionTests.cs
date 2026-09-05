@@ -232,13 +232,167 @@ public class WorkflowCompositionTests
         }
     }
 
+    // ---- S16.1/S16.2: release needs machine-state, and machine-state runs for every event
+    // release accepts ----
+
+    [Test]
+    public void Release_NeedsMachineState()
+    {
+        var release = ParseJobs(File.ReadAllText(WorkflowPath)).Single(j => j.Name == "release");
+
+        AssertReleaseNeedsMachineState(release);
+    }
+
+    [Test]
+    public void NeedsCheck_FailsWhenReleaseOmitsMachineStateFromNeeds()
+    {
+        const string fixture = """
+            jobs:
+              release:
+                needs: build
+                if: ${{ github.event_name == 'push' }}
+                runs-on: windows-latest
+                steps:
+                  - name: Release
+                    run: echo release
+            """;
+
+        var release = ParseJobs(fixture).Single(j => j.Name == "release");
+
+        var act = () => AssertReleaseNeedsMachineState(release);
+
+        act.Should().Throw<AssertionException>();
+    }
+
+    [Test]
+    public void NeedsCheck_PassesWhenReleaseNeedsBuildAndMachineState()
+    {
+        const string fixture = """
+            jobs:
+              release:
+                needs: [build, machine-state]
+                if: ${{ github.event_name == 'push' }}
+                runs-on: windows-latest
+                steps:
+                  - name: Release
+                    run: echo release
+            """;
+
+        var release = ParseJobs(fixture).Single(j => j.Name == "release");
+
+        var act = () => AssertReleaseNeedsMachineState(release);
+
+        act.Should().NotThrow();
+    }
+
+    private static void AssertReleaseNeedsMachineState(WorkflowJob release) =>
+        release.Needs.Should().Contain("machine-state",
+            "'release' must declare 'needs: [build, machine-state]' so a machine-state failure " +
+            "on the tagged commit leaves publishing unrun (S16.2)");
+
+    [Test]
+    public void MachineState_RunsForEveryEventReleaseAccepts()
+    {
+        var jobs = ParseJobs(File.ReadAllText(WorkflowPath));
+        var release = jobs.Single(j => j.Name == "release");
+        var machineState = jobs.Single(j => j.Name == "machine-state");
+
+        AssertJobAcceptsEveryEventReleaseAccepts(release, machineState);
+    }
+
+    [Test]
+    public void EventCoverageCheck_FailsWhenMachineStateExcludesAnEventReleaseAccepts()
+    {
+        const string fixture = """
+            jobs:
+              machine-state:
+                if: ${{ github.event_name == 'pull_request' }}
+                runs-on: windows-latest
+                steps:
+                  - name: Check
+                    run: echo check
+              release:
+                needs: [build, machine-state]
+                if: ${{ github.event_name == 'push' }}
+                runs-on: windows-latest
+                steps:
+                  - name: Release
+                    run: echo release
+            """;
+
+        var jobs = ParseJobs(fixture);
+        var release = jobs.Single(j => j.Name == "release");
+        var machineState = jobs.Single(j => j.Name == "machine-state");
+
+        var act = () => AssertJobAcceptsEveryEventReleaseAccepts(release, machineState);
+
+        act.Should().Throw<AssertionException>();
+    }
+
+    [Test]
+    public void EventCoverageCheck_PassesWhenMachineStateCarriesNoEventCondition()
+    {
+        const string fixture = """
+            jobs:
+              machine-state:
+                runs-on: windows-latest
+                steps:
+                  - name: Check
+                    run: echo check
+              release:
+                needs: [build, machine-state]
+                if: ${{ github.event_name == 'push' }}
+                runs-on: windows-latest
+                steps:
+                  - name: Release
+                    run: echo release
+            """;
+
+        var jobs = ParseJobs(fixture);
+        var release = jobs.Single(j => j.Name == "release");
+        var machineState = jobs.Single(j => j.Name == "machine-state");
+
+        var act = () => AssertJobAcceptsEveryEventReleaseAccepts(release, machineState);
+
+        act.Should().NotThrow();
+    }
+
+    // A job with no `if:` condition of its own carries no event restriction and therefore
+    // accepts every event by construction - only a job that names an explicit, narrower set
+    // can exclude one `release` accepts.
+    private static void AssertJobAcceptsEveryEventReleaseAccepts(WorkflowJob release, WorkflowJob job)
+    {
+        var releaseEvents = ExtractEventNames(release.IfCondition);
+        var jobEvents = ExtractEventNames(job.IfCondition);
+
+        if (jobEvents.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var eventName in releaseEvents)
+        {
+            jobEvents.Should().Contain(eventName,
+                $"job '{job.Name}' must run for every event 'release' can reach, including " +
+                $"'{eventName}' - an `if:` narrower than release's own trigger set would make " +
+                "publishing unreachable rather than gated (S16.1)");
+        }
+    }
+
+    private static List<string> ExtractEventNames(string? condition) =>
+        condition is null
+            ? []
+            : Regex.Matches(condition, "github\\.event_name == '([^']+)'")
+                .Select(m => m.Groups[1].Value)
+                .ToList();
+
     // ---- helpers: a deliberately minimal workflow-YAML reader, not a general parser. It reads
     // only the shapes this repository's own workflow uses - two-space job indent, six-space step
     // indent - which is exactly the surface S15 constrains, per S15.5 (no third-party dependency). ----
 
     private sealed record WorkflowStep(string? Name, string? IfCondition, string Text);
 
-    private sealed record WorkflowJob(string Name, List<WorkflowStep> Steps);
+    private sealed record WorkflowJob(string Name, string? IfCondition, List<string> Needs, List<WorkflowStep> Steps);
 
     private static List<WorkflowJob> ParseJobs(string yaml)
     {
@@ -263,7 +417,9 @@ public class WorkflowCompositionTests
                     end++;
                 }
 
-                jobs.Add(new WorkflowJob(jobName!, ParseSteps(lines[start..end])));
+                var jobLines = lines[start..end];
+                var (ifCondition, needs) = ParseJobProperties(jobLines);
+                jobs.Add(new WorkflowJob(jobName!, ifCondition, needs, ParseSteps(jobLines)));
                 i = end;
             }
             else
@@ -274,6 +430,45 @@ public class WorkflowCompositionTests
 
         return jobs;
     }
+
+    // Job-level properties sit at exactly four-space indent, directly under the job header and
+    // above its "steps:" block - never confused with a step's own (six-space) "if:", since
+    // ParseSteps and ParseJobProperties are looking for different indentation, not different text.
+    private static (string? IfCondition, List<string> Needs) ParseJobProperties(string[] jobLines)
+    {
+        string? ifCondition = null;
+        var needs = new List<string>();
+
+        foreach (var line in jobLines)
+        {
+            if (line.Length <= 4 || !line.StartsWith("    ", StringComparison.Ordinal) || line[4] == ' ')
+            {
+                continue;
+            }
+
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("if:", StringComparison.Ordinal))
+            {
+                ifCondition = StripExpressionMarkers(trimmed["if:".Length..].Trim());
+            }
+            else if (trimmed.StartsWith("needs:", StringComparison.Ordinal))
+            {
+                needs.AddRange(ParseNeedsValue(trimmed["needs:".Length..].Trim()));
+            }
+        }
+
+        return (ifCondition, needs);
+    }
+
+    private static string StripExpressionMarkers(string value) =>
+        value.StartsWith("${{", StringComparison.Ordinal) && value.EndsWith("}}", StringComparison.Ordinal)
+            ? value[3..^2].Trim()
+            : value;
+
+    private static List<string> ParseNeedsValue(string value) =>
+        value.Trim('[', ']')
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
 
     private static bool IsJobHeader(string line, out string? name)
     {
