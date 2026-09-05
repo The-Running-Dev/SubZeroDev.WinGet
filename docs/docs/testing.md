@@ -48,11 +48,11 @@ Mocked unit tests — zero COM dependency, run anywhere in ~200ms. They cover th
 
 ```shell
 ./build.ps1 MachineStateTest        # 7 assertions about this machine's installed/local state
-./build.ps1 CatalogIntegrationTest  # 5 assertions with a remote-catalog witness
-./build.ps1 IntegrationTest         # all 12 checks, composed from the two risk classes
+./build.ps1 CatalogIntegrationTest  # 6 assertions with a remote-catalog witness
+./build.ps1 IntegrationTest         # all 13 checks, composed from the two risk classes
 ```
 
-12 tests marked NUnit `[Explicit]` (excluded from plain `dotnet test`) exercise the **real** COM API and the **real** winget.exe on the machine. Stable NUnit categories split them into seven `MachineState` checks and five `CatalogIntegration` checks; each risk-specific target verifies its selected count before it executes. The catalog class contains the assertions whose witness is a `Microsoft.VisualStudioCode` or `git` result in the remote catalog.
+13 tests marked NUnit `[Explicit]` (excluded from plain `dotnet test`) exercise the **real** COM API and the **real** winget.exe on the machine. Stable NUnit categories split them into seven `MachineState` checks and six `CatalogIntegration` checks; each risk-specific target verifies its selected count before it executes. The catalog class contains the assertions whose witness is a `Microsoft.VisualStudioCode` or `git` result in the remote catalog.
 
 They are **deliberately read-only** — no install/upgrade/uninstall — because they run against whatever machine executes them.
 
@@ -60,7 +60,7 @@ They are **deliberately read-only** — no install/upgrade/uninstall — because
 strength: unvalidated
 evidence: MachineStateTest, CatalogIntegrationTest
 -->
-Read-only package and source operations — search, get, list installed, list available upgrades, get manifest details (agreements, documentation, icons), list/get sources, and a pinned-version download — are executed live by the twelve tests above and by `WinGetProjectionMapper`'s ten live-licensed translations they exercise. Mutating operations — install, upgrade, uninstall, repair, source add/remove/refresh, pin add/remove, export/import — remain unvalidated against the real API. Live coverage of the mutating operations is a tracked roadmap item pending a disposable, side-effect-free test package.
+Read-only package and source operations — search, get, list installed, list available upgrades, get manifest details (agreements, documentation, icons), list/get sources, and a pinned-version download — are executed live by the thirteen tests above and by `WinGetProjectionMapper`'s ten live-licensed translations they exercise, nine of which carry a named live assertion; `GetInstallerErrorCode`'s only call paths are install and upgrade, which stay unvalidated below. Mutating operations — install, upgrade, uninstall, repair, source add/remove/refresh, pin add/remove, export/import — remain unvalidated against the real API. Live coverage of the mutating operations is a tracked roadmap item pending a disposable, side-effect-free test package.
 
 ## Coverage
 

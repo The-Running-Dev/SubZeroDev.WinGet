@@ -33,7 +33,7 @@ Design properties worth preserving:
 | Project | Role |
 |---|---|
 | [SubZeroDev.WinGet](SubZeroDev.WinGet) | The library. Packs as the `SubZeroDev.WinGet` NuGet package (v0.2.0, MIT). |
-| [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 100 mocked unit tests + 12 opt-in live integration tests. |
+| [SubZeroDev.WinGet.Tests](SubZeroDev.WinGet.Tests) | NUnit tests: 100 mocked unit tests + 13 opt-in live integration tests. |
 | [SubZeroDev.WinGet.Examples](SubZeroDev.WinGet.Examples) | Console app with a runnable example per public API. Read-only examples run live by default; mutating ones require explicit arguments. Also demonstrates the direct-ComInterop-reference rule and Ctrl+C cancellation. |
 | [SubZeroDev.WinGet.sln](SubZeroDev.WinGet.sln) | Solution containing these three projects. **Deliberately excludes** `build/_build.csproj` (§9). |
 | [build/](build) | The Nuke build project (§9): `_build.csproj` (plain `net10.0`, not part of the main `.sln`) + `Build.cs` + `Configuration.cs`. Generic target-based replacement for the dotnet-CLI steps that used to live directly in the workflow YAML. |
@@ -128,7 +128,7 @@ Raw single-attempt behavior is always available by calling `IWinGetClient` direc
 
 ## 6. Build & Platform Requirements
 
-- **`net8.0-windows10.0.26100`** — the interop package requires a Windows-flavored TFM (min SDK contract 10.0.26100). The product targets net8 for the widest reach (a net8 library is consumable by net8/net9/net10 apps via forward compatibility); validated on both the net8 and net10 runtimes — all 12 live COM integration tests pass on each.
+- **`net8.0-windows10.0.26100`** — the interop package requires a Windows-flavored TFM (min SDK contract 10.0.26100). The product targets net8 for the widest reach (a net8 library is consumable by net8/net9/net10 apps via forward compatibility); validated on both the net8 and net10 runtimes — all 12 live COM integration tests existing at that validation pass on each; S14's 13th test (§8) has not yet run live.
 - **Platform pinned to `x64` (or `ARM64`)** — `Microsoft.Management.Deployment.dll` is not `AnyCPU`; both `.csproj` files default `AnyCPU` → `x64` so plain `dotnet build`/`test` works. ARM64 declared but never built/tested on hardware.
 - **Consumers that *run* code from this library need a direct `PackageReference` to `Microsoft.WindowsPackageManager.ComInterop`**, not just a `ProjectReference`: the interop package's `.targets` copies the native activation-factory DLL only into the directly-referencing project's output. Verified by a real `COMException 0x80040154` until the test project took the direct reference. **The most important integration note for any consumer.**
 
@@ -167,7 +167,7 @@ Success/failure comes from `.Status`; the numeric code, when present, is `.HResu
 | Suite | What | How to run | Status |
 |---|---|---|---|
 | Unit (100 tests) | Services (validation, retry-policy edges, delegation), CLI argument-building contracts, `ParsePinList` variants, model defaults/records, DI registration, exception — all mocked, zero COM | `dotnet test` | 100/100 passing |
-| Integration (12 tests) | Real COM API + real winget.exe on the machine. `[Explicit]`, **deliberately read-only** (export writes only a temp file) | `nuke MachineStateTest`, `nuke CatalogIntegrationTest`, or `nuke IntegrationTest` for both | 12/12 passing |
+| Integration (13 tests) | Real COM API + real winget.exe on the machine. `[Explicit]`, **deliberately read-only** (export writes only a temp file) | `nuke MachineStateTest`, `nuke CatalogIntegrationTest`, or `nuke IntegrationTest` for both | 12/12 passing (2026-07-21, §7.7); S14's 13th test (a pinned-version `Download`) has not yet run live |
 
 Coverage (measured 2026-07-22 on net8): unit-only **27.7% line** (290/1045); merged with the live integration run **54% line** (565/1045). Everything unit-testable is at or near 100% (`PackageSourceService` 100%, `PackageManagementService` 98.9%, DI registration 100%, models, CLI argument builders, pin parsing); the remaining uncovered code is COM-operation internals reachable only by mutating operations (`WinGetClient` 33%, `WinGetSourceClient` 40.8%, `WinGetFactory` 50% — install/upgrade/uninstall/repair paths, source add/remove, activation fallback modes) — tracked by the "disposable test package" roadmap item.
 

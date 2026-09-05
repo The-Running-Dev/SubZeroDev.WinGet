@@ -361,8 +361,8 @@ Everything below predates the kit install and is kept verbatim from this reposit
 dotnet build SubZeroDev.WinGet.sln
 dotnet test  SubZeroDev.WinGet.sln                    # mocked unit tests, no COM, ~200ms
 ./build.ps1 MachineStateTest                   # 7 local-machine live tests
-./build.ps1 CatalogIntegrationTest             # 5 remote-catalog live tests
-./build.ps1 IntegrationTest                    # all 12 live tests
+./build.ps1 CatalogIntegrationTest             # 6 remote-catalog live tests
+./build.ps1 IntegrationTest                    # all 13 live tests
 dotnet test  SubZeroDev.WinGet.sln --filter "Name=Install_WithAnyAlreadyInstalledCode_NormalizesToSuccess"
 ```
 

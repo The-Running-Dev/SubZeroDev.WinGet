@@ -242,7 +242,7 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            AssertLiveTestCount(CatalogIntegrationCategory, 5);
+            AssertLiveTestCount(CatalogIntegrationCategory, 6);
             DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
