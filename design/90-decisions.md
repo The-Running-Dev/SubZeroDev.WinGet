@@ -7,6 +7,23 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-05 — S16.7 is ticked from the post-merge run observation, and S16 retires
+Context: `/track` found S16 landed in the tree (`8bbf105`, PR #102 merged) but its issue #100 still
+open on one unticked box, S16.7 — the criterion that can only be satisfied by observing the `main`
+run produced by the slice's own merge, not by the workflow file reading correctly. `main`'s tip had
+already moved past `8bbf105` (PR #104), so the observation was made against that commit's own Build
+run rather than the current tip.
+Chosen: the Build run for `8bbf1054718121d729c2bda324c782563e74c0e9` (run id `33967262743`) shows
+`machine-state` completing successfully at 2026-09-05T12:53:52Z and `release` — which performs the
+GitHub Packages publish — starting only at 2026-09-05T12:54:53Z, after `machine-state` succeeded.
+S16.7 is ticked from that observation, recorded on #100, #100 is closed, and S16's body retires to
+`## Landed` at `8bbf105`.
+Rejected: leaving #100 open until a future run is inspected by hand outside `/track`, which defers a
+criterion that is already satisfiable from data this run already has. Rejected: ticking S16.7 without
+recording the run id and SHA on the issue, which would satisfy the letter of the criterion while
+losing the one thing that makes the tick checkable later.
+Reversibility: cheap — reopen #100, untick S16.7, and move S16's body back out of `## Landed`.
+
 ### 2026-09-05 — The tree-identity substitution is superseded by direct machine-state evidence (S16)
 Context: the 2026-09-05 entry below, *A release's live evidence is carried by tree identity, and the
 design says so*, recorded that publishing waited on the hermetic check alone while `machine-state`
