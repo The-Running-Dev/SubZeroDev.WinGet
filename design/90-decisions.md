@@ -7,6 +7,32 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-05 — S12.6 is ticked as vacuously satisfied rather than struck, and S12 retires
+Context: `/track` found S12 landed (`77bb631`, `v0.2.0` tagged, both feeds confirmed) but its issue
+#31 still open on one unticked box, S12.6 — "If only one feed confirms the package, that feed remains
+published state but the slice and release criterion remain incomplete; neither tag is moved and no
+replacement version is invented." Both feeds confirmed, so the antecedent is false. The criterion is
+a guard against a partial publish, not a step to perform, so it can only ever be ticked by a *failed*
+release: leaving it unticked keeps #31 open permanently, and keeps S12 under `## Outstanding` where
+every future `/track` re-reports it. Retirement to `## Landed` is gated on the issue closing, so one
+box blocked both.
+Chosen: tick S12.6 as vacuously satisfied, close #31, and retire S12's body to the `## Landed` index
+at `77bb631`. The tick is recorded as a vacuous truth in a comment on #31 and here, rather than left
+to look like an executed assertion — which is the only real cost, since it slightly weakens what a
+ticked box means in a repository where ticking is a trusted doneness signal.
+Rejected: striking S12.6 as unsatisfiable with a `Retired:` line, the shape already used for S6.2 and
+S6.3 on 2026-09-01. More rigorous, and genuinely tempting for symmetry — but the two cases are not
+alike. S6.2/S6.3 demanded work a later rule *forbade*, so they could never be satisfied by any run;
+S12.6 is satisfiable, just only by a release that goes wrong, and striking a guard that did its job
+records it as broken rather than as passed. Rejected: leaving #31 open until a future partial publish
+ticks it, because that makes an issue's open state mean "this release failed in a way it did not"
+and defers S12's retirement indefinitely. Rejected: correcting S12.1's "all five catalog tests" (it
+is six) while editing #31 — a criterion's wording outside the agent fence is not rewritten by a sync,
+and retiring the body removed the document-side copy anyway; the issue keeps its historical text.
+Reversibility: cheap for the tracker — reopen #31 and untick. The `## Landed` row is one line.
+
+---
+
 ### 2026-09-05 — A release's live evidence is carried by tree identity, and the design says so
 Context: `/reconcile` found `design/10-design.md` § *Control flow* still asserting that "the required
 hermetic and machine-state checks must pass for the tagged commit" when the tree cannot do it. The
