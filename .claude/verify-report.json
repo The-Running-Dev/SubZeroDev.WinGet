@@ -1,17 +1,19 @@
-[
-  {
-    "name": "Test, coverage, architecture, and package",
-    "status": "DidNotRun",
-    "reason": "Local equivalent is `nuke Test Coverage ArchitectureTest PackageTest --configuration Release` via ./build.ps1. The .NET SDK is not installed in this container (`command -v dotnet` returns nothing), and the library targets net8.0-windows10.0.26100, which does not build on this Linux host. Flagged at .github/workflows/build.yml:69."
-  },
-  {
-    "name": "Validate Markdown links, terminology, and generated files",
-    "status": "DidNotRun",
-    "reason": "Local equivalent is ./build/Test-Documentation.ps1. Neither pwsh nor powershell is installed in this container (`command -v pwsh` and `command -v powershell` both return nothing). Flagged at .github/workflows/docs-ci.yml:42."
-  },
-  {
-    "name": "Build documentation",
-    "status": "DidNotRun",
-    "reason": "Local equivalent is ./docs.ps1 -BuildOnly, which needs both PowerShell and Docker. Docker is present at /usr/bin/docker, but PowerShell is not installed, so the script cannot be invoked. Flagged at .github/workflows/docs-ci.yml:65."
-  }
-]
+{
+  "gates": [
+    {
+      "name": "Test, coverage, architecture, and package",
+      "status": "Passed",
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release: Restore Succeeded 0:02, Compile Succeeded 0:03, Pack Succeeded 0:01, Test Succeeded 0:08, Coverage Succeeded <1sec, ArchitectureTest Succeeded 0:04, PackageTest Succeeded 1:01. Total 1:22. Build succeeded on 9/5/2026 3:35:35 PM. 233 unit tests passed, 0 failed, 13 skipped (Explicit live tests)."
+    },
+    {
+      "name": "Validate Markdown links, terminology, and generated files",
+      "status": "Passed",
+      "detail": "pwsh -File ./build/Test-Documentation.ps1: Documentation checks passed across 85 Markdown file(s)."
+    },
+    {
+      "name": "Build documentation",
+      "status": "Passed",
+      "detail": "pwsh -File ./docs.ps1 -BuildOnly: Generated docs/docs/index.md from README.md. Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest) ... Built 'subzerodev-winget-docs'. (build-only). The regenerated docs/docs/index.md was byte-identical to the checked-in copy (git diff showed 0 lines changed, only a CRLF-normalization warning) and was reverted with git checkout -- to leave the tree clean."
+    }
+  ]
+}
