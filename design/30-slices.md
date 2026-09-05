@@ -24,33 +24,6 @@ from git history, while `/track` ignores landed slices when checking criterion d
 
 ## Outstanding
 
-## S11 — Publishing succeeds only after both feeds confirm the intended version
-Delivers: The maintainer can publish a release and have each publishing target fail unless its feed
-can be queried back for the exact version, so a skipped duplicate or green push command is not
-mistaken for delivery.
-Touches: `build/Build.cs`, `.github/workflows/build.yml`, `GitVersion.yml`,
-         `SubZeroDev.WinGet/SubZeroDev.WinGet.csproj`, `SPECIFICATION.md`, publication test fixtures
-Depends on: S9
-Acceptance:
-  - S11.1 `PublishGitHubPackages` confirms through the intended GitHub Packages feed that the exact
-    GitVersion-derived package version is visible after push; push success or `--skip-duplicate`
-    without that observation fails the target.
-  - S11.2 `PublishNuGet` confirms through NuGet.org that the exact project-version package is visible
-    after push; command success without that observation fails the target.
-  - S11.3 Each confirmation records the release tag/ref, exact commit, destination, intended version,
-    observed version, and workflow run identity without exposing credentials.
-  - S11.4 Publication tests make both targets fail for a successful push followed by a missing or
-    mismatched feed version and pass only for an exact match.
-  - S11.5 GitVersion and project version inputs both prepare `0.2.0`, the workflow publishes from the
-    exact checked-out ref, and stale comments or specification claims about `v0.1.0` and previously
-    exercised publishing paths are corrected to the verified history.
-  - S11.6 Re-running confirmation for the same intended version is safe; changing the version or tag
-    to escape a partial publish is not automated.
-Out of scope: creating or pushing `v0.2.0`, moving `v0.1.0`, deleting a feed version, or publishing
-    from a commit that has not passed the release prerequisites.
-
----
-
 ## S12 — The proven release is cut and observed on both feeds
 Delivers: A package consumer can install the immutable `v0.2.0` release from either intended feed,
 and the maintainer has run evidence tying both published packages to the exact tested commit.
@@ -91,3 +64,4 @@ Out of scope: `v0.2.1`, moving or deleting published tags/packages, ARM64 runtim
 | S13 — Product invariants fail the build when they regress | #67 | `894c99f` |
 | S14 — Live runs name the translations they license | #68 | `693fce9` |
 | S15 — Every live check proves which WinGet it ran against | #70 | `ec16c6e` |
+| S11 — Publishing succeeds only after both feeds confirm the intended version | #30 | `089814b` |
