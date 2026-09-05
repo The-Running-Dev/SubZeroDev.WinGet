@@ -5,6 +5,54 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
+- **A release publishes on hermetic evidence alone; give the tagged commit its own live evidence.**
+  `.github/workflows/build.yml` scopes the `machine-state` and `catalog` jobs to `pull_request`, and
+  the `release` job declares `needs: build`. Combined with squash merge, no commit on `main` — tag
+  included — can carry its own machine-state run, so publishing waits on the hermetic check only and
+  a machine-state regression landing after the cited pull-request run reaches both feeds unseen. The
+  2026-09-05 entry below routed S12 around this by tree identity and deferred the fix; the
+  2026-09-05 entry *A release's live evidence is carried by tree identity* states the substitution
+  and its cost, and does not close it. The work is a workflow-composition change — run
+  `machine-state` for `push` and tag events, add it to `release`'s `needs`, and decide whether
+  `catalog` joins it given that it is deliberately non-required — plus whatever contract row makes
+  the tree-identity reading checkable rather than per-release judgement. **This needs a slice authored
+  by `/slices` and a contract amendment from `/contract`; `/reconcile` authored neither.**
+
+---
+
+### 2026-09-05 — A release's live evidence is carried by tree identity, and the design says so
+Context: `/reconcile` found `design/10-design.md` § *Control flow* still asserting that "the required
+hermetic and machine-state checks must pass for the tagged commit" when the tree cannot do it. The
+`machine-state` and `catalog` jobs carry `if: github.event_name == 'pull_request'`, and the `release`
+job declares `needs: build` alone; with squash merge, `main`'s tip is never a SHA any live job ran
+against. The entry below diagnosed exactly this while cutting `v0.2.0` and deferred the fix, but
+amended neither design document — so both kept promising a gate that has never fired for a release,
+which is the aspirational-evidence confusion `design/00-brief.md` exists to remove, sitting in the
+design itself.
+Chosen: correct the design to state what actually gates a release — the hermetic check, alone — and
+promote S12's improvisation to a stated rule: a release's live evidence is carried by *tree
+identity*, citing the pull-request run whose pre-squash head has a tree identical to the tagged
+commit's, admissible only while a diff between the two touches no product, build, or workflow path.
+The paragraph names the cost rather than burying it: a machine-state regression introduced between
+the cited run and the tag is invisible to every gate that fires. The workflow change that would
+close the gap is filed under `## Open` for `/slices`, and the contract row that would make the
+tree-identity test mechanically checkable is named there as `/contract`'s. `/reconcile` authored
+neither, because a slice and a new invariant are not a reconciliation's to write.
+Rejected: changing `.github/workflows/build.yml` here instead, so the design's original sentence
+becomes true — the honest fix, and the one the filed slice will make, but it is a code change
+against a settled contract and belongs to a slice; folding it into a documentation pass is the same
+scope creep S12 declined when it refused to edit `build.yml` from a release slice. Its cost is also
+real and worth recording before that slice runs: running the live jobs for every push and tag lets a
+WinGet-install failure or a catalog flake block a release over something unrelated to the code being
+released, which is precisely why `catalog` was made non-required in the first place. Rejected:
+leaving both documents unchanged and treating the 2026-09-05 release entry as sufficient notice —
+a decision-log entry records what one release did; it is not where the next reader of the design
+looks to find out what gates a release, and leaving the contradiction in place invites the next
+release to re-improvise it. Rejected: adding a numbered contract invariant for tree identity in this
+pass, because a new invariant is a contract amendment and `/contract` owns it.
+Reversibility: cheap. One paragraph in `design/10-design.md`; the substitution it describes is
+retired by the filed workflow slice, not undone by an edit.
+
 ---
 
 ### 2026-09-05 — `v0.2.0` is tagged and cut; both feeds positively confirm it (S12)
