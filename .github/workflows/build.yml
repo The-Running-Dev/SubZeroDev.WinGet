@@ -105,11 +105,11 @@ jobs:
           path: coverage/Cobertura.xml
 
   # S8.1/S8.3: MachineStateTest and PackedConsumerSmokeTest share one job and one required
-  # pull-request status, per C8. Not yet marked required in branch protection - that setting
-  # change is S8.3's and is made by the maintainer, not by this file - but C23's precondition
-  # is now satisfied: a hosted run (33671049835, commit 44afa873, 2026-09-02) recorded the
-  # packed consumer observing a non-null WinGet version (1.29.280) after this job's pinned
-  # install step ran.
+  # pull-request status, per C8. C23's precondition was satisfied by a hosted run (33671049835,
+  # commit 44afa873, 2026-09-02) that recorded the packed consumer observing a non-null WinGet
+  # version (1.29.280) after this job's pinned install step ran, and the Main ruleset was then
+  # updated (2026-09-03) to require this job's status. That requirement lives in repository
+  # settings, not in this file.
   machine-state:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: windows-latest

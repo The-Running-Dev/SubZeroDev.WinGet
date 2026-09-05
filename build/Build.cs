@@ -202,7 +202,7 @@ class Build : NukeBuild
             ArtifactsDirectory, Configuration));
 
     // Mirrors the original CI "Test" step exactly: NUnit's [Explicit] attribute already
-    // excludes the 12 live integration tests from a plain test run, so no filter is needed.
+    // excludes the 13 live integration tests from a plain test run, so no filter is needed.
     Target Test => _ => _
         .DependsOn(Compile)
         .Executes(() => DotNetTest(s => s

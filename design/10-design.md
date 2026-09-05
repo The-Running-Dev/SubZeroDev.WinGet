@@ -92,7 +92,7 @@ The stable live invocation surface is:
 | Target | Risk class | Meaning |
 |---|---|---|
 | `MachineStateTest` | Machine state | Executes the seven read-only tests whose truth depends on the runner's installed/local state rather than a particular remote catalog entry. |
-| `CatalogIntegrationTest` | Catalog dependent | Executes the five tests whose witnesses are identities or content in Microsoft's remote catalog. |
+| `CatalogIntegrationTest` | Catalog dependent | Executes the six tests whose witnesses are identities or content in Microsoft's remote catalog. |
 | `PackedConsumerSmokeTest` | Machine state | Builds through the existing packed-consumer construction path, then executes `GetWinGetVersion` from that consumer. |
 | `IntegrationTest` | Local aggregate | Preserves the existing developer entry point by composing the two integration-test risk classes; it is not itself assigned a CI blocking consequence. |
 
