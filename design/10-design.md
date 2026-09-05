@@ -92,7 +92,7 @@ The stable live invocation surface is:
 | Target | Risk class | Meaning |
 |---|---|---|
 | `MachineStateTest` | Machine state | Executes the seven read-only tests whose truth depends on the runner's installed/local state rather than a particular remote catalog entry. |
-| `CatalogIntegrationTest` | Catalog dependent | Executes the five tests whose witnesses are identities or content in Microsoft's remote catalog. |
+| `CatalogIntegrationTest` | Catalog dependent | Executes the six tests whose witnesses are identities or content in Microsoft's remote catalog. |
 | `PackedConsumerSmokeTest` | Machine state | Builds through the existing packed-consumer construction path, then executes `GetWinGetVersion` from that consumer. |
 | `IntegrationTest` | Local aggregate | Preserves the existing developer entry point by composing the two integration-test risk classes; it is not itself assigned a CI blocking consequence. |
 
@@ -233,9 +233,22 @@ projected-parameter translations. A catalog outage may leave valid machine-state
 empty input that makes an implication vacuously true records no evidence for that assertion and makes
 the absent witness visible.
 
-**A release is cut.** The required hermetic and machine-state checks must pass for the tagged commit.
-Publishing derives the intended version, pushes, then retrieves or queries each intended feed and
-confirms that exact version. A green push command or skipped duplicate without retrieval is not a
+**A release is cut.** The hermetic check gates publishing directly: it is the only check the release
+job depends on, and it is the only one that runs for a tag. The machine-state and catalog jobs are
+scoped to pull requests, and squash merge gives `main` a tip whose SHA no live job has ever seen, so
+**no tagged commit can carry its own live evidence** and none is waited for.
+
+The live half of a release's evidence is therefore carried by *tree identity* rather than commit
+identity: the release cites the pull-request run whose pre-squash head has a tree identical to the
+tagged commit's, and the citation is admissible only while that identity is demonstrated — a diff
+between the two commits touching no product, build, or workflow path. Anything else is a gap in the
+evidence, not a weaker grade of it. This is a substitution with a real cost, stated here rather than
+improvised per release: a machine-state regression introduced between the cited run and the tag is
+invisible to every gate that fires, and the required status that would have caught it is required
+only on the pull request. Closing that gap is a workflow-composition change, not a documentation one.
+
+Publishing then derives the intended version, pushes, and retrieves or queries each intended feed to
+confirm that exact version. A green push command or skipped duplicate without retrieval is not a
 successful publication. Only after both GitHub Packages and NuGet.org positively confirm `v0.2.0`
 does the release satisfy the brief.
 
