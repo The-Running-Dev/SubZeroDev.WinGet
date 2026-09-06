@@ -7,11 +7,11 @@ in `design/20-contract.md` C23 was never taken. Every slice through S15 has land
 tagged and confirmed on both feeds.
 
 The riskiest assumption now is one the pipeline made about itself rather than about WinGet: that a
-published version had been checked against the code being published. It had not. Publishing depends
-only on the hermetic check, and the live jobs are scoped to pull requests, so the live half of a
-release's evidence has been carried by a tree-identity argument rather than by a run against the
-tagged commit. S16 replaces the argument with the run. Its own merge is the observation, so the
-assumption is exercised by the slice that makes it rather than deferred to the next release.
+published version had been checked against the code being published. It had not. Publishing depended
+only on the hermetic check, and the live jobs were scoped to pull requests, so the live half of a
+release's evidence was carried by a tree-identity argument rather than by a run against the
+tagged commit. S16 replaced the argument with the run. Its own merge was the observation, so the
+assumption was exercised by the slice that made it rather than deferred to the next release.
 
 `/track` should be run after this document is reviewed. Do not open issues from this command.
 
