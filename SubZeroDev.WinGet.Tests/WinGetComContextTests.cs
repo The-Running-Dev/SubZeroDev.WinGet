@@ -166,8 +166,12 @@ public class WinGetComContextTests
         using var registration = context.RegisterCancellation(CancellationToken.None,
             () => cancelled.TrySetResult(Environment.CurrentManagedThreadId));
 
+        // This budget is a deadlock backstop, not a performance assertion: the 10s value widened
+        // in #86 still timed out once under hosted-runner load (#103), with the local suite
+        // passing clean on the same commit both times. 30s gives real headroom against that
+        // variance while still failing a genuine hang inside a single CI job.
         var disposeTask = Task.Run(context.Dispose);
-        await Task.WhenAll(disposeTask, cancelled.Task).WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.WhenAll(disposeTask, cancelled.Task).WaitAsync(TimeSpan.FromSeconds(30));
 
         cancelled.Task.Result.Should().Be(ownerThread);
     }
