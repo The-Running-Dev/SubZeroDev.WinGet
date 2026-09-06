@@ -149,9 +149,9 @@ pwsh ./tools/Update-DesignProjection.ps1
 
 Run it — a real run, not `-DryRun` — whenever `Update-WorkMirror.ps1` wrote at least one record, so the mirror and its projection land in the same commit. `MirrorStale` staying reported (never blocking) for the commit that follows is expected and is not this step's concern (`design/20-contract.md` § *The divergence classes*) — this step exists only to keep the *projection* from going stale, not to chase `MirroredAt` into never firing at all.
 
-### Commit the refresh to the default branch — no branch, no pull request
+### Commit the refresh — straight to the default branch where the branch allows it
 
-**This is the one place in the kit that commits straight to the default branch, and the carve-out permitting it is in `AGENTS.md`, *Git and delivery*.** Read its four conditions there; they are not restated here. Satisfy them, then:
+**This is the one place in the kit that commits straight to the default branch, and the carve-out permitting it is in `AGENTS.md`, *Git and delivery*.** Read its four conditions **and the branch-protection limit that follows them** there; neither is restated here. Where that limit applies the refresh gets no commit of its own at all — it rides along with the next substantive pull request, and a run with nothing to ride along with leaves it uncommitted and says so. Otherwise satisfy the four and:
 
 ```powershell
 git add design/state/work design/state-index.md
