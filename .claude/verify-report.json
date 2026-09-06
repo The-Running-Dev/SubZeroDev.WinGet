@@ -1,19 +1,19 @@
 {
   "gates": [
-    {
-      "name": "Test, coverage, architecture, and package",
-      "status": "Passed",
-      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release: Restore Succeeded 0:02, Compile Succeeded 0:06, Pack Succeeded 0:02, Test Succeeded 0:10, Coverage Succeeded 0:01, ArchitectureTest Succeeded 0:06, PackageTest Succeeded 1:08. Total 1:37. Build succeeded on 9/5/2026 4:01:19 PM."
-    },
-    {
-      "name": "Validate Markdown links, terminology, and generated files",
-      "status": "Passed",
-      "detail": "pwsh -File ./build/Test-Documentation.ps1: Documentation checks passed across 85 Markdown file(s)."
-    },
-    {
-      "name": "Build documentation",
-      "status": "Passed",
-      "detail": "pwsh -File ./docs.ps1 -BuildOnly: Built 'subzerodev-winget-docs' successfully via Docker (cached layers, base image ghcr.io/the-running-dev/docs-template:latest). The regenerated docs/docs/index.md was byte-identical to the checked-in copy (0 diff lines, only a CRLF-normalization warning) and was reverted with git checkout -- to leave the tree clean."
-    }
+  {
+    "name": "Test, coverage, architecture, and package",
+    "status": "Passed",
+    "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 1:04; Build succeeded on 9/6/2026 11:16:39 PM."
+  },
+  {
+    "name": "Validate Markdown links, terminology, and generated files",
+    "status": "Passed",
+    "detail": "./build/Test-Documentation.ps1 output: Documentation checks passed across 86 Markdown file(s)."
+  },
+  {
+    "name": "Build documentation",
+    "status": "Passed",
+    "detail": "./docs.ps1 -BuildOnly output: Generated docs/docs/index.md from README.md. Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest) ... Built 'subzerodev-winget-docs'. (build-only) EXITCODE:0. The regenerated docs/docs/index.md differed from the committed copy only by line-ending normalization (LF vs CRLF), confirmed via git diff showing no content change; discarded with git checkout to keep the tree clean, per prior documented behavior of this local gate."
+  }
   ]
 }
