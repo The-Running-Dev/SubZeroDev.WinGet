@@ -36,6 +36,7 @@ library API.
 | C25 | `GetWinGetVersion` requires a runtime exposing WinGet COM contract 13, first declared in WinGet 1.12; below that it returns `null` under C16 rather than failing. That floor is a Claim with subject `runtime-version-floor`, canonically owned by `docs/docs/getting-started.md`, and is scoped to this member alone — no library-wide minimum WinGet version is asserted, because live evidence exists of the rest of the surface working below it. | Documentation | Ownership, `executed` strength, and its evidence (`PackedConsumerSmokeTest`, `Test`) are enforced structurally by C1/C2 (`Test-DocumentationClaim`). That no other document asserts a library-wide minimum WinGet version is authored (SPECIFICATION.md §11 item 3, README.md) and review-enforced, not a dedicated mechanical check. |
 | C26 | Whether a mapper member carries a unit test is decided separately from C13, by whether its inputs are constructible without live COM activation. A translation taking a projected instance — `MatchResult`, `CatalogPackage`, `PackageCatalogInfo`, `PackageAgreement`, `Documentation`, `Icon`, or `InstallResult` — is owned under C13 and licensed under C3 by the live run that exercised it. That licence is an explicit obligation with named assertions; a live run that merely happens to touch such a member licenses nothing. No fake projection, stub-backed read accessor, or reflection substitute may stand in for it, and its absence of a unit test is not a coverage gap to be closed. | Client translation boundary and live-verification workflow | The ten members are named under *Types* § *Projection mapper*. Nine carry a named live assertion in `WinGetClientIntegrationTests.cs`/`WinGetSourceClientIntegrationTests.cs` (S14); `GetInstallerErrorCode` is licensed by nothing while install/upgrade live coverage remains a non-goal. |
 | C27 | A green hermetic required check asserts nothing about any C26 live-licensed translation. A regression in one is detectable only by the live run whose assertion names it, and its blocking consequence is exactly that of that run's risk class under C8 — never elevated by the hermetic check, and never substituted for by it. | Live-verification workflow | Each live job's evidence record names which of the ten C26 translations its passing assertions licensed and which it did not reach; the hermetic `build` job's evidence record explicitly disclaims all ten (S14.4/S14.6, `.github/workflows/build.yml`). |
+| C28 | Publishing is gated on live evidence recorded against the exact commit being published. No evidence keyed to another commit substitutes for it, however identical the two trees: the tree-identity reading is retired, not narrowed to a per-release diff judgement. Therefore `release` names `machine-state` in its `needs`, and `machine-state` carries no event condition narrower than `release`'s own — a job skipped by a narrower `if:` blocks its dependent, so narrowing makes publishing unreachable rather than gated, which is a different failure and not a stricter one. `catalog` runs for the same events and records its own evidence but stays out of `release`'s `needs`: a catalog-dependent regression can still reach a feed unseen, and that residual gap is C8's accepted non-required status persisting into release, not an oversight this row closes. | Release workflow | Enforced in `WorkflowCompositionTests.cs`: `Release_NeedsMachineState` and `MachineState_RunsForEveryEventReleaseAccepts` read the checked-in workflow, and their fixture pairs fail on a `needs` omitting `machine-state` and on an `if:` naming fewer events than `release`'s. `catalog`'s absence from `needs` is authored and review-enforced — adding it would pass every check here — and is recorded in the 2026-09-05 decision *The tree-identity substitution is superseded by direct machine-state evidence (S16)*. |
 
 Only rows whose enforcement says **enforced** may be trusted without inspecting the planned slice that
 materialises the rest. A green workflow before those slices land is not evidence that a planned row is
@@ -135,6 +136,10 @@ No runtime type. A Release is the immutable pair `(Tag, Commit)` plus one feed-c
 intended destination. GitVersion output and the project-file version are inputs to publishing, not the
 identity of an already-published Release.
 
+`Commit` is also the key under which the Release's live evidence must exist. Evidence is keyed by
+`(Gate, Environment, Commit)` under C3, so a Release admits only the record whose commit is its own;
+C28 makes that a workflow-composition property rather than a judgement made once per release.
+
 ## Persisted schemas
 
 | Store | Key | Required constraints | Existing-data and migration story |
@@ -205,9 +210,10 @@ references, unsupported strength, and non-canonical restatement all make the gat
 fetch external evidence during a documentation check; the committed Claim carries the reference the
 gate validates structurally.
 
-The pull-request workflow invokes `MachineStateTest` and `PackedConsumerSmokeTest` together in the
-machine-state job and `CatalogIntegrationTest` separately. Both jobs retain normal failing outcomes;
-only the machine-state job becomes required, and only after C23 is satisfied.
+The workflow invokes `MachineStateTest` and `PackedConsumerSmokeTest` together in the machine-state
+job and `CatalogIntegrationTest` separately, for every event the workflow accepts rather than for
+pull requests alone (C28). Both jobs retain normal failing outcomes; only the machine-state job is
+required, its rollout precondition under C23 having been satisfied.
 
 ## Error semantics
 
