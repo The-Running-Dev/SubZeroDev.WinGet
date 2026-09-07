@@ -3,7 +3,7 @@
   {
     "name": "Test, coverage, architecture, and package",
     "status": "Passed",
-    "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 1:04; Build succeeded on 9/6/2026 11:16:39 PM."
+    "detail": "./build.ps1 Test Coverage ArchitectureTest --configuration Release: Restore Succeeded 0:01, Compile Succeeded 0:06, Test Succeeded 0:10 (240 passed, 0 failed, 13 skipped [Explicit] live tests), Coverage Succeeded, ArchitectureTest Succeeded 0:04 (x64 and ARM64 cross-builds succeeded). Build succeeded on 9/7/2026 8:27:38 AM. PackageTest run separately: ./build.ps1 PackageTest --configuration Release: Restore/Compile/Pack/PackageTest all Succeeded, total 1:31. Build succeeded on 9/7/2026 8:29:23 AM."
   },
   {
     "name": "Validate Markdown links, terminology, and generated files",
@@ -13,7 +13,7 @@
   {
     "name": "Build documentation",
     "status": "Passed",
-    "detail": "./docs.ps1 -BuildOnly output: Generated docs/docs/index.md from README.md. Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest) ... Built 'subzerodev-winget-docs'. (build-only) EXITCODE:0. The regenerated docs/docs/index.md differed from the committed copy only by line-ending normalization (LF vs CRLF), confirmed via git diff showing no content change; discarded with git checkout to keep the tree clean, per prior documented behavior of this local gate."
+    "detail": "./docs.ps1 -BuildOnly output: Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest); all build stages CACHED or DONE; Built 'subzerodev-winget-docs'. (build-only). The regenerated docs/docs/index.md differed from the committed copy only by line-ending normalization (LF vs CRLF) per `git diff`, which showed no content change; discarded with `git checkout` to keep the tree clean."
   }
   ]
 }
