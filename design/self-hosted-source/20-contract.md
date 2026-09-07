@@ -203,12 +203,8 @@ restated: whether WAM interactive authentication completes inside the disposable
 the tenant will admit the fixed client id for a maintainer-owned resource. Neither is answerable by
 reading anything; both require executing.
 
-One imprecision in `10-design.md` is recorded here rather than corrected, because correcting it is a
-judgement about that document's meaning rather than a transcription fix. Its *Open questions*
-preamble says both questions "change the slice list rather than the design's shape", but each
-question's own text then says a negative answer escalates above the slice list — the first puts two
-of the brief's requirements in tension so that "one gives", and the second returns a recorded
-2026-08-29 decision to the maintainer. Those are brief-level outcomes, not slice-list ones. This
-contract encodes the questions' own text (FC24, FC25) rather than the preamble's summary of them, on
-the ground that the specific statement is the more careful one. If the preamble is instead the
-intended reading, FC24 and FC25 are too strong and this is the row to revisit.
+FC24 and FC25 state that a negative answer to either escalates past the slice list — to a tension
+between two of the brief's own requirements in the first case, and to the maintainer in the second.
+That reading was adjudicated on 2026-09-07 against a looser summary sentence in `10-design.md`, which
+was corrected in the same change; the decision is logged, so the escalation is not something a later
+session can narrow by rereading the design.
