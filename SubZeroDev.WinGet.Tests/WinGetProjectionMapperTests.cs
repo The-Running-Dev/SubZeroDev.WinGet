@@ -189,4 +189,25 @@ public class WinGetProjectionMapperTests
 
         WinGetProjectionMapper.ToNullableDate(value).Should().Be(value);
     }
+
+    [Test]
+    public void TryGetCatalogPackageMetadata_WhenGetterSucceeds_ReturnsItsResult()
+    {
+        WinGetProjectionMapper.TryGetCatalogPackageMetadata(() => null).Should().BeNull();
+    }
+
+    [Test]
+    public void TryGetCatalogPackageMetadata_WhenGetterThrows_ReturnsNullRatherThanPropagating()
+    {
+        WinGetProjectionMapper.TryGetCatalogPackageMetadata(() => throw new InvalidOperationException("no manifest"))
+            .Should().BeNull();
+    }
+
+    [Test]
+    public void TryGetCatalogPackageMetadata_WhenCancelled_PropagatesRatherThanReturningNull()
+    {
+        var act = () => WinGetProjectionMapper.TryGetCatalogPackageMetadata(() => throw new OperationCanceledException());
+
+        act.Should().Throw<OperationCanceledException>();
+    }
 }

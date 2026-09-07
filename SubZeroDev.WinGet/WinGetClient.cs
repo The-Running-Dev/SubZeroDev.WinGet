@@ -477,16 +477,9 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
 
             foreach (var reference in references)
             {
-                try
+                if (ProbeReachable(() => reference.Connect().Status))
                 {
-                    if (reference.Connect().Status == ConnectResultStatus.Ok)
-                    {
-                        reachable.Add(reference);
-                    }
-                }
-                catch
-                {
-                    // Unreachable source; skip it.
+                    reachable.Add(reference);
                 }
             }
 
@@ -504,6 +497,27 @@ public sealed class WinGetClient : IWinGetClient, IDisposable
         }
 
         return connectResult.PackageCatalog;
+    }
+
+    // Any exception here means this one source cannot be reached, not a diagnosable
+    // environment fact the way the version member's absence is (see ReadWinGetVersion) — the
+    // recourse is identical (skip it) regardless of cause. Cancellation is the one exception
+    // this must not treat as "unreachable": it is a caller decision, not a source's, and must
+    // propagate the same way it does everywhere else in this class.
+    internal static bool ProbeReachable(Func<ConnectResultStatus> connect)
+    {
+        try
+        {
+            return connect() == ConnectResultStatus.Ok;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private List<PackageCatalogReference> GetRemoteCatalogReferences(string? sourceName)

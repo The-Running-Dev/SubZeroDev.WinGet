@@ -218,17 +218,9 @@ internal static class WinGetProjectionMapper
         var latest = package.DefaultInstallVersion;
         var versionInfo = latest ?? installed;
 
-        CatalogPackageMetadata? metadata = null;
-
-        try
-        {
-            metadata = versionInfo?.GetCatalogPackageMetadata();
-        }
-        catch
-        {
-            // Not all sources provide manifest metadata (e.g. bare ARP entries); fall through
-            // with nulls rather than failing the whole details lookup.
-        }
+        var metadata = versionInfo is null
+            ? null
+            : TryGetCatalogPackageMetadata(versionInfo.GetCatalogPackageMetadata);
 
         var availableVersions = new List<string>();
         var versionIds = package.AvailableVersions;
@@ -272,6 +264,26 @@ internal static class WinGetProjectionMapper
             IsInstalled: installed is not null,
             IsUpdateAvailable: package.IsUpdateAvailable,
             Source: latest?.PackageCatalog?.Info?.Name ?? installed?.PackageCatalog?.Info?.Name ?? "winget");
+    }
+
+    // Any exception here means this source did not provide manifest metadata (e.g. a bare ARP
+    // entry), not a diagnosable environment fact — the recourse is identical (fall through with
+    // nulls) regardless of cause. Cancellation is the one exception this must not treat as
+    // "no metadata": it is a caller decision, not the source's, and must propagate.
+    internal static CatalogPackageMetadata? TryGetCatalogPackageMetadata(Func<CatalogPackageMetadata?> getMetadata)
+    {
+        try
+        {
+            return getMetadata();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     internal static List<PackageAgreementInfo> CopyAgreements(IReadOnlyList<PackageAgreement>? source)
