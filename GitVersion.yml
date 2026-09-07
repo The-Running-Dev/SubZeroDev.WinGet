@@ -4,9 +4,9 @@
 # Without `next-version` it inferred 0.0.1 and published 0.0.1-<n>, which is why this
 # file exists: it sets the base version GitVersion works toward.
 #
-# `v0.1.0` is already tagged and published (design/90-decisions.md, 2026-08-20); `v0.2.0`
-# is the next stable release this repository is preparing (S11/S12), so next-version is
-# raised past the existing tag rather than left pointing at it.
+# `v0.1.0` (design/90-decisions.md, 2026-08-20) and `v0.2.0` (SPECIFICATION.md §11 item 6,
+# 2026-09-05) are both already tagged and published. next-version stays pinned at 0.2.0 until
+# a future slice starts the next release cycle and bumps it past the existing tag.
 #
 # Resulting behaviour (verified against GitVersion 6.8.2, before this raise):
 #
