@@ -65,18 +65,12 @@ and preferences belong in `AGENTS.md`.
   tokens per full read. Full reads are for the drift pass, not for lookups.
 - **Start a fresh session at phase boundaries.** `AGENTS.md`, this file, and the design docs
   re-prime a new session cheaply — which is the reason for keeping all three tight.
-- **Knowledge-graph tooling is cheap on code and expensive on prose.** Code extracts
-  structurally via AST with no model call; prose does not, and a full rebuild on a small
-  prose corpus cost ~200K tokens and found fewer issues than reading the documents did.
 
 ## Git, CI, and delivery
 
 - **A broad `git add` has already nearly cost real work.** An ignore pattern would have made
   installer-generated scripts invisible to `git add -A` — present locally, green locally,
   missing in CI, with nothing saying why.
-- **`prettier --check` reports false failures on a Windows working tree.** `core.autocrlf=true`
-  gives CRLF locally while the committed blob is LF, which is what CI checks out. Check the
-  blob before "fixing" formatting CI never complained about.
 - **After a squash merge, `git branch -d` reports the branch unmerged** because the squash
   commit shares no history with it. Confirm with `git diff <branch> main` returning empty,
   then delete.
@@ -86,8 +80,6 @@ and preferences belong in `AGENTS.md`.
 - **A CI job can never be granted more permission than its workflow declares.** Splitting a
   read-only gate from a deploy that needs write credentials is what keeps the gate from
   holding credentials it never uses.
-- **Verify a regression test by reverting the fix.** A test that passes either way guards
-  nothing.
 - **A fix that only changed the odds is not a fix.** An intermittent failure went away when
   test parallelism was disabled — three consecutive clean runs — and came back on the fourth.
   The real cause was connection pooling handing out a stale schema snapshot, found by a tight
@@ -102,8 +94,6 @@ and preferences belong in `AGENTS.md`.
   Markdown, wrong intent. A metadata field or blockquote label needs a **blank line** after
   it, never trailing double-spaces (`git diff --check` rejects those). Render before merging
   a document change.
-- **Imported Markdown arrives CP1252 often enough to check for it** — mojibake em-dashes and
-  arrows. Rewrite to UTF-8 on import.
 
 ## Naming and scope
 
