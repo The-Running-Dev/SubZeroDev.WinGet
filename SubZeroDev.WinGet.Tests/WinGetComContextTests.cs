@@ -166,13 +166,17 @@ public class WinGetComContextTests
         using var registration = context.RegisterCancellation(CancellationToken.None,
             () => cancelled.TrySetResult(Environment.CurrentManagedThreadId));
 
-        // This budget is a deadlock backstop, not a performance assertion: the 10s value widened
-        // in #86 still timed out once under hosted-runner load (#103), with the local suite
-        // passing clean on the same commit both times. 30s gives real headroom against that
-        // variance while still failing a genuine hang inside a single CI job.
-        var disposeTask = Task.Run(context.Dispose);
-        await Task.WhenAll(disposeTask, cancelled.Task).WaitAsync(TimeSpan.FromSeconds(30));
+        // Two prior widenings (10s in #86, 30s in #103) each still timed out under hosted-runner
+        // load, with the same commit passing clean on re-run — evidence this was host-load
+        // variance in a wall-clock race, not a hang. So this no longer races Dispose against
+        // cancelled.Task at all: Dispose() posts the cancellation callback ahead of the
+        // queue-completion item and only returns once the owner thread has drained its queue and
+        // exited (see WinGetComContext.Dispose's _stopped.Wait()/_thread.Join()), which means the
+        // callback has already run by the time Dispose() returns. Observing cancellation is
+        // therefore a plain synchronous assertion with nothing to wait on.
+        context.Dispose();
 
+        cancelled.Task.IsCompletedSuccessfully.Should().BeTrue();
         cancelled.Task.Result.Should().Be(ownerThread);
     }
 
