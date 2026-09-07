@@ -425,8 +425,11 @@ of recorded observations, and prose is where a record goes to be forgotten.
 
 ## Open questions
 
-Two, both empirical stop conditions — verifiable, but only by executing, and each answer changes the
-slice list rather than the design's shape.
+Two, both empirical stop conditions — verifiable, but only by executing. A *positive* answer to either
+changes the slice list rather than the design's shape. A **negative** answer to either escalates past
+the slice list, as each question states below: the first puts two of the brief's own requirements in
+tension so that one of them gives, and the second returns a recorded decision to the maintainer.
+Neither may be resolved by a session that finds it inconvenient.
 
 **Does WAM interactive authentication complete inside Windows Sandbox?** The brief requires a
 *disposable* client to complete registration, refresh, search, show, install, upgrade and removal
