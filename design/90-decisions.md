@@ -7,6 +7,14 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-07 — The self-hosted sequence's ids carry an `F` prefix, and its contract states no `enforced` row
+Context: `design/self-hosted-source/00-brief.md` forbids an `S<n>` slice id in this sequence, because `design/30-slices.md`'s numbering is live and mirrored into the tracker. Authoring `20-contract.md` for that sequence raises the identical collision one document earlier and the brief does not cover it: `C1`–`C28` are live in `design/20-contract.md` and are referenced from issue bodies, from `build/Test-Documentation.ps1`'s configuration, and from test names, so a bare `C29` in the parallel sequence would be indistinguishable from the next v0.2 row by grep, by a reader, and by `/track` once the sequences are promoted together.
+Chosen: every id in this sequence carries an `F` prefix — `FC<n>` for a contract invariant, `FS<n>` for a slice when `30-slices.md` exists. The letter after the prefix keeps its v0.2 meaning, so the two sequences read the same way and differ only in namespace. Separately, and for the same honesty reason the v0.2 contract's closing sentence exists: because nothing in this sequence is implemented, `20-contract.md` states **no `enforced` row at all**, marking each row `authored` (held by prose and review) or `planned` (names a check nobody has written), so a green anything cannot be read as evidence that a row is checked.
+Rejected: Continuing the shared `C<n>` sequence — rejected because the ambiguity is unrecoverable once an id is cited outside the file that defines it, which is where every one of these ids is actually used. A wholly different letter per document (`H` for host, `M` for manifest) — rejected because it makes the prefix carry two facts at once, sequence and subject, and a row that moves between subjects would then have to be renumbered, which no id in this repository may be. Deferring the question until `30-slices.md` is written — rejected because the contract is the document being written now, and an id space chosen after the fact is a renumbering.
+Reversibility: cheap while nothing cites these ids — no issue, no tracker entry, and no test names them yet, so the prefix is a find-and-replace within one file. Expensive on the same terms as every other id in this repository once one is cited.
+
+---
+
 ### 2026-09-05 — S16.7 is ticked from the post-merge run observation, and S16 retires
 Context: `/track` found S16 landed in the tree (`8bbf105`, PR #102 merged) but its issue #100 still
 open on one unticked box, S16.7 — the criterion that can only be satisfied by observing the `main`
