@@ -1,19 +1,19 @@
 {
   "gates": [
-  {
-    "name": "Test, coverage, architecture, and package",
-    "status": "Passed",
-    "detail": "./build.ps1 Test Coverage ArchitectureTest --configuration Release: Restore Succeeded 0:01, Compile Succeeded 0:06, Test Succeeded 0:10 (240 passed, 0 failed, 13 skipped [Explicit] live tests), Coverage Succeeded, ArchitectureTest Succeeded 0:04 (x64 and ARM64 cross-builds succeeded). Build succeeded on 9/7/2026 8:27:38 AM. PackageTest run separately: ./build.ps1 PackageTest --configuration Release: Restore/Compile/Pack/PackageTest all Succeeded, total 1:31. Build succeeded on 9/7/2026 8:29:23 AM."
-  },
-  {
-    "name": "Validate Markdown links, terminology, and generated files",
-    "status": "Passed",
-    "detail": "./build/Test-Documentation.ps1 output: Documentation checks passed across 86 Markdown file(s)."
-  },
-  {
-    "name": "Build documentation",
-    "status": "Passed",
-    "detail": "./docs.ps1 -BuildOnly output: Building 'subzerodev-winget-docs' from .../docs (base: ghcr.io/the-running-dev/docs-template:latest); all build stages CACHED or DONE; Built 'subzerodev-winget-docs'. (build-only). The regenerated docs/docs/index.md differed from the committed copy only by line-ending normalization (LF vs CRLF) per `git diff`, which showed no content change; discarded with `git checkout` to keep the tree clean."
-  }
+    {
+      "name": "Test, coverage, architecture, and package",
+      "status": "Passed",
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 2:28. Restore 0:02, Compile 0:06, Pack 0:02, Test 0:13, Coverage 0:01, ArchitectureTest 0:07, PackageTest 1:54, all Succeeded. Build succeeded on 9/7/2026 9:56:07 AM. Two non-fatal warnings noted: 'Exception was suppressed' and 'Could not inject value for Build.GitVersion' (pre-existing, unrelated to this change)."
+    },
+    {
+      "name": "Validate Markdown links, terminology, and generated files",
+      "status": "Passed",
+      "detail": "./build/Test-Documentation.ps1 output: 'Documentation checks passed across 88 Markdown file(s).' Exit succeeded."
+    },
+    {
+      "name": "Build documentation",
+      "status": "Passed",
+      "detail": "./docs.ps1 -BuildOnly output: 'Generated docs/docs/index.md from README.md.' followed by a successful Docker image build ('Built subzerodev-winget-docs. (build-only)'), BuildKit steps 1-9 all DONE, image exported and named docker.io/library/subzerodev-winget-docs:latest. Exit code 0. The regeneration reproduced docs/docs/index.md identically to the working tree (git diff showed only a CRLF/LF line-ending artifact, no content difference); that working-tree artifact was reverted with git checkout so it does not appear in the diff."
+    }
   ]
 }
