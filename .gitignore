@@ -65,3 +65,10 @@ graphify-out/cache/*
 docs/node_modules/
 docs/build/
 docs/.docusaurus/
+
+## FC24/FC25 observation harness (design/self-hosted-source/) - throwaway run state:
+## tenant/app identifiers, self-signed certs, endpoint logs, sandbox share contents.
+## Never committed - the harness scripts regenerate all of it, and none of it is
+## evidence in the design/10-design.md sense (design/self-hosted-source/observations/
+## is the tracked record of what a run found).
+design/self-hosted-source/harness/output/
