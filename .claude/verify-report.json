@@ -3,7 +3,7 @@
     {
       "name": "Test, coverage, architecture, and package",
       "status": "Passed",
-      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 2:28. Restore 0:02, Compile 0:06, Pack 0:02, Test 0:13, Coverage 0:01, ArchitectureTest 0:07, PackageTest 1:54, all Succeeded. Build succeeded on 9/7/2026 9:56:07 AM. Two non-fatal warnings noted: 'Exception was suppressed' and 'Could not inject value for Build.GitVersion' (pre-existing, unrelated to this change)."
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 1:40. Restore 0:02, Compile 0:08, Pack 0:02, Test 0:15, Coverage <1s, ArchitectureTest 0:06, PackageTest 1:03, all Succeeded. Build succeeded on 9/13/2026 1:04:13 PM. Two non-fatal warnings noted: 'Exception was suppressed' and 'Could not inject value for Build.GitVersion' (pre-existing, unrelated to this change). PackageTest's unsupported-rid sub-case intentionally fails its inner build (SubZeroDev.WinGet does not support RuntimeIdentifier 'win-x86') as the negative assertion the gate is designed to make; the overall PackageTest target and the overall nuke invocation both reported Succeeded / exit code 0."
     },
     {
       "name": "Validate Markdown links, terminology, and generated files",
@@ -13,7 +13,7 @@
     {
       "name": "Build documentation",
       "status": "Passed",
-      "detail": "./docs.ps1 -BuildOnly output: 'Generated docs/docs/index.md from README.md.' followed by a successful Docker image build ('Built subzerodev-winget-docs. (build-only)'), BuildKit steps 1-9 all DONE, image exported and named docker.io/library/subzerodev-winget-docs:latest. Exit code 0. The regeneration reproduced docs/docs/index.md identically to the working tree (git diff showed only a CRLF/LF line-ending artifact, no content difference); that working-tree artifact was reverted with git checkout so it does not appear in the diff."
+      "detail": "./docs.ps1 -BuildOnly output: 'Generated docs/docs/index.md from README.md.' followed by a successful Docker image build ('Built subzerodev-winget-docs. (build-only)'), BuildKit steps 1-9 all DONE/CACHED, image exported and named docker.io/library/subzerodev-winget-docs:latest. Exit code 0."
     }
   ]
 }
