@@ -56,6 +56,11 @@ and preferences belong in `AGENTS.md`.
   value everything else was checked against.
 - **Several confident recollections were wrong.** Every claim about an external contract
   should be checked against the published spec, not remembered.
+- **`dotnet test --list-tests` ignores `--filter`** — it lists every test in the assembly.
+  A pre-run count guard built on it failed PR #75's first hosted run, and its replacement
+  (counting `[Category]` source lines) silently stopped guarding what actually executed until
+  a reconcile caught it (#120). **Cost: a wasted hosted run, then a gate weaker than the
+  contract it claimed to enforce.** Count what ran from the trx, not what was listed.
 
 ## Token economy
 
