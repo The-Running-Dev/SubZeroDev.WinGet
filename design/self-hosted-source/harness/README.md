@@ -21,6 +21,24 @@ these scripts, and safe to delete between runs.
 - An elevated PowerShell session if serving HTTPS (`Start-InformationEndpoint.ps1
   -UseHttps`) — it binds a certificate with `netsh` and may reserve a URL ACL.
 
+## Quick path
+
+**`Initialize-ObservationHarness.ps1`** runs steps 1-3 below in one elevated command:
+app registration, endpoint (its own process), certificate trust, hosts entry, and
+source registration. Add `-RunSearch` to also fire the triggering `winget search` for
+FC25, or `-LaunchSandbox` to generate and launch the FC24 Sandbox automatically. The
+WAM consent prompt itself is never automated - that is the observation, not setup toil.
+
+```powershell
+./Initialize-ObservationHarness.ps1 -RunSearch      # FC25
+./Initialize-ObservationHarness.ps1 -LaunchSandbox  # FC24 (run at least twice - see step 5 below)
+./Initialize-ObservationHarness.ps1 -Remove -Force  # tear down everything it created
+```
+
+Then record the outcome with `New-ObservationRecord.ps1` (step 6 below) as usual. The
+rest of this section documents the individual steps it wires together - read it if the
+quick path fails partway, or to run a step in isolation.
+
 ## Run order
 
 1. **`New-EntraObservationApp.ps1`** — creates the throwaway app registration exposing a
