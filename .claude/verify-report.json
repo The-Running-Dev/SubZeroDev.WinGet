@@ -3,17 +3,17 @@
     {
       "name": "Test, coverage, architecture, and package",
       "status": "Passed",
-      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release completed in 1:40. Restore 0:02, Compile 0:08, Pack 0:02, Test 0:15, Coverage <1s, ArchitectureTest 0:06, PackageTest 1:03, all Succeeded. Build succeeded on 9/13/2026 1:04:13 PM. Two non-fatal warnings noted: 'Exception was suppressed' and 'Could not inject value for Build.GitVersion' (pre-existing, unrelated to this change). PackageTest's unsupported-rid sub-case intentionally fails its inner build (SubZeroDev.WinGet does not support RuntimeIdentifier 'win-x86') as the negative assertion the gate is designed to make; the overall PackageTest target and the overall nuke invocation both reported Succeeded / exit code 0."
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release - all targets succeeded (Restore 0:02, Compile 0:05, Pack 0:02, Test 0:11, Coverage 0:01, ArchitectureTest 0:06, PackageTest 1:56, total 2:27). PackageTest's log shows two expected negative-assertion build errors for PlatformTarget 'x86' / RuntimeIdentifier 'win-x86' ('SubZeroDev.WinGet does not support the architecture selected... Supported values are RuntimeIdentifier win-x64 or win-arm64') - these are the deliberate unsupported-RID assertions the target itself passed by observing, not a build failure. Final line: 'Build succeeded on 9/13/2026 2:23:32 PM.'"
     },
     {
       "name": "Validate Markdown links, terminology, and generated files",
       "status": "Passed",
-      "detail": "./build/Test-Documentation.ps1 output: 'Documentation checks passed across 88 Markdown file(s).' Exit succeeded."
+      "detail": "pwsh -File build/Test-Documentation.ps1 - output: 'Documentation checks passed across 89 Markdown file(s).' Exit code 0."
     },
     {
       "name": "Build documentation",
       "status": "Passed",
-      "detail": "./docs.ps1 -BuildOnly output: 'Generated docs/docs/index.md from README.md.' followed by a successful Docker image build ('Built subzerodev-winget-docs. (build-only)'), BuildKit steps 1-9 all DONE/CACHED, image exported and named docker.io/library/subzerodev-winget-docs:latest. Exit code 0."
+      "detail": "pwsh -File docs.ps1 -BuildOnly - Docker build of ghcr.io/the-running-dev/docs-template completed, all layers CACHED except final export/naming steps. Final line: \"Built 'subzerodev-winget-docs'. (build-only)\" Exit code 0."
     }
   ]
 }
