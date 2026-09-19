@@ -1,5 +1,8 @@
 # Agent contract
 
+**Read [`AGENTS.shared.md`](C:/Users/Ben/.agent-kit/AGENTS.shared.md) completely before this file.** It holds the rules every repository using the kit shares.
+
+
 This file is binding for every agent session in this repo, regardless of tool or model. `AGENTS.md`
 is a pointer to this file — the kit's default arrangement has that reversed, but this repository's
 direction (`CLAUDE.md` holding the content) predates the kit install and is the smaller change to
