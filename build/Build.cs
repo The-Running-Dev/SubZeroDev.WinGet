@@ -227,6 +227,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             AssertLiveTestCount(MachineStateCategory, 7);
+            var resultsDirectory = TestResultsDirectory / "MachineState";
             DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
@@ -234,8 +235,13 @@ class Build : NukeBuild
                 .EnableNoBuild()
                 .SetFilter($"Category={MachineStateCategory}")
                 .SetLoggers("trx")
-                .SetResultsDirectory(TestResultsDirectory / "MachineState")
+                .SetResultsDirectory(resultsDirectory)
                 .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
+
+            LiveTestCountGate.Assert(
+                MachineStateCategory,
+                LiveTestCountGate.ReadPassedCount(LiveTestCountGate.FindLatestTrx(resultsDirectory)),
+                7);
         });
 
     Target CatalogIntegrationTest => _ => _
@@ -243,6 +249,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             AssertLiveTestCount(CatalogIntegrationCategory, 6);
+            var resultsDirectory = TestResultsDirectory / "CatalogIntegration";
             DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
@@ -250,8 +257,13 @@ class Build : NukeBuild
                 .EnableNoBuild()
                 .SetFilter($"Category={CatalogIntegrationCategory}")
                 .SetLoggers("trx")
-                .SetResultsDirectory(TestResultsDirectory / "CatalogIntegration")
+                .SetResultsDirectory(resultsDirectory)
                 .SetProcessAdditionalArguments("--logger \"console;verbosity=detailed\""));
+
+            LiveTestCountGate.Assert(
+                CatalogIntegrationCategory,
+                LiveTestCountGate.ReadPassedCount(LiveTestCountGate.FindLatestTrx(resultsDirectory)),
+                6);
         });
 
     // S9: gates on the unit-only report ReportGenerator just produced. Test is the only
@@ -310,6 +322,41 @@ class Build : NukeBuild
 
             // The checked-in floor itself, against the exact counts it was measured from.
             AssertPasses(591, 1232, CoverageFloorPercent);
+        });
+
+    // #120 regression test: exercises LiveTestCountGate.Evaluate directly, independent of live
+    // COM - the same shape as CoverageGateTest above. A run that skips one of the expected live
+    // tests must fail this gate even though `dotnet test` itself exits 0 for a Skipped outcome.
+    Target LiveTestCountGateTest => _ => _
+        .Executes(() =>
+        {
+            void AssertPasses(int passedCount, int expectedCount)
+            {
+                if (!LiveTestCountGate.Evaluate(passedCount, expectedCount).Passed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {passedCount}/{expectedCount} passed to pass, but it failed.");
+                }
+            }
+
+            void AssertFails(int passedCount, int expectedCount)
+            {
+                if (LiveTestCountGate.Evaluate(passedCount, expectedCount).Passed)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {passedCount}/{expectedCount} passed to fail, but it passed.");
+                }
+            }
+
+            // A full run of all seven machine-state tests passes.
+            AssertPasses(7, 7);
+
+            // One of the seven skipped (e.g. `[Ignore("probe")]`) - the gap #120 reports - fails.
+            AssertFails(6, 7);
+
+            // The catalog-dependent risk class, same shape.
+            AssertPasses(6, 6);
+            AssertFails(5, 6);
         });
 
     // Packs at the version pinned in SubZeroDev.WinGet.csproj. Reached transitively by
