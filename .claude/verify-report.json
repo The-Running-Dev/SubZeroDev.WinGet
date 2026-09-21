@@ -3,7 +3,7 @@
     {
       "name": "Test, coverage, architecture, and package",
       "status": "Passed",
-      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release -> Restore Succeeded 0:02, Compile Succeeded 0:02, Pack Succeeded 0:02, Test Succeeded 0:08, Coverage Succeeded <1sec, ArchitectureTest Succeeded 0:02, PackageTest Succeeded 0:45. Total 1:04. Build succeeded on 9/21/2026 10:11:12 PM."
+      "detail": "nuke Test Coverage ArchitectureTest PackageTest --configuration Release -> Restore Succeeded 0:01, Compile Succeeded 0:03, Pack Succeeded 0:02, Test Succeeded 0:06, Coverage Succeeded <1sec, ArchitectureTest Succeeded 0:03, PackageTest Succeeded 0:56. Total 1:13. Build succeeded on 9/21/2026 11:42:17 PM."
     },
     {
       "name": "Validate Markdown links, terminology, and generated files",
