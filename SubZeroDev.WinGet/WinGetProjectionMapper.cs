@@ -349,16 +349,20 @@ internal static class WinGetProjectionMapper
             Priority: GetPriority(info));
     }
 
-    internal static int GetPriority(PackageCatalogInfo info)
+    internal static int GetPriority(PackageCatalogInfo info) => ReadPriority(() => info.Priority);
+
+    internal static int ReadPriority(Func<int> readPriority)
     {
         try
         {
-            // Priority is contract 29; guard against older WinGet runtimes.
-            return info.Priority;
+            return readPriority();
         }
-        catch
+        catch (InvalidCastException exception) when (exception.HResult == ENoInterface)
         {
+            // Priority is contract 29; older WinGet runtimes do not implement its interface.
             return 0;
         }
     }
+
+    private const int ENoInterface = unchecked((int)0x80004002);
 }
