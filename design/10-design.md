@@ -97,7 +97,9 @@ The stable live invocation surface is:
 | `IntegrationTest` | Local aggregate | Preserves the existing developer entry point by composing the two integration-test risk classes; it is not itself assigned a CI blocking consequence. |
 
 Selection is by stable test risk metadata, not fixture-name substrings. Each target asserts its
-expected selected count before its result can license a claim, so an under-selecting filter fails.
+expected selected count before execution and, after it, that exactly that many tests passed, before
+its result can license a claim — so an under-selecting filter fails, and so does a selected test that
+is skipped or never runs.
 The packed smoke remains a separate target because it consumes an artifact; it does not become a
 thirteenth project-reference integration test.
 
@@ -227,7 +229,7 @@ record results against the same commit; one cannot substitute for another.
 
 **Live behaviour is interpreted.** A live target first records its environment — including the pinned
 WinGet build and the versions observed either side of installing it — and its selected-test count, then
-executes. Missing prerequisites are failures with no licensed claim, not product success. Passing
+executes, then confirms from its trx that every selected test passed. Missing prerequisites are failures with no licensed claim, not product success. Passing
 assertions become Evidence only for their named subjects, and a passing live run is what licenses the
 projected-parameter translations. A catalog outage may leave valid machine-state evidence intact. An
 empty input that makes an implication vacuously true records no evidence for that assertion and makes
@@ -266,7 +268,8 @@ absent interface as `E_NOINTERFACE`, and [.NET represents HRESULT `0x80004002` a
 `InvalidCastException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidcastexception?view=net-8.0).
 `GetWinGetVersion` therefore converts only an `InvalidCastException` carrying exactly `0x80004002` to
 `null`. Cancellation, activation errors, other COM failures, and every other exception propagate
-unchanged. Message matching and a blanket `COMException` guard are forbidden.
+unchanged. Message matching and a blanket `COMException` guard are forbidden. A source's priority, a
+contract-29 member, is read under the same rule: only that exact `InvalidCastException` becomes `0`.
 
 This is now a diagnosed condition rather than a suspected one. The version member is declared in COM
 contract 13, first present in WinGet 1.12; the hosted image carried a build declaring contract 12,
