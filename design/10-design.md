@@ -277,11 +277,13 @@ which cannot answer the query, so the narrowed classifier correctly reported abs
 environment fact, not a product defect, and it is why the hosted jobs constitute their runtime. The
 consumer-visible half of the same fact is the runtime version floor Claim.
 
-The stop condition survives in narrowed form. The machine-state status is not made required until the
-narrowed classifier has run against the *constituted* environment and the packed consumer has observed
-a non-null version. If it still returns `null` there, the packed-consumer criterion is unsatisfied and
-the work returns to the brief for an environment decision. It must not silently replace
-`GetWinGetVersion`, weaken non-null, or call `winget --version` as a fallback.
+The stop condition survived in narrowed form and has been met. The machine-state status was not made
+required until the narrowed classifier had run against the *constituted* environment and the packed
+consumer had observed a non-null version; that observation and the ruleset change that followed are
+recorded under C23. Had it still returned `null`, the packed-consumer criterion would have been
+unsatisfied and the work would have returned to the brief for an environment decision. A future `null`
+there is the same stop: it must not silently replace `GetWinGetVersion`, weaken non-null, or call
+`winget --version` as a fallback.
 
 **A remote catalog or witness changes.** Catalog-dependent tests fail their non-required status and
 retain any separately passing machine-state evidence. A package identity, publisher, tag, or source
@@ -421,7 +423,6 @@ No maintainer policy question remains in this design revision, and the empirical
 previous revision carried has been answered: the hosted `null` was an absent interface on a runtime
 older than the member, and the environment branch was taken.
 
-One execution remains unobserved rather than undecided. Against the constituted runtime, the packed
-consumer must return a non-null version before the machine-state status becomes required. That is a
-gate sequencing rule under *Failure modes*, not a question for the maintainer — it becomes one only if
-the observation fails, at which point it is an environment decision and not an implementation choice.
+The one execution this revision left unobserved has since been observed: the packed consumer returned
+a non-null version against the constituted runtime, and the machine-state status became required (C23).
+No open question remains.

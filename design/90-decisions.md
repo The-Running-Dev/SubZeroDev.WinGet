@@ -7,6 +7,14 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-25 — The COM-activation spike workflow and its branch are deleted, not promoted
+Context: the 2026-08-20 entry *Probe hosted-CI COM activation before writing the design* made `.github/workflows/spike-com-activation.yml` throwaway, "to be deleted or promoted into `build.yml` once the design decides whether integration tests run in CI". The design decided that long ago: `build.yml`'s `machine-state` and `catalog` jobs run the live tests, with count gates, pinned WinGet and recorded environment. `/align` found the spike workflow and the `spike/ci-com-activation` branch still present, with nothing recording why they were kept. The branch carries no commit that `main` lacks, and nothing in the tree refers to the workflow.
+Chosen: delete the workflow and the remote branch. The spike's evidence lives in its run and the 2026-08-20 entry, not in the file.
+Rejected: promoting it into `build.yml`, because the live jobs there already do what it did, with the count gates and pinned runtime it lacks. Keeping it as a manual-dispatch diagnostic for new runner images, because that would be a second definition of "run the live tests", still describing a twelve-test suite with no count assertion, free to drift from the gated one. Leaving it unrecorded, because the next `/align` would raise it again.
+Reversibility: cheap — the file is recoverable from history and the branch's commits are all on `main`.
+
+---
+
 ### 2026-09-23 — Priority's E_NOINTERFACE-only narrowing is contract, and its classifier may carry a delegate-seam unit test
 Context: `/align` found that PR #133 (closing #121) changed what a source call can raise — a failure reading priority other than the older-runtime `E_NOINTERFACE` case now propagates instead of becoming a silent `0` — while `design/20-contract.md` C16 and *Error semantics* covered only the version member, and the PR body stated "No contract, schema, or public-surface change". The fix also introduced `WinGetProjectionMapper.ReadPriority(Func<int>)` with unit tests, which C26's ban on a "stub-backed read accessor" for live-licensed members could be read to forbid. Why the narrowing itself is right was already recorded in the 2026-09-13 entry below; what was missing was the contract stating it.
 Chosen: amend the contract to follow the code. C16 now covers priority (`0` only for `E_NOINTERFACE`; cancellation and every other failure propagate), *Error semantics* gains the two matching rows, and *Types* § *Projection mapper* states that `ReadPriority` is a pure classifier over an ordinary delegate — the `ReadWinGetVersion` shape C16 already relies on — whose tests assert which exceptions become `0`, never what the projection reads. `GetPriority` stays one of the ten C26 live-licensed members, without a unit test. `10-design.md` § *Failure modes* extends the version-interface paragraph to priority.
