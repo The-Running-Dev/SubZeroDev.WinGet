@@ -7,6 +7,11 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-10-06 — Remove the per-repository SessionEnd cost hook
+Context: `.claude/settings.json` ran `pwsh … tools/Measure-Session.ps1` on `SessionEnd`, but that script no longer exists — it left this repository when the kit moved to a single home install, and the kit later ported it to Node as `measure-session.ts` — so the hook failed at the end of every session. The kit's setup installs one global `SessionEnd` hook in `~/.claude/settings.json` that logs every project.
+Chosen: remove this repository's `hooks.SessionEnd` entry, in the AgentKit sync to `v2026.10.06.1`. Nothing else in `settings.json` changes.
+Rejected: point it at `measure-session.ts` — the global hook already runs that script, so every session would be logged twice; leave it — it keeps failing at every session end.
+
 ### 2026-09-25 — The COM-activation spike workflow and its branch are deleted, not promoted
 Context: the 2026-08-20 entry *Probe hosted-CI COM activation before writing the design* made `.github/workflows/spike-com-activation.yml` throwaway, "to be deleted or promoted into `build.yml` once the design decides whether integration tests run in CI". The design decided that long ago: `build.yml`'s `machine-state` and `catalog` jobs run the live tests, with count gates, pinned WinGet and recorded environment. `/align` found the spike workflow and the `spike/ci-com-activation` branch still present, with nothing recording why they were kept. The branch carries no commit that `main` lacks, and nothing in the tree refers to the workflow.
 Chosen: delete the workflow and the remote branch. The spike's evidence lives in its run and the 2026-08-20 entry, not in the file.
