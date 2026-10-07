@@ -19,7 +19,7 @@ on the public surface (see `README.md` and `SPECIFICATION.md` for the full desig
 It does not own: a CLI or GUI front end (the library is consumed by other projects), or the WinGet
 COM API's own behaviour (bugs there are upstream, not this repo's).
 
-`.claude/kit.json` records the installed kit commit. The Commands/Architecture/
+The Commands/Architecture/
 Constraints/Retry-policy/CI/Known-gaps sections below are this repository's own pre-existing
 guidance, kept verbatim from before the kit install.
 
