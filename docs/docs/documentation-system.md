@@ -55,9 +55,7 @@ deploy job fails at `configure-pages`.
 merge:
 
 ```text
-Documentation links and terminology
-Verify Documentation Build
-Build and Deploy Documentation
+docs / Build
 ```
 
 No registry credentials are needed — `ghcr.io/the-running-dev/docs-template` is a public package,
@@ -67,7 +65,7 @@ required if `-BaseImage` points at a private fork or mirror.
 Then it is automatic:
 
 - **Pull request** → gate runs, site builds, Pages artifact archived. Nothing is published.
-- **Push to `main`** → `docs-deploy.yml` builds and deploys to Pages.
+- **Push to `main`** → `docs.yml` builds and deploys to Pages.
 
 The published URL is `url` + `baseUrl` in `docs/docusaurus.config.ts`, set by `-SiteUrl` at install
 time.
@@ -104,7 +102,7 @@ site.
 ```
 
 Errors (broken relative links, bad heading anchors, generated-file drift) fail the run. **Warnings
-(terminology) do not block CI** — `docs-ci.yml` runs the gate without `-TreatWarningsAsErrors`. Add
+(terminology) do not block CI** — `docs.yml` runs the gate without `-TreatWarningsAsErrors`. Add
 that switch if they should.
 
 ## Serving path

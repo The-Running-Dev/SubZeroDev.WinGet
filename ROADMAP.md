@@ -191,9 +191,9 @@ can't be reproduced locally: UI freezes and permanently-poisoned singletons.
 ## Phase 5 — Documentation
 
 - [x] **`M` Stand up the Docusaurus site and deploy to GitHub Pages.** ✅ Done.
-  [docs/](docs/docs) is built by the containerised `docs-template` image (one source
+  [docs/](docs/docs) is built by the shared `docs.yml` workflow on the build-agent image (one source
   of truth) and deploys to GitHub Pages on push to `main` via
-  [.github/workflows/docs-deploy.yml](.github/workflows/docs-deploy.yml). Live at
+  [.github/workflows/docs.yml](.github/workflows/docs.yml). Live at
   <https://winget.subzerodev.com/> via a custom domain (`website/static/CNAME`), linked from
   the README. This is now the only supported URL: `docusaurus.config.js` builds with
   `baseUrl: '/'` for the custom domain, so every internal link and asset path is generated
