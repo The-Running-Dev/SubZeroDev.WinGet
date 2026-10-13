@@ -29,80 +29,31 @@ env:
 
 jobs:
   # Runs on every push to main AND every pull request: tests, coverage, architecture,
-  # and package-contract verification, but never publishes. This is the required
-  # status check for branch protection.
+  # and package-contract verification, but never publishes. Its `build / Result` job is
+  # the required status check for branch protection.
+  #
+  # The shared dotnet.yml workflow checks out, sets up both SDKs, restores and builds;
+  # build/ci/Test-HermeticCheck.ps1 then runs `Test Coverage ArchitectureTest PackageTest`
+  # in one Nuke invocation, appends the coverage summary and records the hermetic evidence
+  # (S14.6/C27). `test: false` leaves the tests to Nuke, which owns the coverage floor (S9).
   build:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # This job never publishes, so it does not strictly need full history — a shallow
-          # clone would only make Nuke's eager [GitVersion] injection emit a harmless warning
-          # (the value is never dereferenced here; only PublishGitHubPackages reads it).
-          # fetch-depth: 0 purely silences that warning and keeps both jobs' checkouts identical.
-          fetch-depth: 0
-
-      - name: Setup .NET
-        # Skipped under act host mode — the host machine already has a .NET SDK.
-        if: ${{ !env.ACT }}
-        uses: actions/setup-dotnet@v4
-        with:
-          # 8.0.x: builds and runs the product (library/tests/examples target net8).
-          # 10.0.x: runs the Nuke build tooling (build/_build.csproj is net10 — Nuke.Common
-          #         10.x ships lib/net10.0 only). Nuke shells out to the net8 targets.
-          dotnet-version: |
-            8.0.x
-            10.0.x
-
-      - name: Install Nuke
-        run: |
-          # `update` (not `install`) so this is idempotent: it installs the tool when
-          # missing and is a no-op success when the pinned version is already present.
-          # `install --version X` instead errors if a *different* version is already on
-          # the host - which happens under `act` host mode (the host environment persists
-          # between runs) whenever NUKE_VERSION is bumped.
-          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
-          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
-
-      # verification: true
-      - name: Test, coverage, architecture, and package
-        # One Nuke invocation for all requested targets. Nuke de-duplicates target execution
-        # only WITHIN a single invocation, so Test and Coverage must be requested together —
-        # separate `nuke Test` then `nuke Coverage` calls would re-run Test (and its
-        # Restore/Compile dependencies). Coverage depends on Test, so the plan runs
-        # Restore -> Compile -> Test -> Coverage exactly once, while ArchitectureTest
-        # cross-builds x64/ARM64 and verifies the emitted PE headers. PackageTest then
-        # validates the packed direct and transitive consumer contract without executing
-        # live COM calls. A failure stops the job before release. The append step below
-        # surfaces the generated markdown on the run's summary page (GITHUB_STEP_SUMMARY).
-        run: nuke Test Coverage ArchitectureTest PackageTest --configuration Release
-
-      - name: Append coverage summary
-        run: Get-Content coverage/SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
-
-      # S14.6/C27: this required check never activates WinGet COM (C7), so it is blind to every
-      # C26 live-licensed translation by construction. Recorded explicitly so a green hermetic
-      # check is never read as evidence about one - the machine-state and catalog jobs' own
-      # evidence records are the only place any of them are licensed.
-      - name: Record hermetic evidence
-        if: always()
-        shell: pwsh
-        run: |
-          @(
-            '## Hermetic evidence',
-            "Commit: $env:GITHUB_SHA",
-            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
-            'This required check never activates WinGet COM, queries a network catalog, or invokes the WinGet CLI binary (C7).',
-            'Non-assertion: every C26 live-licensed translation - ToPackages, ToPackageInfo, ToPackageDetails, CopyAgreements, CopyDocumentations, CopyIcons, ToPackageSource, GetPriority, FindVersionId, GetInstallerErrorCode - is licensed by nothing here. A regression in one is detectable only by the machine-state or catalog job whose named assertion covers it (or, for GetInstallerErrorCode, by nothing while install/upgrade live coverage remains a non-goal).'
-          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/Cobertura.xml
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v0
+    with:
+      os: '["windows-latest"]'
+      # 8.0.x: builds and runs the product (library/tests/examples target net8).
+      # 10.0.x: runs the Nuke build tooling (build/_build.csproj is net10 — Nuke.Common
+      #         10.x ships lib/net10.0 only). Nuke shells out to the net8 targets.
+      dotnet-version: |
+        8.0.x
+        10.0.x
+      solution: SubZeroDev.WinGet.sln
+      test: false
+      # This job never publishes, so it does not strictly need full history — a shallow
+      # clone would only make Nuke's eager [GitVersion] injection emit a harmless warning
+      # (the value is never dereferenced here; only PublishGitHubPackages reads it).
+      # Full history purely silences that warning and keeps every job's checkout identical.
+      fetch-depth: 0
+      post-build: build/ci/Test-HermeticCheck.ps1
 
   # S8.1/S8.3: MachineStateTest and PackedConsumerSmokeTest share one job and one required
   # pull-request status, per C8. C23's precondition was satisfied by a hosted run (33671049835,
@@ -132,98 +83,23 @@ jobs:
             10.0.x
 
       - name: Install Nuke
-        run: |
-          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
-          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+        shell: pwsh
+        run: ./build/ci/Install-Nuke.ps1
 
       - name: Check WinGet prerequisite
         id: prerequisite
         shell: pwsh
-        run: |
-          $package = Get-AppxPackage Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue
-          if ($null -eq $package) {
-            throw 'WinGet/App Installer is not installed on this runner.'
-          }
+        run: ./build/ci/Test-WinGetPrerequisite.ps1
 
-          # C4 requires the environment fact to be observed rather than inferred from a
-          # successful call. Capture it here, where it exists whether or not the checks below
-          # later succeed - the previous shape read the version out of the consumer's own
-          # stdout, so the run that most needed it was the one run that never recorded it.
-          "before=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
-
-      # The runner image pins no WinGet version at all and has shipped builds predating COM
-      # contract 13, where PackageManager.Version does not exist - see design/90-decisions.md,
-      # 2026-08-21. Downloading a specific release tag is what makes C24's "explicitly pinned
-      # build" true; the published SHA256 sidecars make it verifiable rather than asserted,
-      # since a tag can be moved and a hash cannot.
       - name: Install pinned WinGet
         id: install
         shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          # Invoke-WebRequest's progress rendering dominates the runtime of a 200 MB download.
-          $ProgressPreference = 'SilentlyContinue'
+        run: ./build/ci/Install-PinnedWinGet.ps1
 
-          $base = "https://github.com/microsoft/winget-cli/releases/download/v$env:WINGET_VERSION"
-          $work = (New-Item -ItemType Directory -Force -Path (Join-Path $env:RUNNER_TEMP 'winget-pin')).FullName
-
-          foreach ($asset in 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
-                             'DesktopAppInstaller_Dependencies.zip') {
-            $file = Join-Path $work $asset
-            Invoke-WebRequest "$base/$asset" -OutFile $file
-
-            # Downloaded rather than read from the response body: GitHub serves release assets
-            # as application/octet-stream, so Invoke-WebRequest hands back Content as bytes.
-            $sidecar = Join-Path $work ([IO.Path]::GetFileNameWithoutExtension($asset) + '.txt')
-            Invoke-WebRequest "$base/$([IO.Path]::GetFileName($sidecar))" -OutFile $sidecar
-
-            $expected = (Get-Content -Path $sidecar -Raw).Trim()
-            $actual = (Get-FileHash -Path $file -Algorithm SHA256).Hash
-
-            if ($actual -ne $expected) {
-              throw "$asset hash mismatch: expected $expected, got $actual."
-            }
-          }
-
-          Expand-Archive -Path (Join-Path $work 'DesktopAppInstaller_Dependencies.zip') `
-                         -DestinationPath (Join-Path $work 'dependencies') -Force
-
-          # -DependencyPath installs only the dependencies the bundle actually needs, so an
-          # already-present VCLibs is skipped rather than failing as an unnecessary downgrade.
-          # The runner is x64; ARM64 runtime execution is a binding non-goal in design/00-brief.md.
-          $dependencies = @(Get-ChildItem -Path (Join-Path $work 'dependencies') -Recurse -Include *.appx, *.msix |
-            Where-Object { $_.FullName -match '[\\/]x64[\\/]' })
-
-          $arguments = @{
-            Path = Join-Path $work 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
-            ForceUpdateFromAnyVersion = $true
-          }
-
-          # An empty -DependencyPath is an error rather than a no-op, so omit it when the layout
-          # yielded nothing. A genuinely missing dependency then fails the bundle install below,
-          # which is the outcome that should fail the gate anyway.
-          if ($dependencies.Count -gt 0) { $arguments.DependencyPath = $dependencies.FullName }
-
-          Add-AppxPackage @arguments
-
-          $package = Get-AppxPackage Microsoft.DesktopAppInstaller
-          if ($null -eq $package) {
-            throw 'App Installer is absent after installing the pinned build.'
-          }
-
-          "after=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
-
-      # One Nuke invocation for both targets (Nuke de-duplicates Restore/Compile within it,
-      # same reasoning as the hermetic job). SetLoggers("trx") plus the detailed console logger
-      # in build/Build.cs give this a per-test retained record, not just a job-level pass/fail
-      # (S8.4/S8.6).
       - name: Run machine-state and packed-consumer checks
         id: checks
         shell: pwsh
-        run: |
-          nuke MachineStateTest PackedConsumerSmokeTest --configuration Release 2>&1 |
-            Tee-Object -FilePath machine-state.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: ./build/ci/Invoke-MachineStateChecks.ps1
 
       - name: Record machine-state evidence
         if: always()
@@ -234,34 +110,7 @@ jobs:
           CHECKS_OUTCOME: ${{ steps.checks.outcome }}
           APP_INSTALLER_BEFORE: ${{ steps.prerequisite.outputs.before }}
           APP_INSTALLER_AFTER: ${{ steps.install.outputs.after }}
-        run: |
-          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-          $principal = [Security.Principal.WindowsPrincipal]::new($identity)
-          $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-          $version = if (Test-Path machine-state.log) {
-            Select-String -Path machine-state.log -Pattern '^WinGet version:' |
-              Select-Object -Last 1 | ForEach-Object Line
-          }
-
-          @(
-            '## Machine-state evidence',
-            "Commit: $env:GITHUB_SHA",
-            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
-            "OS: $([Environment]::OSVersion.VersionString)",
-            "Architecture: $([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)",
-            "Interactive: $([Environment]::UserInteractive)",
-            "Elevated: $elevated",
-            "WinGet prerequisite: $env:PREREQUISITE_OUTCOME",
-            "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
-            "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
-            "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
-            "MachineStateTest (7 tests, C8) + PackedConsumerSmokeTest: $env:CHECKS_OUTCOME",
-            "Observed $($version ?? 'WinGet version: (not observed)')",
-            'Configured-source state (C4) is asserted by GetSources_ReturnsTheConfiguredSources and GetSource_ForWinget_ReturnsIt within the checks above; per-test outcomes are in the retained log and trx artifact, not restated here.',
-            # S14.4: this job's own share of the ten C26 live-licensed translations.
-            'Licensed here: ToPackageSource, GetPriority (via GetSource_ForWinget_ReturnsIt).',
-            'Non-assertion: ToPackages, ToPackageInfo, ToPackageDetails, CopyAgreements, CopyDocumentations, CopyIcons, FindVersionId are not reached by this job - see the catalog job''s evidence. GetInstallerErrorCode is reachable only from Install/Upgrade, a binding non-goal (C26), and is licensed by nothing.'
-          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        run: ./build/ci/Write-LiveEvidence.ps1 -Gate MachineState
 
       - name: Upload machine-state evidence artifact
         if: always()
@@ -298,76 +147,23 @@ jobs:
             10.0.x
 
       - name: Install Nuke
-        run: |
-          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
-          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+        shell: pwsh
+        run: ./build/ci/Install-Nuke.ps1
 
       - name: Check WinGet prerequisite
         id: prerequisite
         shell: pwsh
-        run: |
-          $package = Get-AppxPackage Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue
-          if ($null -eq $package) {
-            throw 'WinGet/App Installer is not installed on this runner.'
-          }
-
-          "before=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+        run: ./build/ci/Test-WinGetPrerequisite.ps1
 
       - name: Install pinned WinGet
         id: install
         shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ProgressPreference = 'SilentlyContinue'
-
-          $base = "https://github.com/microsoft/winget-cli/releases/download/v$env:WINGET_VERSION"
-          $work = (New-Item -ItemType Directory -Force -Path (Join-Path $env:RUNNER_TEMP 'winget-pin')).FullName
-
-          foreach ($asset in 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
-                             'DesktopAppInstaller_Dependencies.zip') {
-            $file = Join-Path $work $asset
-            Invoke-WebRequest "$base/$asset" -OutFile $file
-
-            $sidecar = Join-Path $work ([IO.Path]::GetFileNameWithoutExtension($asset) + '.txt')
-            Invoke-WebRequest "$base/$([IO.Path]::GetFileName($sidecar))" -OutFile $sidecar
-
-            $expected = (Get-Content -Path $sidecar -Raw).Trim()
-            $actual = (Get-FileHash -Path $file -Algorithm SHA256).Hash
-
-            if ($actual -ne $expected) {
-              throw "$asset hash mismatch: expected $expected, got $actual."
-            }
-          }
-
-          Expand-Archive -Path (Join-Path $work 'DesktopAppInstaller_Dependencies.zip') `
-                         -DestinationPath (Join-Path $work 'dependencies') -Force
-
-          $dependencies = @(Get-ChildItem -Path (Join-Path $work 'dependencies') -Recurse -Include *.appx, *.msix |
-            Where-Object { $_.FullName -match '[\\/]x64[\\/]' })
-
-          $arguments = @{
-            Path = Join-Path $work 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
-            ForceUpdateFromAnyVersion = $true
-          }
-
-          if ($dependencies.Count -gt 0) { $arguments.DependencyPath = $dependencies.FullName }
-
-          Add-AppxPackage @arguments
-
-          $package = Get-AppxPackage Microsoft.DesktopAppInstaller
-          if ($null -eq $package) {
-            throw 'App Installer is absent after installing the pinned build.'
-          }
-
-          "after=$($package.Version)" | Add-Content -Path $env:GITHUB_OUTPUT
+        run: ./build/ci/Install-PinnedWinGet.ps1
 
       - name: Run catalog-integration checks
         id: checks
         shell: pwsh
-        run: |
-          nuke CatalogIntegrationTest --configuration Release 2>&1 |
-            Tee-Object -FilePath catalog.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        run: ./build/ci/Invoke-CatalogChecks.ps1
 
       - name: Record catalog evidence
         if: always()
@@ -378,43 +174,7 @@ jobs:
           CHECKS_OUTCOME: ${{ steps.checks.outcome }}
           APP_INSTALLER_BEFORE: ${{ steps.prerequisite.outputs.before }}
           APP_INSTALLER_AFTER: ${{ steps.install.outputs.after }}
-        run: |
-          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-          $principal = [Security.Principal.WindowsPrincipal]::new($identity)
-          $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-          $version = if (Test-Path catalog.log) {
-            Select-String -Path catalog.log -Pattern '^WinGet version:' |
-              Select-Object -Last 1 | ForEach-Object Line
-          }
-
-          # S14.4/S14.5: the log carries whichever CopyAgreements/CopyDocumentations/CopyIcons
-          # ran into an empty witness collection this run (TestContext.WriteLine, captured by
-          # this job's Tee-Object'd log the same way the WinGet version line above is) - read
-          # those back rather than asserting statically that every run licenses all three.
-          $nonAssertions = if (Test-Path catalog.log) {
-            Select-String -Path catalog.log -Pattern '^\s*Non-assertion:' |
-              ForEach-Object { $_.Line.Trim() } | Select-Object -Unique
-          }
-
-          @(
-            '## Catalog-integration evidence',
-            "Commit: $env:GITHUB_SHA",
-            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID (attempt $env:GITHUB_RUN_ATTEMPT)",
-            "OS: $([Environment]::OSVersion.VersionString)",
-            "Architecture: $([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)",
-            "Interactive: $([Environment]::UserInteractive)",
-            "Elevated: $elevated",
-            "WinGet prerequisite: $env:PREREQUISITE_OUTCOME",
-            "Pinned WinGet install: $env:INSTALL_OUTCOME (v$env:WINGET_VERSION)",
-            "App Installer before: $(if ($env:APP_INSTALLER_BEFORE) { $env:APP_INSTALLER_BEFORE } else { '(not observed)' })",
-            "App Installer after: $(if ($env:APP_INSTALLER_AFTER) { $env:APP_INSTALLER_AFTER } else { '(not observed)' })",
-            "CatalogIntegrationTest (6 tests, C8): $env:CHECKS_OUTCOME",
-            "Observed $($version ?? 'WinGet version: (not observed)')",
-            'Remote-catalog reachability (C4) is the fact these six tests assert against the configured winget/msstore sources; per-test outcomes are in the retained log and trx artifact.',
-            # S14.4: this job's own share of the ten C26 live-licensed translations.
-            'Licensed here: ToPackages, ToPackageInfo, ToPackageDetails, FindVersionId, plus whichever of CopyAgreements/CopyDocumentations/CopyIcons the witness''s manifest actually populated this run (see Non-assertion lines below for the rest).',
-            'Non-assertion: ToPackageSource, GetPriority are not reached by this job - see the machine-state job''s evidence. GetInstallerErrorCode is reachable only from Install/Upgrade, a binding non-goal (C26), and is licensed by nothing.'
-          ) + $nonAssertions | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        run: ./build/ci/Write-LiveEvidence.ps1 -Gate Catalog
 
       - name: Upload catalog evidence artifact
         if: always()
@@ -463,45 +223,24 @@ jobs:
             10.0.x
 
       - name: Install Nuke
-        run: |
-          # `update` (not `install`) so this is idempotent: it installs the tool when
-          # missing and is a no-op success when the pinned version is already present.
-          # `install --version X` instead errors if a *different* version is already on
-          # the host - which happens under `act` host mode (the host environment persists
-          # between runs) whenever NUKE_VERSION is bumped.
-          dotnet tool update --global Nuke.GlobalTool --version ${{ env.NUKE_VERSION }}
-          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+        shell: pwsh
+        run: ./build/ci/Install-Nuke.ps1
 
-      # Automatic release on every push to main. Version comes from GitVersion (resolved
-      # by Nuke's GitVersion component). Auth uses the built-in GITHUB_TOKEN — no secret
-      # needed — and --skip-duplicate makes re-pushing an unchanged version harmless.
-      # C21/S11.1: the target itself fails unless it positively confirms the exact pushed
-      # version back from the feed - push success or a skipped duplicate is not enough. The
-      # "Publication confirmed:" line PublicationConfirmation.Report writes is appended to the
-      # run summary, matching how machine-state/catalog evidence is recorded elsewhere in this
-      # workflow.
+      # Automatic release on every push to main; see build/ci/Publish-Package.ps1 (C21/S11.1).
       - name: Release to GitHub Packages
         if: ${{ github.event_name == 'push' }}
         shell: pwsh
-        run: |
-          nuke PublishGitHubPackages --github-token "${{ secrets.GITHUB_TOKEN }}" --github-repository-owner "${{ github.repository_owner }}" 2>&1 |
-            Tee-Object -FilePath publish-github-packages.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Select-String -Path publish-github-packages.log -Pattern '^Publication confirmed:' |
-            ForEach-Object Line | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./build/ci/Publish-Package.ps1 -Feed GitHubPackages
 
-      # Manual, opt-in release to NuGet.org. Requires the NUGET_API_KEY secret and
-      # publishes the version pinned in the .csproj. Same S11.2 confirmation requirement as
-      # GitHub Packages above.
+      # Manual, opt-in release to NuGet.org. Requires the NUGET_API_KEY secret (S11.2).
       - name: Release to NuGet.org
         if: ${{ github.event_name == 'workflow_dispatch' }}
         shell: pwsh
-        run: |
-          nuke PublishNuGet --nuget-api-key "${{ secrets.NUGET_API_KEY }}" 2>&1 |
-            Tee-Object -FilePath publish-nuget.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Select-String -Path publish-nuget.log -Pattern '^Publication confirmed:' |
-            ForEach-Object Line | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: ./build/ci/Publish-Package.ps1 -Feed NuGet
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4

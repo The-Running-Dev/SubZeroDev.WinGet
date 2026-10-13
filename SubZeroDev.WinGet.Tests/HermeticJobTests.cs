@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using FluentAssertions;
 
 namespace SubZeroDev.WinGet.Tests;
@@ -6,8 +8,10 @@ namespace SubZeroDev.WinGet.Tests;
 /// S8.2 — a source-level negative dependency check proving the required `build` job stays
 /// hermetic under C7: it must never invoke a live nuke target, activate WinGet COM (via
 /// `Get-AppxPackage`/`Add-AppxPackage`), or execute `winget.exe`. Reads only the checked-in
-/// workflow file - no COM, no process, no network - so it runs inside the existing hermetic
-/// `Test` target with no new CI wiring, the same as `WorkflowCompositionTests`.
+/// workflow file and the build/ci scripts the job names - no COM, no process, no network - so it
+/// runs inside the existing hermetic `Test` target with no new CI wiring, the same as
+/// `WorkflowCompositionTests`. The job calls the shared dotnet.yml workflow and has no steps of
+/// its own, so the whole job, including the scripts it hands that workflow, is what is checked.
 /// </summary>
 [TestFixture]
 public class HermeticJobTests
@@ -74,6 +78,22 @@ public class HermeticJobTests
     }
 
     [Test]
+    public void HermeticJobCheck_FailsWhenTheJobRunsAScriptThatInvokesALiveTarget()
+    {
+        const string fixture = """
+            jobs:
+              build:
+                uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v0
+                with:
+                  post-build: build/ci/Invoke-MachineStateChecks.ps1
+            """;
+
+        var act = () => AssertJobStaysHermetic(ParseJobs(fixture).Single(j => j.Name == HermeticJobName));
+
+        act.Should().Throw<AssertionException>();
+    }
+
+    [Test]
     public void HermeticJobCheck_PassesOnTheRealWorkflow()
     {
         var act = () => AssertJobStaysHermetic(
@@ -84,7 +104,7 @@ public class HermeticJobTests
 
     private static void AssertJobStaysHermetic(WorkflowJob job)
     {
-        var jobText = string.Join('\n', job.Steps.Select(step => step.Text));
+        var jobText = job.Text;
 
         foreach (var signal in ForbiddenSignals)
         {
@@ -100,7 +120,29 @@ public class HermeticJobTests
 
     private sealed record WorkflowStep(string? Name, string Text);
 
-    private sealed record WorkflowJob(string Name, List<WorkflowStep> Steps);
+    // Text is every line of the job plus the build/ci scripts it names.
+    private sealed record WorkflowJob(string Name, string Text, List<WorkflowStep> Steps);
+
+    private static readonly Regex ScriptReference = new(@"build/ci/[A-Za-z0-9._-]+\.ps1");
+
+    // A job that runs a repository script is read together with that script, so moving a step's
+    // body out of the workflow file never moves it out of what this check constrains. A named
+    // script that does not exist fails the check rather than being skipped.
+    private static string ExpandScripts(string text)
+    {
+        var scripts = ScriptReference.Matches(text)
+            .Select(match => match.Value)
+            .Distinct()
+            .Select(path =>
+            {
+                var fullPath = Path.Combine(RepoRoot, path);
+                return File.Exists(fullPath)
+                    ? File.ReadAllText(fullPath)
+                    : throw new InvalidOperationException($"The workflow names '{path}', which does not exist.");
+            });
+
+        return string.Join('\n', scripts.Prepend(text));
+    }
 
     private static List<WorkflowJob> ParseJobs(string yaml)
     {
@@ -125,7 +167,8 @@ public class HermeticJobTests
                     end++;
                 }
 
-                jobs.Add(new WorkflowJob(jobName!, ParseSteps(lines[start..end])));
+                var jobLines = lines[start..end];
+                jobs.Add(new WorkflowJob(jobName!, ExpandScripts(string.Join('\n', jobLines)), ParseSteps(jobLines)));
                 i = end;
             }
             else

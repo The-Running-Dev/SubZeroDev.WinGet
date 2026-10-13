@@ -1,0 +1,16 @@
+{
+  "gates": [
+    {
+      "name": "build / restore",
+      "command": "dotnet restore SubZeroDev.WinGet.sln"
+    },
+    {
+      "name": "build / build",
+      "command": "dotnet build SubZeroDev.WinGet.sln --no-restore --configuration Release"
+    },
+    {
+      "name": "build / build/ci/Test-HermeticCheck.ps1",
+      "command": "pwsh -NoProfile -File ./build/ci/Test-HermeticCheck.ps1"
+    }
+  ]
+}
