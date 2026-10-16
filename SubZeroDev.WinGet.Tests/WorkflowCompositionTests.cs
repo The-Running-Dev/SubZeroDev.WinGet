@@ -7,7 +7,8 @@ namespace SubZeroDev.WinGet.Tests;
 /// <summary>
 /// S15 — a workflow-composition check that proves every hosted live job constitutes its own
 /// WinGet runtime (C24) rather than accepting whatever the runner image happens to carry. Reads
-/// only the checked-in workflow file and the library project file (S15.5): it activates no COM,
+/// only the checked-in workflow file, the build/ci scripts its steps run, and the library project
+/// file (S15.5): a step is checked together with the script it runs. It activates no COM,
 /// starts no process, and contacts no network, so it runs as an ordinary test inside the existing
 /// hermetic required check with no new CI wiring. It has no override of any kind (S15.6) — a live
 /// job that skips the pinned install fails this check until the check itself is deleted.
@@ -504,7 +505,7 @@ public class WorkflowCompositionTests
         for (var b = 0; b < boundaries.Count - 1; b++)
         {
             var stepLines = jobLines[boundaries[b]..boundaries[b + 1]];
-            var text = string.Join('\n', stepLines);
+            var text = ExpandScripts(string.Join('\n', stepLines));
             var name = stepLines[0]["      - name: ".Length..].Trim();
             var ifLine = stepLines.FirstOrDefault(line => line.TrimStart().StartsWith("if:", StringComparison.Ordinal));
             var ifCondition = ifLine is null ? null : ifLine.Trim()["if:".Length..].Trim();
@@ -513,6 +514,27 @@ public class WorkflowCompositionTests
         }
 
         return steps;
+    }
+
+    private static readonly Regex ScriptReference = new(@"build/ci/[A-Za-z0-9._-]+\.ps1");
+
+    // A step that runs a repository script is read together with that script, so moving a step's
+    // body out of the workflow file never moves it out of what this check constrains. A named
+    // script that does not exist fails the check rather than being skipped.
+    private static string ExpandScripts(string text)
+    {
+        var scripts = ScriptReference.Matches(text)
+            .Select(match => match.Value)
+            .Distinct()
+            .Select(path =>
+            {
+                var fullPath = Path.Combine(RepoRoot, path);
+                return File.Exists(fullPath)
+                    ? File.ReadAllText(fullPath)
+                    : throw new InvalidOperationException($"The workflow names '{path}', which does not exist.");
+            });
+
+        return string.Join('\n', scripts.Prepend(text));
     }
 
     private static string ExtractPinnedWinGetVersion(string workflowText)

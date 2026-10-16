@@ -82,13 +82,13 @@ Method coverage isn't quoted here: ReportGenerator 5.5.x gates that metric behin
 
 The GitHub Actions workflow ([build.yml](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/.github/workflows/build.yml)) runs on `windows-latest` and has two jobs.
 
-The **`build`** job runs on **every push to `main` and every pull request**. It installs `Nuke.GlobalTool` and invokes `nuke Test Coverage ArchitectureTest PackageTest --configuration Release`; shared dependencies run once because Nuke de-duplicates targets within an invocation. `ArchitectureTest` cross-builds and checks PE headers; `PackageTest` packs and validates direct/two-hop consumer restore, build, and publish contracts without live COM activation. A failing check stops the build, and the coverage summary is rendered onto the run page and uploaded as an artifact.
+The **`build`** job runs on **every push to `main` and every pull request**. It calls the shared [dotnet.yml](https://github.com/The-Running-Dev/GitHub-ActionTemplates) workflow, which checks out, sets up both SDKs, restores and builds; its post-build script, [build/ci/Test-HermeticCheck.ps1](https://github.com/The-Running-Dev/SubZeroDev.WinGet/blob/main/build/ci/Test-HermeticCheck.ps1), then runs `./build.ps1 Test Coverage ArchitectureTest PackageTest --configuration Release`; shared dependencies run once because Nuke de-duplicates targets within an invocation. `ArchitectureTest` cross-builds and checks PE headers; `PackageTest` packs and validates direct/two-hop consumer restore, build, and publish contracts without live COM activation. A failing check stops the build, and the coverage summary is rendered onto the run page.
 
-That's all a pull request ever does — **no release packaging or publishing**. `PackageTest` deliberately performs isolated contract packing; only the release job produces and publishes release artifacts. It is also the required status check.
+That's all a pull request ever does — **no release packaging or publishing**. `PackageTest` deliberately performs isolated contract packing; only the release job produces and publishes release artifacts. Its `build / Result` check is the required status check.
 
 The **`release`** job (`needs: build`) runs only on a push to `main` or a manual dispatch, and does the packing/publishing (below).
 
-`main` is protected: all changes land via pull request and the `build` check must pass before merge, so "a push to `main`" is always a merged PR. Both jobs check out full git history (`fetch-depth: 0`), but for different reasons: the `release` job genuinely needs it (its publish target dereferences `[GitVersion]`, which is fatal on a shallow clone), while the `build` job uses it only to silence Nuke's harmless eager-injection warning — it never reads the value.
+`main` is protected: all changes land via pull request and the `build / Result` check must pass before merge, so "a push to `main`" is always a merged PR. Both jobs check out full git history (`fetch-depth: 0`), but for different reasons: the `release` job genuinely needs it (its publish target dereferences `[GitVersion]`, which is fatal on a shallow clone), while the `build` job uses it only to silence Nuke's harmless eager-injection warning — it never reads the value.
 
 ## Publishing
 
