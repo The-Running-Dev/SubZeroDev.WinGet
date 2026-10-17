@@ -83,7 +83,7 @@ public class HermeticJobTests
         const string fixture = """
             jobs:
               build:
-                uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v0
+                uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v1
                 with:
                   post-build: build/ci/Invoke-MachineStateChecks.ps1
             """;

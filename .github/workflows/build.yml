@@ -44,7 +44,7 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v0
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/dotnet.yml@v1
     with:
       os: '["windows-latest"]'
       # 8.0.x: builds and runs the product (library/tests/examples target net8).
