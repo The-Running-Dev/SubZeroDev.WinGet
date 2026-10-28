@@ -1,0 +1,34 @@
+{
+  "capturedUtc": "2026-10-28T21:44:07.3127249Z",
+  "vmName": "Windows11-Test",
+  "checkpoint": "prerequisites-ready",
+  "provisioningEvidence": "provisioning-20261028T214228Z",
+  "checkpointsBefore": {
+    "Name": "prerequisites-ready",
+    "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+    "ParentId": ""
+  },
+  "checkpointsAfter": {
+    "Name": "prerequisites-ready",
+    "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+    "ParentId": ""
+  },
+  "passed": false,
+  "results": [
+    {
+      "check": "prerequisites-ready exists once, Id as at provisioning",
+      "ok": true,
+      "observed": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0"
+    },
+    {
+      "check": "D-9: prerequisites-ready is the root and the only checkpoint",
+      "ok": false,
+      "observed": "prerequisites-ready [fc9b536f-885d-48ef-bf1a-15f6e5adfea0] parent="
+    },
+    {
+      "check": "Checkpoint list unchanged (names, Ids, parents)",
+      "ok": true,
+      "observed": "3 checkpoints"
+    }
+  ]
+}

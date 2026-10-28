@@ -1,0 +1,2 @@
+# Frozen upstream manifests must stay byte-identical to their winget-pkgs blobs.
+manifests/** -text

@@ -1,0 +1,10 @@
+
+
+Key                : HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppInstaller
+ExperimentalBefore : 
+ExperimentalAfter  : 0
+AllPolicyValues    : EnableExperimentalFeatures=0
+WindowsUpdateAU    : 
+
+
+

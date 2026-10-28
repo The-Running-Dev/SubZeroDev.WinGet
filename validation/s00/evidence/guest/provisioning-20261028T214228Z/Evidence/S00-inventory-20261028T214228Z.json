@@ -1,0 +1,255 @@
+﻿{
+    "capturedUtc":  "2026-10-28T21:43:10.2837413Z",
+    "baseline":  {
+                     "decision":  "BC-1",
+                     "expected":  {
+                                      "EditionID":  "Professional",
+                                      "DisplayVersion":  "26H2",
+                                      "CurrentBuild":  "26300",
+                                      "Architecture":  "AMD64"
+                                  },
+                     "observed":  {
+                                      "EditionID":  "Professional",
+                                      "DisplayVersion":  "26H2",
+                                      "CurrentBuild":  "26300",
+                                      "Architecture":  "AMD64"
+                                  },
+                     "pass":  true,
+                     "mismatches":  [
+
+                                    ]
+                 },
+    "os":  {
+               "ProductName":  "Windows 10 Pro",
+               "EditionID":  "Professional",
+               "DisplayVersion":  "26H2",
+               "CurrentBuild":  "26300",
+               "UBR":  9711,
+               "BuildLabEx":  "26100.1.amd64fre.ge_release.240331-1435",
+               "Caption":  "Microsoft Windows 11 Pro",
+               "Version":  "10.0.26300",
+               "OSArchitecture":  "64-bit",
+               "InstallDateUtc":  "2026-10-28T17:31:28.0000000Z",
+               "LastBootUtc":  "2026-10-28T21:14:22.6895570Z",
+               "Model":  "Virtual Machine",
+               "Manufacturer":  "Microsoft Corporation",
+               "PartOfDomain":  false,
+               "SecureBoot":  true,
+               "Tpm":  "TpmPresent TpmReady\r\n---------- --------\r\n      True     True"
+           },
+    "updates":  {
+                    "HotFix":  [
+                                   "KB5124007 Security Update 09/13/2026 00:00:00",
+                                   "KB5127648 Security Update 10/28/2026 00:00:00",
+                                   "KB5127647 Security Update 10/28/2026 00:00:00",
+                                   "KB5127694 Update 10/28/2026 00:00:00",
+                                   "KB5121794 Update 10/28/2026 00:00:00",
+                                   "KB5128942 Update 10/28/2026 00:00:00"
+                               ],
+                    "PendingReboot":  {
+                                          "CbsRebootPending":  false,
+                                          "WuRebootRequired":  false,
+                                          "PendingFileRename":  false
+                                      }
+                },
+    "appx":  [
+                 {
+                     "Name":  "Microsoft.DesktopAppInstaller",
+                     "Version":  "1.29.379.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.DesktopAppInstaller_1.29.379.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00",
+                     "Version":  "14.0.33519.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00_14.0.33519.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00.UWPDesktop",
+                     "Version":  "14.0.33728.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00.UWPDesktop_14.0.33728.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00",
+                     "Version":  "14.0.33519.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00_14.0.33519.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00.UWPDesktop",
+                     "Version":  "14.0.33728.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00.UWPDesktop_14.0.33728.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.CBS",
+                     "Version":  "9.2603.18001.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.UI.Xaml.CBS_9.2603.18001.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.2.8",
+                     "Version":  "8.2511.26001.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.UI.Xaml.2.8_8.2511.26001.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.2.8",
+                     "Version":  "8.2501.31001.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.UI.Xaml.2.8_8.2501.31001.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.CBS.1.6",
+                     "Version":  "6000.900.156.100",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.CBS.1.6_6000.900.156.100_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.2.0.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.2.0.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.CBS.2",
+                     "Version":  "2.4.1.100",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.CBS.2_2.4.1.100_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.6.4.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.6.4.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.6.4.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.6.4.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.8",
+                     "Version":  "8000.994.2142.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.8_8000.994.2142.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.8",
+                     "Version":  "8000.994.2142.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.8_8000.994.2142.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.7",
+                     "Version":  "7000.785.2325.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.7_7000.785.2325.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.7",
+                     "Version":  "7000.785.2325.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.7_7000.785.2325.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 }
+             ],
+    "appxProvisioned":  [
+                            "Microsoft.DesktopAppInstaller 2026.917.151.0"
+                        ],
+    "wingetPolicy":  "{\"EnableExperimentalFeatures\":0}",
+    "worker":  {
+                   "PwshPath":  "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\pwsh\\pwsh.exe",
+                   "PwshFileVersion":  "7.6.6.500",
+                   "PwshRuntime":  "10.0.12",
+                   "PwshOnPath":  false,
+                   "ModulePath":  "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\Modules\\Microsoft.WinGet.Client\\1.29.380",
+                   "ModuleFileCount":  41,
+                   "ModuleInMachinePSModulePath":  false,
+                   "ModuleFileHashes":  [
+                                            "870794D7E2F61690D9169DC6869166DFD179026D45B5B8030F47FA2B9B17A222  Format.ps1xml",
+                                            "DD9662069BDEB625A51B419765276E35D2E471150CC02CD9CDBFE775469C01E9  Microsoft.WinGet.Client.Cmdlets.dll-Help.xml",
+                                            "F35492F1995233A84D4B826CDE8949076494E86BCDB9113E51035BF0E61318A7  Microsoft.WinGet.Client.psd1",
+                                            "DF2727A5905A6B80B79643F711969FC67643CD683A4280624786F3710663DBA2  NOTICE.txt",
+                                            "6505584AE64ABF5EFE6BAAE361D43A85C5D5A800CA198462BF5DFD0E9951DF9B  net48\\Microsoft.WinGet.Client.Cmdlets.dll",
+                                            "620D71DDE450727250C43A318C77C1244AF2612F24904DB6179230B39764015B  net48\\DirectDependencies\\Microsoft.WinGet.Client.Engine.dll",
+                                            "E9A9D281C1A708AAAE366F82FD6A1742F65DA2918CC4FA5EAAAADA0BE24277D9  net48\\SharedDependencies\\Microsoft.Win32.Registry.dll",
+                                            "DA1ABF9AAFCDE483AD937D2200B067037561872248A66E1143E25F0D1BB03A3C  net48\\SharedDependencies\\Microsoft.WinGet.SharedLib.dll",
+                                            "BBA13C6AA0E08F95E9F8666DACB515C5753470F3EA8D36D6C16BA3F80ADC73E3  net48\\SharedDependencies\\Newtonsoft.Json.dll",
+                                            "B5B548BC64FA9392CCB13DAF79AA0F385BF68F025FA05D7FCF8CCB0CF8D2EFF3  net48\\SharedDependencies\\Octokit.dll",
+                                            "C21B2C4CCE55CD55D527EE7538C17AAC000EB4BA2AF4D9E563BFF7C60264D382  net48\\SharedDependencies\\Semver.dll",
+                                            "6491DADF6D4B259DAB328485E9981974067F1B07A8524AFBB770A6FAB168E724  net48\\SharedDependencies\\arm64\\Microsoft.Management.Deployment.dll",
+                                            "7BAB66F1B4FAC472533B2F587627025FC770638BD7E37DB060C467904AAD185F  net48\\SharedDependencies\\arm64\\Microsoft.Management.Deployment.winmd",
+                                            "03490F00437F024AFD762DF1EB91CE4CE05AD1480EA537AB52A1554103193051  net48\\SharedDependencies\\arm64\\WindowsPackageManager.dll",
+                                            "D814B74CA12345205E87DCDB9E0C2F2140223C087D9D9CBC9FB6176D931F6E22  net48\\SharedDependencies\\arm64\\winrtact.dll",
+                                            "5AB84530DC02019E06C6E482C61CECA3EEA87C90CB0962B8A42A0E4C55B08FA3  net48\\SharedDependencies\\x64\\Microsoft.Management.Deployment.dll",
+                                            "DC9E8A40999BA9862432AB42C29EB463261766C838C7E4C62313D7611FB85078  net48\\SharedDependencies\\x64\\Microsoft.Management.Deployment.winmd",
+                                            "0FB0F8EEE1214AE3C17ABE740EA32964A7DA8B01F829FFA66DEC241B9FB3B384  net48\\SharedDependencies\\x64\\WindowsPackageManager.dll",
+                                            "E25048CD0CCE68F9D9BC50410FFAB104992CE7B6A79B7A3F4E3E78AAEB0657E7  net48\\SharedDependencies\\x64\\winrtact.dll",
+                                            "7731D23F038DB75540124948E3C1C3CBDECA6C5586417C1C636D1B2F01785451  net48\\SharedDependencies\\x86\\Microsoft.Management.Deployment.dll",
+                                            "902C262E27E624EF61D6D2BADF42BA889B9C572F658B620FF232175D262712E3  net48\\SharedDependencies\\x86\\Microsoft.Management.Deployment.winmd",
+                                            "4769115A6D282E4C2E7F9D6E679ED207948472DC5DFE61F002636CF79B44C157  net48\\SharedDependencies\\x86\\WindowsPackageManager.dll",
+                                            "5C842C0D1081D4F5C6462451C5171D3156E1F3672D281AD4E5AA3B923ECEAFA0  net48\\SharedDependencies\\x86\\winrtact.dll",
+                                            "1AE0B64F3FA5A5BBF6CDB470954A7CE7DA1BB88AB28E6C9363A4DFB69D5FAC27  net8.0-windows10.0.26100.0\\Microsoft.WinGet.Client.Cmdlets.dll",
+                                            "14FD5C8C7319F8AF762BC368557D1FEBC4EB5C64F41A3F0500A6CAD5A4C3256C  net8.0-windows10.0.26100.0\\DirectDependencies\\Microsoft.WinGet.Client.Engine.dll",
+                                            "DA1ABF9AAFCDE483AD937D2200B067037561872248A66E1143E25F0D1BB03A3C  net8.0-windows10.0.26100.0\\SharedDependencies\\Microsoft.WinGet.SharedLib.dll",
+                                            "880F83777CABEB188A8E863745FCD494E57B2863448A26C9B39FAF882CC28E06  net8.0-windows10.0.26100.0\\SharedDependencies\\Newtonsoft.Json.dll",
+                                            "B5B548BC64FA9392CCB13DAF79AA0F385BF68F025FA05D7FCF8CCB0CF8D2EFF3  net8.0-windows10.0.26100.0\\SharedDependencies\\Octokit.dll",
+                                            "B734D651483A50F00BE2A9B7A495DADECDBB2FADCA74F0A083CBD560CD054280  net8.0-windows10.0.26100.0\\SharedDependencies\\Semver.dll",
+                                            "6491DADF6D4B259DAB328485E9981974067F1B07A8524AFBB770A6FAB168E724  net8.0-windows10.0.26100.0\\SharedDependencies\\arm64\\Microsoft.Management.Deployment.dll",
+                                            "7BAB66F1B4FAC472533B2F587627025FC770638BD7E37DB060C467904AAD185F  net8.0-windows10.0.26100.0\\SharedDependencies\\arm64\\Microsoft.Management.Deployment.winmd",
+                                            "03490F00437F024AFD762DF1EB91CE4CE05AD1480EA537AB52A1554103193051  net8.0-windows10.0.26100.0\\SharedDependencies\\arm64\\WindowsPackageManager.dll",
+                                            "D814B74CA12345205E87DCDB9E0C2F2140223C087D9D9CBC9FB6176D931F6E22  net8.0-windows10.0.26100.0\\SharedDependencies\\arm64\\winrtact.dll",
+                                            "5AB84530DC02019E06C6E482C61CECA3EEA87C90CB0962B8A42A0E4C55B08FA3  net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\Microsoft.Management.Deployment.dll",
+                                            "DC9E8A40999BA9862432AB42C29EB463261766C838C7E4C62313D7611FB85078  net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\Microsoft.Management.Deployment.winmd",
+                                            "0FB0F8EEE1214AE3C17ABE740EA32964A7DA8B01F829FFA66DEC241B9FB3B384  net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\WindowsPackageManager.dll",
+                                            "E25048CD0CCE68F9D9BC50410FFAB104992CE7B6A79B7A3F4E3E78AAEB0657E7  net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\winrtact.dll",
+                                            "7731D23F038DB75540124948E3C1C3CBDECA6C5586417C1C636D1B2F01785451  net8.0-windows10.0.26100.0\\SharedDependencies\\x86\\Microsoft.Management.Deployment.dll",
+                                            "902C262E27E624EF61D6D2BADF42BA889B9C572F658B620FF232175D262712E3  net8.0-windows10.0.26100.0\\SharedDependencies\\x86\\Microsoft.Management.Deployment.winmd",
+                                            "4769115A6D282E4C2E7F9D6E679ED207948472DC5DFE61F002636CF79B44C157  net8.0-windows10.0.26100.0\\SharedDependencies\\x86\\WindowsPackageManager.dll",
+                                            "5C842C0D1081D4F5C6462451C5171D3156E1F3672D281AD4E5AA3B923ECEAFA0  net8.0-windows10.0.26100.0\\SharedDependencies\\x86\\winrtact.dll"
+                                        ]
+               },
+    "executionAliases":  [
+
+                         ],
+    "packagesAbsent":  {
+                           "PuTTYUninstallKey":  false,
+                           "PuTTYDir":  false,
+                           "SevenZipUninstallKey":  false,
+                           "SevenZipDir":  false
+                       },
+    "sessions":  [
+                     {
+                         "SessionId":  "1",
+                         "State":  "Active"
+                     }
+                 ],
+    "autoAdminLogon":  "0",
+    "network":  {
+                    "WinHttpProxy":  "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+                    "CdnReachable":  200
+                },
+    "shares":  [
+
+               ]
+}

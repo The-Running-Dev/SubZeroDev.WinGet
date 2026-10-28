@@ -1,0 +1,73 @@
+{
+  "capturedUtc": "2026-10-28T21:52:54.2669948Z",
+  "vmName": "Windows11-Test",
+  "checkpoint": "prerequisites-ready",
+  "provisioningEvidence": "provisioning-20261028T214228Z",
+  "checkpointsBefore": [
+    {
+      "Name": "prerequisites-ready",
+      "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+      "ParentId": ""
+    }
+  ],
+  "checkpointsAfter": [
+    {
+      "Name": "prerequisites-ready",
+      "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+      "ParentId": ""
+    }
+  ],
+  "passed": false,
+  "results": [
+    {
+      "check": "prerequisites-ready exists once, Id as at provisioning",
+      "ok": true,
+      "observed": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0"
+    },
+    {
+      "check": "D-9: prerequisites-ready is the root and the only checkpoint",
+      "ok": true,
+      "observed": "prerequisites-ready [fc9b536f-885d-48ef-bf1a-15f6e5adfea0] parent="
+    },
+    {
+      "check": "VM is Off before the first restore",
+      "ok": true,
+      "observed": "Off"
+    },
+    {
+      "check": "Canary written after restore 1",
+      "ok": true,
+      "observed": "C:\\S00RestoreCanary.txt"
+    },
+    {
+      "check": "Canary absent after restore 2",
+      "ok": true,
+      "observed": "C:\\S00RestoreCanary.txt"
+    },
+    {
+      "check": "Fixture files match fixture.sha256.txt",
+      "ok": true,
+      "observed": "24 files, 0 bad"
+    },
+    {
+      "check": "fixture.sha256.txt equals the provisioning export",
+      "ok": true,
+      "observed": "24 / 24 lines"
+    },
+    {
+      "check": "Get-S00Inventory BASELINE PASS",
+      "ok": false,
+      "observed": "exit 1"
+    },
+    {
+      "check": "VM Off at the checkpoint after restore 3",
+      "ok": true,
+      "observed": "state Off, under fc9b536f-885d-48ef-bf1a-15f6e5adfea0"
+    },
+    {
+      "check": "Checkpoint list unchanged (names, Ids, parents)",
+      "ok": true,
+      "observed": "1 checkpoints"
+    }
+  ]
+}

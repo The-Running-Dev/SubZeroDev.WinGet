@@ -1,0 +1,74 @@
+{
+  "schema": "subzerodev.filemanager.s00.package-profile/1",
+  "profileId": "s02-7zip-26.01-x64-exe-machine",
+  "status": "validation-profile",
+  "source": {
+    "name": "winget",
+    "type": "Microsoft.PreIndexed.Package",
+    "argument": "https://cdn.winget.microsoft.com/cache",
+    "identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe"
+  },
+  "frozenManifests": {
+    "repository": "microsoft/winget-pkgs",
+    "commit": "aaaf44e17204afb742dcf006ce6ee8c2263bd59e",
+    "path": "manifests/7/7zip/7zip/26.01",
+    "blobs": {
+      "7zip.7zip.installer.yaml": "681b2f73d42485dbec826280c6b3fe2516bc0ac6",
+      "7zip.7zip.locale.en-US.yaml": "4f6dea56e9122e7acf1d4f646b7bc4e29808e072",
+      "7zip.7zip.locale.zh-CN.yaml": "dbad5679b90cca5f0d2842b8b13425ed18b99975",
+      "7zip.7zip.yaml": "ce96e123002f876f3ecb71551bd5c1a2b3bbb798"
+    }
+  },
+  "package": { "id": "7zip.7zip", "version": "26.01", "matchOption": "Equals" },
+  "installer": {
+    "architecture": "x64",
+    "installerType": "exe",
+    "scope": "machine",
+    "mode": "silent",
+    "manifestSilentSwitch": "/S",
+    "url": "https://7-zip.org/a/7z2601-x64.exe",
+    "sha256": "D64A0468F5B5B0B0FC5B2188450BCD655B70809D97B1C4535F2884635094377D",
+    "authenticode": "NotSigned",
+    "productCode": "7-Zip",
+    "customArguments": null,
+    "override": null,
+    "installLocation": null
+  },
+  "rejectedAlternativeOfConcern": {
+    "installerType": "wix",
+    "url": "https://7-zip.org/a/7z2601-x64.msi",
+    "productCode": "{23170F69-40C1-2702-2601-000001000000}"
+  },
+  "agreements": {
+    "package": "none-declared",
+    "packageRecord": "../agreements/package-agreements.none.json",
+    "source": "captured-during-preparation",
+    "sourceRecord": "../agreements/source-agreements.approval.json",
+    "installRequires": "all three approval records status 'approved' by the operator"
+  },
+  "dependencies": { "declared": [], "admission": "../agreements/dependency-admission.json", "moduleDependencyInstall": "skip" },
+  "verification": {
+    "uninstallKey": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\7-Zip",
+    "displayVersion": "26.01",
+    "mustNotExistMsiProductCode": "{23170F69-40C1-2702-2601-000001000000}",
+    "executable": "%ProgramFiles%\\7-Zip\\7z.exe",
+    "executableProductVersion": "26.01",
+    "script": "../scripts/guest/Test-S00SevenZip.ps1"
+  },
+  "returnCodes": {
+    "basis": "winget-cli v1.29.380: manifest InstallerSuccessCodes, then manifest ExpectedReturnCodes, then GetDefaultKnownReturnCodes(exe), which is empty (ManifestCommon.cpp:1145)",
+    "manifestInstallerSuccessCodes": [],
+    "manifestExpectedReturnCodes": [],
+    "installerTypeDefaults": "exe (none)",
+    "applicable": {
+      "success": [0],
+      "rebootRequiredToFinish": [],
+      "rebootInitiated": [],
+      "rebootRequiredForInstall": [],
+      "failure": {},
+      "otherNonZero": "unmapped-failure"
+    },
+    "osPendingRebootMarkers": "supplementary-only"
+  },
+  "rebootPolicy": { "requestRestart": false, "expectedRestartRequired": false, "expectedReturnCode": 0 }
+}

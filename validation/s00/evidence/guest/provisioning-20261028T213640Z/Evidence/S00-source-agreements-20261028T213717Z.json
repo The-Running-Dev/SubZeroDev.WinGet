@@ -1,0 +1,28 @@
+{
+  "schema": "subzerodev.filemanager.s00.source-agreements-capture/1",
+  "capturedUtc": "2026-10-28T21:37:18.8418096Z",
+  "identitySid": "S-1-5-18",
+  "processSession": 0,
+  "pwshVersion": "7.6.6",
+  "pwshRuntime": "10.0.12",
+  "module": {
+    "Name": "Microsoft.WinGet.Client",
+    "Version": "1.29.380",
+    "Path": "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\Modules\\Microsoft.WinGet.Client\\1.29.380\\net8.0-windows10.0.26100.0\\Microsoft.WinGet.Client.Cmdlets.dll"
+  },
+  "source": {
+    "Name": "winget",
+    "Argument": "https://cdn.winget.microsoft.com/cache",
+    "Type": "Microsoft.PreIndexed.Package",
+    "TrustLevel": "Trusted",
+    "Explicit": false,
+    "Priority": 0
+  },
+  "route": "Microsoft.WinGet.Client.Engine PackageManagerWrapper.Instance.GetPackageCatalogByName",
+  "status": "not-observable",
+  "agreementsPresented": null,
+  "agreements": [],
+  "digestBasis": "SHA256 of UTF-8 ConvertTo-Json -Compress of the agreements array, each item ordered Label, Text, Url",
+  "digestSha256": null,
+  "error": "System.Management.Automation.MethodInvocationException: Exception calling \"Invoke\" with \"2\" argument(s): \"Single threaded apartment (STA) is not currently supported in this context; run PowerShell in Multi-threaded apartment mode (MTA).\"\r\n ---> Microsoft.WinGet.Client.Engine.Exceptions.SingleThreadedApartmentException: Single threaded apartment (STA) is not currently supported in this context; run PowerShell in Multi-threaded apartment mode (MTA).\r\n   at Microsoft.WinGet.Client.Engine.Helpers.PackageManagerWrapper.Execute[TReturn](Func`1 func, Boolean canRetry)\r\n   at Microsoft.WinGet.Client.Engine.Helpers.PackageManagerWrapper.GetPackageCatalogByName(String source)\r\n   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)\r\n   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)\r\n   --- End of inner exception stack trace ---\r\n   at System.Management.Automation.ExceptionHandlingOps.CheckActionPreference(FunctionContext funcContext, Exception exception)\r\n   at System.Management.Automation.Interpreter.ActionCallInstruction`2.Run(InterpretedFrame frame)\r\n   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)\r\n   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)"
+}

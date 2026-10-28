@@ -1,0 +1,18 @@
+[2026-10-28T21:50:50.5653711Z] Provisioning evidence: provisioning-20261028T214228Z
+[2026-10-28T21:50:50.7060775Z] OK   prerequisites-ready exists once, Id as at provisioning  [fc9b536f-885d-48ef-bf1a-15f6e5adfea0]
+[2026-10-28T21:50:50.7072643Z] OK   D-9: prerequisites-ready is the root and the only checkpoint  [prerequisites-ready [fc9b536f-885d-48ef-bf1a-15f6e5adfea0] parent=]
+[2026-10-28T21:50:50.7430534Z] OK   VM is Off before the first restore  [Off]
+[2026-10-28T21:50:54.9645976Z] Restore 1: restored prerequisites-ready; state Off, current state under fc9b536f-885d-48ef-bf1a-15f6e5adfea0
+[2026-10-28T21:51:44.6839648Z] OK   Canary written after restore 1  [C:\S00RestoreCanary.txt]
+[2026-10-28T21:51:48.3728264Z] Windows11-Test shut down
+[2026-10-28T21:51:48.6161619Z] Restore 2: restored prerequisites-ready; state Off, current state under fc9b536f-885d-48ef-bf1a-15f6e5adfea0
+[2026-10-28T21:52:33.2994597Z] OK   Canary absent after restore 2  [C:\S00RestoreCanary.txt]
+[2026-10-28T21:52:34.9985653Z] OK   Fixture files match fixture.sha256.txt  [24 files, 0 bad]
+[2026-10-28T21:52:35.0045724Z] OK   fixture.sha256.txt equals the provisioning export  [24 / 24 lines]
+[2026-10-28T21:52:43.7157978Z] Get-S00Inventory.ps1 -OutFile C:\S00Restore\inventory.json -> exit 1; output in inventory.txt
+[2026-10-28T21:52:43.7173448Z] FAIL Get-S00Inventory BASELINE PASS  [exit 1]
+[2026-10-28T21:52:43.7185313Z] STOPPED: Get-S00Inventory BASELINE PASS failed.
+[2026-10-28T21:52:53.9356398Z] Windows11-Test shut down
+[2026-10-28T21:52:54.1764256Z] Restore 3: restored prerequisites-ready; state Off, current state under fc9b536f-885d-48ef-bf1a-15f6e5adfea0
+[2026-10-28T21:52:54.1990464Z] OK   VM Off at the checkpoint after restore 3  [state Off, under fc9b536f-885d-48ef-bf1a-15f6e5adfea0]
+[2026-10-28T21:52:54.2659691Z] OK   Checkpoint list unchanged (names, Ids, parents)  [1 checkpoints]

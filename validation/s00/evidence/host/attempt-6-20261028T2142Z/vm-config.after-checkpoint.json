@@ -1,0 +1,194 @@
+{
+  "capturedUtc": "2026-10-28T21:43:52.2812093Z",
+  "vm": {
+    "Name": "Windows11-Test",
+    "State": "Off",
+    "Generation": 2,
+    "ConfigurationVersion": "12.0",
+    "ProcessorCount": 4,
+    "DynamicMemory": false,
+    "MemoryStartupBytes": 8589934592,
+    "Path": "D:\\VMs\\Windows11-TEst",
+    "CurrentParentCheckpointId": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+    "CheckpointType": "Standard",
+    "AutomaticCheckpointsEnabled": false,
+    "AutomaticStartAction": "Nothing",
+    "AutomaticStopAction": "ShutDown",
+    "EnhancedSessionTransportType": "VMBus",
+    "Heartbeat": "",
+    "SecureBoot": "On",
+    "SecureBootTemplate": "MicrosoftWindows",
+    "TpmEnabled": true,
+    "IntegrationServices": [
+      {
+        "Name": "Guest Service Interface",
+        "Enabled": false
+      },
+      {
+        "Name": "Heartbeat",
+        "Enabled": true
+      },
+      {
+        "Name": "Key-Value Pair Exchange",
+        "Enabled": true
+      },
+      {
+        "Name": "Shutdown",
+        "Enabled": true
+      },
+      {
+        "Name": "Time Synchronization",
+        "Enabled": true
+      },
+      {
+        "Name": "VSS",
+        "Enabled": true
+      }
+    ],
+    "Disks": [
+      {
+        "Controller": "SCSI 0:0",
+        "Path": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst_E93CFAFF-0422-487D-90AB-DCED7660A321.avhdx",
+        "VhdType": "Differencing",
+        "SizeBytes": 136365211648,
+        "FileSizeBytes": 4194304,
+        "ParentPath": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst.vhdx",
+        "Chain": [
+          {
+            "Path": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst_E93CFAFF-0422-487D-90AB-DCED7660A321.avhdx",
+            "VhdType": "Differencing",
+            "SizeBytes": 136365211648,
+            "FileSizeBytes": 4194304
+          },
+          {
+            "Path": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst.vhdx",
+            "VhdType": "Dynamic",
+            "SizeBytes": 136365211648,
+            "FileSizeBytes": 32451330048
+          }
+        ]
+      }
+    ],
+    "Dvd": [
+      {
+        "Controller": "0:1",
+        "Path": null
+      }
+    ],
+    "Nics": [
+      {
+        "Name": "Network Adapter",
+        "SwitchName": "Default Switch",
+        "Status": ""
+      }
+    ],
+    "Checkpoints": [
+      {
+        "Name": "prerequisites-ready",
+        "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+        "CreationTimeUtc": "2026-10-28T21:43:27.3018690Z",
+        "Parent": null,
+        "ParentId": "",
+        "Type": "Standard"
+      }
+    ]
+  },
+  "guestKvp": {},
+  "checks": [
+    {
+      "requirement": "Generation 2",
+      "ok": true,
+      "observed": "2"
+    },
+    {
+      "requirement": "Secure Boot on",
+      "ok": true,
+      "observed": "On"
+    },
+    {
+      "requirement": "Secure Boot template MicrosoftWindows",
+      "ok": true,
+      "observed": "MicrosoftWindows"
+    },
+    {
+      "requirement": "vTPM enabled",
+      "ok": true,
+      "observed": "True"
+    },
+    {
+      "requirement": "4 vCPU (preparation setting, not a feasibility gate)",
+      "ok": true,
+      "observed": "4"
+    },
+    {
+      "requirement": "8 GB static RAM",
+      "ok": true,
+      "observed": "dynamic=False startup=8589934592"
+    },
+    {
+      "requirement": "D-9 disk: one 127 GiB disk on the base VHDX, one differencing level per checkpoint",
+      "ok": true,
+      "observed": "Differencing 136365211648 depth=2 root=Windows11-TEst.vhdx"
+    },
+    {
+      "requirement": "Guest Service Interface off",
+      "ok": true,
+      "observed": "False"
+    },
+    {
+      "requirement": "Automatic checkpoints off",
+      "ok": true,
+      "observed": "False"
+    },
+    {
+      "requirement": "Checkpoint type Standard",
+      "ok": true,
+      "observed": "Standard"
+    },
+    {
+      "requirement": "AutomaticStartAction Nothing",
+      "ok": true,
+      "observed": "Nothing"
+    },
+    {
+      "requirement": "AutomaticStopAction ShutDown",
+      "ok": true,
+      "observed": "ShutDown"
+    },
+    {
+      "requirement": "No ISO attached",
+      "ok": true,
+      "observed": ""
+    },
+    {
+      "requirement": "Network adapter connected",
+      "ok": true,
+      "observed": "Default Switch"
+    },
+    {
+      "requirement": "D-9 checkpoints: none, or only prerequisites-ready with no parent",
+      "ok": true,
+      "observed": "prerequisites-ready [fc9b536f-885d-48ef-bf1a-15f6e5adfea0] parent="
+    },
+    {
+      "requirement": "Guest EditionID Professional (KVP OSEditionId 48)",
+      "ok": false,
+      "observed": " "
+    },
+    {
+      "requirement": "Guest build 26300 (26H2, KVP OSVersion)",
+      "ok": false,
+      "observed": ""
+    },
+    {
+      "requirement": "Guest x64 (KVP ProcessorArchitecture 9)",
+      "ok": false,
+      "observed": ""
+    },
+    {
+      "requirement": "Heartbeat OK",
+      "ok": false,
+      "observed": ""
+    }
+  ]
+}

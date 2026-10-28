@@ -1,0 +1,56 @@
+# Host smoke test of guest verifier mechanics. HOST, NOT GUEST EVIDENCE. Read-only. Non-elevated user.
+# utc=2026-10-28T12:43:33.1716024Z host=<redacted:host> pwsh=7.6.9
+packed self-check: 3D6430B3D5515E3459169BEB15FCE26B (expect 3D6430B3D5515E3459169BEB15FCE26B)
+machine-context MSI products enumerated on host: 357
+positive control product: {120C8F10-891E-4D63-A879-1B30E1CC3A3D} context=4
+  MsiGetProductInfoEx machine rc=0 VersionString=72.84.61380
+  packed Installer\Products key exists: True
+negative control PuTTY machine rc=1605 (expect 1605)
+all-users per-user enumeration non-elevated: MsiEnumProductsEx failed: 5 (access denied). All-users enumeration needs SYSTEM or elevated Administrator; the check fails closed.
+--- Test-S00PuTTY -Expect Absent (pwsh 7, non-elevated: must fail closed)
+Exception: MsiEnumProductsEx failed: 5 (access denied). All-users enumeration needs SYSTEM or elevated Administrator; the check
+fails closed.
+exit=1
+--- Test-S00SevenZip -Expect Absent (Windows PowerShell 5.1, non-elevated: must fail closed)
+Get-ChildItem : Requested registry access is not allowed.
+At D:\Dropbox\Projects\SubZeroDev.FileManager\validation\s00\scripts\guest\S00MachineScope.psm1:56 char:5
++     Get-ChildItem Registry::HKEY_USERS | Where-Object { $_.PSChildNam ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (HKEY_USERS\S-1-5-19:String) [Get-ChildItem], SecurityException
+    + FullyQualifiedErrorId : System.Security.SecurityException,Microsoft.PowerShell.Commands.GetChildItemCommand
+ 
+exit=1
+--- Parse check of all guest/host scripts under 5.1
+Get-S00Inventory.ps1 errors=5
+Install-S00Prerequisites.ps1 errors=0
+S00MachineScope.psm1 errors=0
+Set-S00EvidenceAcl.ps1 errors=0
+Set-S00PolicyPins.ps1 errors=0
+Test-S00PuTTY.ps1 errors=0
+Test-S00SevenZip.ps1 errors=0
+New-S00Vm.ps1 errors=0
+Test-S00FrozenManifests.ps1 errors=0
+Test-S00StagedAssets.ps1 errors=0
+
+--- Re-parse after fixing Get-S00Inventory.ps1 (5.1 hash-literal try) utc=2026-10-28T12:43:57.5170677Z
+Get-S00Inventory.ps1 errors=5
+Install-S00Prerequisites.ps1 errors=0
+S00MachineScope.psm1 errors=0
+Set-S00EvidenceAcl.ps1 errors=0
+Set-S00PolicyPins.ps1 errors=0
+Test-S00PuTTY.ps1 errors=0
+Test-S00SevenZip.ps1 errors=0
+New-S00Vm.ps1 errors=0
+Test-S00FrozenManifests.ps1 errors=0
+Test-S00StagedAssets.ps1 errors=0
+--- Re-parse (Windows PowerShell 5.1) after wrapping try/if hashtable values in $() utc=2026-10-28T12:44:24.8346535Z
+Get-S00Inventory.ps1 errors=0
+Install-S00Prerequisites.ps1 errors=0
+S00MachineScope.psm1 errors=0
+Set-S00EvidenceAcl.ps1 errors=0
+Set-S00PolicyPins.ps1 errors=0
+Test-S00PuTTY.ps1 errors=0
+Test-S00SevenZip.ps1 errors=0
+New-S00Vm.ps1 errors=0
+Test-S00FrozenManifests.ps1 errors=0
+Test-S00StagedAssets.ps1 errors=0

@@ -1,0 +1,8 @@
+[2026-10-28T21:21:00.0636991Z] Test-S00StagedAssets -> exit 0
+[2026-10-28T21:21:01.1371119Z] PowerShell Direct session open
+[2026-10-28T21:21:15.6184175Z] Fixture and guest assets copied to C:\S00Staging
+[2026-10-28T21:21:22.2888368Z] Get-S00Inventory.ps1 -OutFile C:\S00Staging\pre-inventory.json -> exit 1; output in pre-inventory.txt
+[2026-10-28T21:21:22.2937680Z] STOPPED: Get-S00Inventory.ps1 exited 1.
+[2026-10-28T21:21:22.3307724Z] C:\S00Staging removed
+[2026-10-28T21:21:22.3399102Z] PowerShell Direct session closed
+[2026-10-28T21:21:22.3413274Z] No checkpoint taken (allPassed=False, agreementsExit=, SkipCheckpoint=False).

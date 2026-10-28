@@ -1,0 +1,30 @@
+{
+  "schema": "subzerodev.filemanager.s00.source-agreements/1",
+  "kind": "source-agreements",
+  "source": { "name": "winget", "type": "Microsoft.PreIndexed.Package", "argument": "https://cdn.winget.microsoft.com/cache", "identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe" },
+  "capture": {
+    "status": "captured",
+    "method": "scripts/guest/Get-S00SourceAgreements.ps1, run during guest preparation (05 section 1 step 7) as S-1-5-18 through a one-shot Task Scheduler task, private pwsh -NoProfile, module imported by absolute psd1; PackageCatalogReference.SourceAgreements read through the module's internal PackageManagerWrapper. A 'not-observable' result blocks installation",
+    "capturedUtc": "2026-10-28T21:43:05.6080636Z",
+    "guestOs": "Windows 11 Pro 26H2, build 26300.9711, AMD64",
+    "identitySid": "S-1-5-18",
+    "processSession": 0,
+    "apartmentState": "MTA",
+    "evidenceFile": "evidence/guest/provisioning-20261028T214228Z/Evidence/S00-source-agreements-20261028T214304Z.json",
+    "agreementsPresented": 0,
+    "agreements": [],
+    "digestSha256": "4F53CDA18C2BAA0C0354BB5F9A3ECBE5ED12AB4D8E11BA873C2F11161202B945",
+    "digestBasis": "SHA256 of UTF-8 ConvertTo-Json -Compress of the agreements array, each item ordered Label, Text, Url (an empty array is a valid capture)",
+    "expected": "[source] none presented: the PreIndexed winget source reference does not override ISourceReference::GetInformation, so an unopened reference returns no agreements (PackageCatalogReference.cpp:241-257, ISource.h:85). Observed at capture: none presented"
+  },
+  "rule": "Installation is blocked until capture.status is 'captured' and approval.decision is 'approved' for the same digestSha256. At run time the worker refuses to install if the source presents an agreement set whose digest differs from the approved one.",
+  "approval": {
+    "status": "pending-approval",
+    "statement": "I have reviewed the source agreements captured above (or the capture showing none were presented) and approve them for SYSTEM installs from this source on the validation guest.",
+    "approvedDigestSha256": null,
+    "decision": null,
+    "approver": null,
+    "decidedUtc": null,
+    "notes": null
+  }
+}

@@ -1,0 +1,10 @@
+[2026-10-28T20:38:34.8974088Z] Test-S00StagedAssets -> exit 0
+[2026-10-28T20:38:35.0386329Z] Starting Windows11-Test
+[2026-10-28T20:38:39.6518470Z] STOPPED: 'Windows11-Test' failed to start.
+
+Unable to allocate 8192 MB of RAM: Insufficient system resources exist to complete the requested service. (0x800705AA).
+
+'Windows11-Test' failed to start. (Virtual machine ID FA744D5A-7C97-4B1D-9615-08B464BAD2FF)
+
+'Windows11-Test' is unable to allocate 8192 MB of RAM: Insufficient system resources exist to complete the requested service. (0x800705AA). (Virtual machine ID FA744D5A-7C97-4B1D-9615-08B464BAD2FF)
+[2026-10-28T20:38:39.6606239Z] No checkpoint taken (allPassed=False, agreementsExit=, SkipCheckpoint=False).

@@ -1,0 +1,107 @@
+{
+  "schema": "subzerodev.filemanager.s00.prerequisites/1",
+  "capturedUtc": "2026-10-28",
+  "stagingRoot": "D:\\Validation\\SubZeroDev.FileManager\\S00\\downloads",
+  "note": "Every asset below was downloaded once on the validation host and verified against an independent publisher-side hash before being admitted. The guest must receive these exact bytes offline; no runtime download is permitted.",
+  "assets": [
+    {
+      "id": "dotnet-sdk",
+      "role": "Build-time SDK for the self-contained win-x64 S01 validation host (not installed on the guest)",
+      "version": "10.0.403",
+      "file": "dotnet-sdk\\dotnet-sdk-10.0.403-win-x64.zip",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip",
+      "bytes": 300745255,
+      "sha256": "F398979A9CAC2DBA760771C4E01F16E431DCD6BCFB2213E3E8F5B3D354095CC0",
+      "sha512": "7A114C318FA7F1D9822991B534B2814D0E78386CEDA816B371F5141ACEFE741D87CCB606EDE06CADAC8F9AC5070E32B708A67BBD1619FF5E5A7858A27874EF48",
+      "verifiedAgainst": "SHA512 published in https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json (sdk 10.0.403, win-x64 zip)",
+      "contents": "sdk/10.0.403; shared Microsoft.NETCore.App, Microsoft.AspNetCore.App, Microsoft.WindowsDesktop.App 10.0.14; packs/Microsoft.NETCore.App.Host.win-x64 10.0.14"
+    },
+    {
+      "id": "dotnet-runtime-pack",
+      "role": "Embedded runtime for self-contained publish (-r win-x64 --self-contained), pinned so restore needs no network",
+      "version": "10.0.14",
+      "file": "dotnet-runtime-pack\\microsoft.netcore.app.runtime.win-x64.10.0.14.nupkg",
+      "url": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.win-x64/10.0.14/microsoft.netcore.app.runtime.win-x64.10.0.14.nupkg",
+      "bytes": 39979900,
+      "sha256": "A3EA61B4A2DA6D28E562DD1CDACF80EB4DD6B9727B0A2B47F9D6ABA90DBBCB1F",
+      "sha512": "98B5866A04CFE67EE731F2502365E95D1620BCF727C98BC073C6620DFBA6F1284CD1472B3C3C9F5B82EAA38E54B650870AE7044541D0B8C4C8EB26D5C1E08DF4",
+      "verifiedAgainst": "nuget.org catalog packageHash (SHA512), catalog entry 2026.10.25.17.31.05, published 2026-10-25; package carries .signature.p7s (repository + author signed)"
+    },
+    {
+      "id": "powershell",
+      "role": "Private worker host, expanded to %ProgramFiles%\\SubZeroDev\\FileManager\\Service\\pwsh (never installed as MSI, never on PATH)",
+      "version": "7.6.6",
+      "file": "powershell\\PowerShell-7.6.6-win-x64.zip",
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip",
+      "bytes": 106328873,
+      "sha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860",
+      "sha512": "D95037CFA3EA9DF5287A409680BB2CF122451760E9B07E3D9B61CDA2155262326911D24643CB1018DA6FD899A9C5BD1F30055CA7B74F785B72B6DD99EF3A54FA",
+      "verifiedAgainst": "Release asset hashes.sha256 (line 19) from the same GitHub release",
+      "observed": "pwsh.exe FileVersion 7.6.6.500, commit 078a4421, Authenticode Valid (Microsoft Corporation)",
+      "compatibilityNote": "The ZIP embeds .NET runtime 10.0.12 (pwsh.runtimeconfig.json includedFrameworks Microsoft.NETCore.App and Microsoft.WindowsDesktop.App 10.0.12; System.Private.CoreLib 10.0.12-servicing). This differs from the 10.0.14 runtime chosen for the .NET host. Recorded, not substituted."
+    },
+    {
+      "id": "powershell-hashes",
+      "role": "Publisher hash list used to verify the PowerShell ZIP",
+      "version": "7.6.6",
+      "file": "powershell\\hashes.sha256",
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/hashes.sha256",
+      "bytes": 6522,
+      "sha256": "388B105A0F329EF7CE9739166CA8E86D3FEE6D31698137099E0558C9EB63C9F5",
+      "sha512": "87520734F9C5E284465E7FE633A275E287DBDAACEB4992F11730B4E829730EA4F1A78017BDBDA380C7E42DAE7D406F161787FBE184EBB108DFBE015B0353E8EC"
+    },
+    {
+      "id": "winget-client-module",
+      "role": "Private module for the worker, expanded to %ProgramFiles%\\SubZeroDev\\FileManager\\Service\\Modules\\Microsoft.WinGet.Client\\1.29.380",
+      "version": "1.29.380",
+      "file": "winget-client-module\\1.29.380",
+      "fileNote": "PSGallery v2 package endpoint returns the .nupkg without an extension; stored byte-for-byte",
+      "url": "https://www.powershellgallery.com/api/v2/package/Microsoft.WinGet.Client/1.29.380",
+      "bytes": 21025850,
+      "sha256": "3469E5747EB6B100E51FED3F2057386B5BA60BC8955A6669B5C2EB562E316619",
+      "sha512": "8B34E93EAE0897D7FB1E5078726A7092472EDBEDAAFB664B7129CF611D89A31A9AA759B08135C7644DF1710C8C7F13373F3E41F1FB69978A9A4C7E621B9F0F20",
+      "verifiedAgainst": "PSGallery OData PackageHash (SHA512, base64) for Microsoft.WinGet.Client 1.29.380",
+      "observed": "Module GUID e11157e2-cd24-4250-83b8-c6654ea4926a; CompatiblePSEditions Desktop,Core; Core loads net8.0-windows10.0.26100.0\\Microsoft.WinGet.Client.Cmdlets.dll; all 45 payload files Authenticode Valid (Microsoft). Per-file inventory: evidence/host/module-1.29.380-file-inventory.sha256.txt",
+      "nativeClosure": {
+        "bundledX64": [
+          "net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\WindowsPackageManager.dll (7642976 bytes, FileVersion 1.29.380)",
+          "net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\Microsoft.Management.Deployment.dll (53528 bytes)",
+          "net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\Microsoft.Management.Deployment.winmd (64296 bytes)",
+          "net8.0-windows10.0.26100.0\\SharedDependencies\\x64\\winrtact.dll (149808 bytes)"
+        ],
+        "staticImports": "OS-inbox only: api-ms-win-crt-* (UCRT), icuuc/icuin, winsqlite3, msi, WININET, WINHTTP, DWrite, Cabinet, XmlLite, RoMetadata and core API sets; GDI32 delay-loaded. No vcruntime140*, no VCLibs/App Installer imports. Microsoft.Management.Deployment.dll imports WindowsPackageManager.dll. Evidence: evidence/host/module-x64-native-dependents.txt (dumpbin 14.44.35207 /dependents)",
+        "uncertainty": "dumpbin cannot see LoadLibrary/COM activation performed at runtime. Whether the in-proc factory under SYSTEM reaches any App Installer package path is a source-based conclusion (see 04-worker-mapping.md) until S01 observes it."
+      }
+    },
+    {
+      "id": "putty-installer",
+      "role": "Pre-staged copy for hash cross-check only. WinGet downloads from the manifest URL during S01; this copy is never executed directly.",
+      "version": "0.85",
+      "file": "putty-installer\\putty-64bit-0.85-installer.msi",
+      "url": "https://the.earth.li/~sgtatham/putty/0.85/w64/putty-64bit-0.85-installer.msi",
+      "bytes": 3846144,
+      "sha256": "2213EBACF962B709411D654A40087508A694756BC4E41C5A1C24AD86596B2511",
+      "sha512": "1E40310BFF2912C05C096C99DC11DB7D5480AEEE63A7E58D512B43B0633CBF1A0638F2F9AB2D0C7D57C2384121B51EEEB8C57F60F2522F871D445253F86624D5",
+      "verifiedAgainst": "InstallerSha256 in frozen manifest PuTTY.PuTTY 0.85.0.0 (winget-pkgs aaaf44e1)",
+      "observed": "Authenticode Valid, signer CN=Simon Tatham"
+    },
+    {
+      "id": "7zip-installer",
+      "role": "Pre-staged copy for hash cross-check only (S02). Never executed in S00.",
+      "version": "26.01",
+      "file": "7zip-installer\\7z2601-x64.exe",
+      "url": "https://7-zip.org/a/7z2601-x64.exe",
+      "bytes": 1658851,
+      "sha256": "D64A0468F5B5B0B0FC5B2188450BCD655B70809D97B1C4535F2884635094377D",
+      "sha512": "E52D5050C8FE4C0A09BD482D36EB1377CF342C4739060D94094C4ACB5AAB1E53FA3842F64DEC7B5DF3B3BDC7394A8BC9A9CD7A88808342C1136DD9CE9FE5A0A2",
+      "verifiedAgainst": "InstallerSha256 in frozen manifest 7zip.7zip 26.01 (winget-pkgs aaaf44e1)",
+      "observed": "Authenticode NotSigned. Integrity rests on the manifest hash only."
+    }
+  ],
+  "notStaged": [
+    {
+      "id": "windows-11-26h2-x64-media",
+      "reason": "Not staged by this lock: the guest OS is already installed in the operator's existing VM Windows11-Test. The admitted 26H2 ISO (SHA256 BD4307DF32BC8AF33B39CCECB1174AEB345386630F89A2B86C7A4E36B55EA650, equal to Microsoft's published value) is recorded in 01-environment-inventory.md. BC-1 replaced the 25H2 baseline."
+    }
+  ]
+}

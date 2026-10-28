@@ -1,0 +1,4 @@
+[2026-10-28T20:57:03.1754065Z] Test-S00StagedAssets -> exit 0
+[2026-10-28T20:57:03.2048975Z] Starting Windows11-Test
+[2026-10-28T21:07:14.3940486Z] STOPPED: PowerShell Direct unavailable after 10 minutes: The credential is invalid.
+[2026-10-28T21:07:14.3958259Z] No checkpoint taken (allPassed=False, agreementsExit=, SkipCheckpoint=False).

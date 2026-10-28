@@ -1,0 +1,18 @@
+[2026-10-28T21:42:30.9335740Z] Test-S00StagedAssets -> exit 0
+[2026-10-28T21:42:31.9767086Z] PowerShell Direct session open
+[2026-10-28T21:42:48.4138312Z] Fixture and guest assets copied to C:\S00Staging
+[2026-10-28T21:42:53.3891340Z] Get-S00Inventory.ps1 -OutFile C:\S00Staging\pre-inventory.json -> exit 0; output in pre-inventory.txt
+[2026-10-28T21:42:53.7220155Z] Pre-inventory gate: pass
+[2026-10-28T21:43:00.1363723Z] Install-S00Prerequisites.ps1 -StagingRoot C:\S00Staging\assets -LockPath C:\S00Staging\fixture\prerequisites.lock.json -> exit 0; output in install-prerequisites.txt
+[2026-10-28T21:43:01.4357774Z] Set-S00PolicyPins.ps1  -> exit 0; output in policy-pins.txt
+[2026-10-28T21:43:02.7971748Z] Set-S00EvidenceAcl.ps1  -> exit 0; output in evidence-acl-sddl.txt
+[2026-10-28T21:43:03.2113681Z] Fixture placed; fixture.sha256.txt exported
+[2026-10-28T21:43:08.9964878Z] Get-S00SourceAgreements.ps1  -> exit 0; output in source-agreements.txt
+[2026-10-28T21:43:13.6510550Z] Get-S00Inventory.ps1 -OutFile C:\ProgramData\SubZeroDev\FileManager\Validation\Evidence\S00-inventory-20261028T214228Z.json -> exit 0; output in inventory.txt
+[2026-10-28T21:43:13.8591415Z] Inventory gate: pass
+[2026-10-28T21:43:15.8456385Z] Test-S00PuTTY.ps1 -Expect Absent -> exit 0; output in putty-absent.txt
+[2026-10-28T21:43:17.1602691Z] Test-S00SevenZip.ps1 -Expect Absent -> exit 0; output in sevenzip-absent.txt
+[2026-10-28T21:43:17.2718426Z] Evidence exported
+[2026-10-28T21:43:17.3057133Z] C:\S00Staging removed
+[2026-10-28T21:43:17.3344268Z] PowerShell Direct session closed
+[2026-10-28T21:43:27.5596451Z] Checkpoint prerequisites-ready taken: fc9b536f-885d-48ef-bf1a-15f6e5adfea0, parent 
