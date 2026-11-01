@@ -90,7 +90,7 @@ Checked 2026-10-28 on the validation host. The operator downloaded the file; thi
 
 The image is build 26300.9457; the current 26H2 build is 26300.9725. The guest must be updated to the current cumulative update, with no pending reboot, before the checkpoint; the provisioning gate ([05 § 1 step 8](05-run-reset-procedure.md#1-provisioning-once-before-the-checkpoint)) refuses otherwise.
 
-## Target VM: `Windows11-Test` [runtime]
+## Target VM: Windows11-Test [runtime]
 
 The operator created this VM and installed the guest before this run; this run did not create a VM. Source: [evidence/host/vm-config.json](evidence/host/vm-config.json), written by [Get-S00VmConfig.ps1](scripts/host/Get-S00VmConfig.ps1) in the operator's elevated session, captured 2026-10-28T19:01:44Z with the VM running. The guest facts come from the Hyper-V KVP Exchange integration service, without guest credentials.
 
@@ -194,7 +194,7 @@ The following must be captured by [scripts/guest/Get-S00Inventory.ps1](scripts/g
 
 The source-agreement capture ([Get-S00SourceAgreements.ps1](scripts/guest/Get-S00SourceAgreements.ps1)) also runs before the checkpoint; see [05 § 1 step 7](05-run-reset-procedure.md#1-provisioning-once-before-the-checkpoint).
 
-## Operator procedure: prepare `Windows11-Test`
+## Operator procedure: prepare Windows11-Test
 
 B-1 is resolved for the operator's elevated session. If the ISO is replaced, the new file must again match the value on `https://www.microsoft.com/en-us/software-download/windows11` (select **Windows 11 (multi-edition ISO for x64 devices)**, **Confirm**, the language, **Confirm**, then read "Hash values for the ISO files for Each Language"), and [Admitted media](#admitted-media-runtime) is updated before use.
 
