@@ -1,0 +1,14 @@
+{
+  "Name": "prerequisites-ready",
+  "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+  "ParentId": "",
+  "CreationTimeUtc": "2026-10-28T21:43:27.3018690Z",
+  "VmState": "Off",
+  "AllCheckpoints": [
+    {
+      "Name": "prerequisites-ready",
+      "Id": "fc9b536f-885d-48ef-bf1a-15f6e5adfea0",
+      "ParentId": ""
+    }
+  ]
+}

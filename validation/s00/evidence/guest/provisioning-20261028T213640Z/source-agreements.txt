@@ -1,0 +1,13 @@
+C:\ProgramData\SubZeroDev\FileManager\Validation\Evidence\S00-source-agreements-20261028T213717Z.json
+status=not-observable identity=S-1-5-18 session=0 presented= digest=
+NOT-OBSERVABLE: System.Management.Automation.MethodInvocationException: Exception calling "Invoke" with "2" argument(s): "Single threaded apartment (STA) is not currently supported in this context; run PowerShell in Multi-threaded apartment mode (MTA)."
+ ---> Microsoft.WinGet.Client.Engine.Exceptions.SingleThreadedApartmentException: Single threaded apartment (STA) is not currently supported in this context; run PowerShell in Multi-threaded apartment mode (MTA).
+   at Microsoft.WinGet.Client.Engine.Helpers.PackageManagerWrapper.Execute[TReturn](Func`1 func, Boolean canRetry)
+   at Microsoft.WinGet.Client.Engine.Helpers.PackageManagerWrapper.GetPackageCatalogByName(String source)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   --- End of inner exception stack trace ---
+   at System.Management.Automation.ExceptionHandlingOps.CheckActionPreference(FunctionContext funcContext, Exception exception)
+   at System.Management.Automation.Interpreter.ActionCallInstruction`2.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)

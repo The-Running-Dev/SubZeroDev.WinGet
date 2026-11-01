@@ -1,0 +1,7 @@
+# 7z.exe version read from the hash-verified S02 installer payload. HOST, SOURCE EVIDENCE (no install performed).
+# utc=2026-10-28T12:57:31.8539689Z extractor=host 7-Zip 26.05 (7z x of 7z.exe, 7z.dll, 7zFM.exe into an empty scratch folder; installer not executed)
+installer 7z2601-x64.exe sha256=D64A0468F5B5B0B0FC5B2188450BCD655B70809D97B1C4535F2884635094377D
+7z.exe bytes=576512 sha256=2BFF20BD679D45166B8C2D039044A4CA16189E6D69FF9C82345B4C1306986EC4 StringFileInfo ProductVersion='26.01' FileVersion='26.01'
+7zFM.exe bytes=999424 sha256=6D05E2A4E04B0E0FE406ABF3822FBC64D9FFA903869BBC4D50967958E0F9D8C8 StringFileInfo ProductVersion='26.01' FileVersion='26.01'
+note: FileVersionInfo API returned empty only because the extraction path exceeded MAX_PATH; values above are parsed from the UTF-16 StringFileInfo block.
+conclusion [source]: Test-S00SevenZip default -ExpectedExeVersion '26.01' matches the payload; the guest must still observe it after install (S02).

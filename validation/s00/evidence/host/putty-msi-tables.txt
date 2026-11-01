@@ -1,0 +1,44 @@
+# MSI: D:\Validation\SubZeroDev.FileManager\S00\downloads\putty-installer\putty-64bit-0.85-installer.msi (opened read-only, msiOpenDatabaseModeReadOnly)
+## Summary: Template=x64;1033; WordCount=2; RevisionNumber(PackageCode)={1DF327D3-777D-41B7-B5D6-51EDAEF2E1A2}
+## Property (selected)
+UpgradeCode | {C9EAA861-2B72-4FAF-9FEE-EEB1AD5FD15E}
+WIXUI_INSTALLDIR | INSTALLDIR
+ALLUSERS | 1
+ARPNOMODIFY | 1
+Manufacturer | Simon Tatham
+ProductCode | {3B0346D3-155D-43E5-9561-B9BE51CF2EB6}
+ProductName | PuTTY release 0.85 (64-bit)
+ProductVersion | 0.85.0.0
+## File rows for executables (File | FileName | Version | Component)
+PuTTY_File | putty.exe | 0.85.0.0 | PuTTY_Component
+Pageant_File | pageant.exe | 0.85.0.0 | Pageant_Component
+PSFTP_File | psftp.exe | 0.85.0.0 | PSFTP_Component
+PuTTYgen_File | puttygen.exe | 0.85.0.0 | PuTTYgen_Component
+Plink_File | plink.exe | 0.85.0.0 | Plink_Component
+PSCP_File | pscp.exe | 0.85.0.0 | PSCP_Component
+## Component (Component | Directory | KeyPath)
+PuTTY_Component | INSTALLDIR | PuTTY_File
+Pageant_Component | INSTALLDIR | Pageant_File
+PSFTP_Component | INSTALLDIR | PSFTP_File
+PuTTYgen_Component | INSTALLDIR | PuTTYgen_File
+Plink_Component | INSTALLDIR | Plink_File
+PSCP_Component | INSTALLDIR | PSCP_File
+HelpFile_Component | INSTALLDIR | HelpFile_File
+Website_Component | INSTALLDIR | Website_File
+LICENCE_Component | INSTALLDIR | LICENCE_File
+README_Component | INSTALLDIR | README_File
+PPK_Assoc_Component | INSTALLDIR | reg351FBC808AA8815866999F63779679FC
+Path_Component | INSTALLDIR | reg003AB399052C22E141A36A3934945C28
+ProgramMenuDir | ProgramMenuDir | reg53F55308E4B0793EDDE5F21A0C915F25
+Desktop_Shortcut_Component | DesktopFolder | regD7494F72B1D49E152CDBA2F4EDD3D207
+## Directory (Directory | Parent | DefaultDir)
+INSTALLDIR | ProgramFiles64Folder | PuTTY
+ProgramMenuDir | ProgramMenuFolder | j7qdqep3|PuTTY (64-bit)
+DesktopFolder | TARGETDIR | Desktop
+ProgramFiles64Folder | TARGETDIR | PFiles
+TARGETDIR |  | SourceDir
+ProgramMenuFolder | TARGETDIR | Programs
+## Reboot-related InstallExecuteSequence actions
+## CustomAction (Action | Type | Source | Target)
+WixUIValidatePath | 65 | WixUIWixca | ValidatePath
+LaunchApplication | 1 | WixCA | WixShellExec

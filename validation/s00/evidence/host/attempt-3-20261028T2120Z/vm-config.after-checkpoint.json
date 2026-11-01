@@ -1,0 +1,196 @@
+{
+  "capturedUtc": "2026-10-28T21:21:32.6323863Z",
+  "vm": {
+    "Name": "Windows11-Test",
+    "State": "Running",
+    "Generation": 2,
+    "ConfigurationVersion": "12.0",
+    "ProcessorCount": 4,
+    "DynamicMemory": false,
+    "MemoryStartupBytes": 8589934592,
+    "Path": "D:\\VMs\\Windows11-TEst",
+    "CurrentParentCheckpointId": "",
+    "CheckpointType": "Standard",
+    "AutomaticCheckpointsEnabled": false,
+    "AutomaticStartAction": "Nothing",
+    "AutomaticStopAction": "ShutDown",
+    "EnhancedSessionTransportType": "VMBus",
+    "Heartbeat": "OkApplicationsUnknown",
+    "SecureBoot": "On",
+    "SecureBootTemplate": "MicrosoftWindows",
+    "TpmEnabled": true,
+    "IntegrationServices": [
+      {
+        "Name": "Guest Service Interface",
+        "Enabled": false
+      },
+      {
+        "Name": "Heartbeat",
+        "Enabled": true
+      },
+      {
+        "Name": "Key-Value Pair Exchange",
+        "Enabled": true
+      },
+      {
+        "Name": "Shutdown",
+        "Enabled": true
+      },
+      {
+        "Name": "Time Synchronization",
+        "Enabled": true
+      },
+      {
+        "Name": "VSS",
+        "Enabled": true
+      }
+    ],
+    "Disks": [
+      {
+        "Controller": "SCSI 0:0",
+        "Path": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst.vhdx",
+        "VhdType": "Dynamic",
+        "SizeBytes": 136365211648,
+        "FileSizeBytes": 32384221184,
+        "ParentPath": "",
+        "Chain": [
+          {
+            "Path": "D:\\VMs\\Windows11-TEst\\Virtual Hard Disks\\Windows11-TEst.vhdx",
+            "VhdType": "Dynamic",
+            "SizeBytes": 136365211648,
+            "FileSizeBytes": 32384221184
+          }
+        ]
+      }
+    ],
+    "Dvd": [
+      {
+        "Controller": "0:1",
+        "Path": null
+      }
+    ],
+    "Nics": [
+      {
+        "Name": "Network Adapter",
+        "SwitchName": "Default Switch",
+        "Status": "Ok"
+      }
+    ],
+    "Checkpoints": []
+  },
+  "guestKvp": {
+    "CSDVersion": "",
+    "IntegrationServicesVersion": "10.0.26300",
+    "OSBuildNumber": "10011",
+    "OSEditionId": "48",
+    "OSMajorVersion": "10",
+    "OSMinorVersion": "0",
+    "OSName": "Windows 10 Pro",
+    "OSPlatformId": "2",
+    "OSSignature": "4",
+    "OSVendor": "1",
+    "OSVersion": "10.0.26300",
+    "ProcessorArchitecture": "9",
+    "ProductType": "1",
+    "ServicePackMajor": "0",
+    "ServicePackMinor": "0",
+    "SuiteMask": "256"
+  },
+  "checks": [
+    {
+      "requirement": "Generation 2",
+      "ok": true,
+      "observed": "2"
+    },
+    {
+      "requirement": "Secure Boot on",
+      "ok": true,
+      "observed": "On"
+    },
+    {
+      "requirement": "Secure Boot template MicrosoftWindows",
+      "ok": true,
+      "observed": "MicrosoftWindows"
+    },
+    {
+      "requirement": "vTPM enabled",
+      "ok": true,
+      "observed": "True"
+    },
+    {
+      "requirement": "4 vCPU (preparation setting, not a feasibility gate)",
+      "ok": true,
+      "observed": "4"
+    },
+    {
+      "requirement": "8 GB static RAM",
+      "ok": true,
+      "observed": "dynamic=False startup=8589934592"
+    },
+    {
+      "requirement": "D-9 disk: one 127 GiB disk on the base VHDX, one differencing level per checkpoint",
+      "ok": true,
+      "observed": "Dynamic 136365211648 depth=1 root=Windows11-TEst.vhdx"
+    },
+    {
+      "requirement": "Guest Service Interface off",
+      "ok": true,
+      "observed": "False"
+    },
+    {
+      "requirement": "Automatic checkpoints off",
+      "ok": true,
+      "observed": "False"
+    },
+    {
+      "requirement": "Checkpoint type Standard",
+      "ok": true,
+      "observed": "Standard"
+    },
+    {
+      "requirement": "AutomaticStartAction Nothing",
+      "ok": true,
+      "observed": "Nothing"
+    },
+    {
+      "requirement": "AutomaticStopAction ShutDown",
+      "ok": true,
+      "observed": "ShutDown"
+    },
+    {
+      "requirement": "No ISO attached",
+      "ok": true,
+      "observed": ""
+    },
+    {
+      "requirement": "Network adapter connected",
+      "ok": true,
+      "observed": "Default Switch"
+    },
+    {
+      "requirement": "D-9 checkpoints: none, or only prerequisites-ready with no parent",
+      "ok": true,
+      "observed": ""
+    },
+    {
+      "requirement": "Guest EditionID Professional (KVP OSEditionId 48)",
+      "ok": true,
+      "observed": "48 Windows 10 Pro"
+    },
+    {
+      "requirement": "Guest build 26300 (26H2, KVP OSVersion)",
+      "ok": true,
+      "observed": "10.0.26300"
+    },
+    {
+      "requirement": "Guest x64 (KVP ProcessorArchitecture 9)",
+      "ok": true,
+      "observed": "9"
+    },
+    {
+      "requirement": "Heartbeat OK",
+      "ok": true,
+      "observed": "OkApplicationsUnknown"
+    }
+  ]
+}

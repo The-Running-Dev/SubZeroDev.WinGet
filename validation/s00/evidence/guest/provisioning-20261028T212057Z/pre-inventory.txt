@@ -1,0 +1,6 @@
+C:\S00Staging\fixture\scripts\guest\Get-S00Inventory.ps1 : Cannot convert 'System.Object[]' to 
+the type 'System.String' required by parameter 'Name'. Specified method is not supported.
+    + CategoryInfo          : InvalidArgument: (:) [Get-S00Inventory.ps1], ParameterBindingExcept 
+   ion
+    + FullyQualifiedErrorId : CannotConvertArgument,Get-S00Inventory.ps1
+ 

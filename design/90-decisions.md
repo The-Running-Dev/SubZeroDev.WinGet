@@ -7,6 +7,14 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-10-29 — Gate A (signed-out WinGet validation) moves here from SubZeroDev.FileManager
+Context: The SubZeroDev.FileManager slice plan (2026-10-27) put Gate A first. It covers S00-S02 and the package parts of S04-S08, and asks whether `Microsoft.WinGet.Client`, run in a private pwsh worker under a LocalSystem service with nobody signed in, can install PuTTY (MSI) and 7-Zip (EXE) machine-wide and silently. The operator decided the question is a WinGet question, not a file-manager one, and that FileManager restarts at its file slices. S00 had been prepared on FileManager PR #1. `CLAUDE.md` § *Known gaps* already lists Windows Service / SYSTEM hosting as unverified here.
+Chosen: Copy `validation/s00` from FileManager commit `0b5cfda` into `validation/s00` here, without history, and record the provenance in its README. Leave every file byte-identical, except the README, the operator folder in `01-environment-inventory.md` and a folder-level `.gitattributes`, which keeps the frozen manifests `-text`. Keep the FileManager-named guest paths, host staging root and evidence schema names unchanged. Gate A stays a standalone validation fixture: it does not touch the C# library, its interop pin or its tests, and CI does not run it. Gate A and signed-out WinGet installation stay unproven, A-3 stays unapproved and S01 does not start.
+Rejected: Keep Gate A in FileManager, because it would block the file manager on a package-install question that has nothing to do with it. Merge FileManager's history in, because 16 commits of fixture churn would land in this repository's history where no reader needs them, and the FileManager branch keeps them. Rename the runtime paths during the move, because evidence was already captured under them, the VM's guest holds them and the attempt-7 run is pending, so a rename would split evidence across two layouts; it is decided separately before S01. Fold Gate A into the C# library's tests, because it validates a different stack (the PowerShell module at 1.29.380, not the COM wrapper at 1.29.280), and mixing them would blur what each result proves.
+Reversibility: cheap. The folder is self-contained, and the FileManager branch still holds the original.
+
+---
+
 ### 2026-10-06 — Remove the per-repository SessionEnd cost hook
 Context: `.claude/settings.json` ran `pwsh … tools/Measure-Session.ps1` on `SessionEnd`, but that script no longer exists — it left this repository when the kit moved to a single home install, and the kit later ported it to Node as `measure-session.ts` — so the hook failed at the end of every session. The kit's setup installs one global `SessionEnd` hook in `~/.claude/settings.json` that logs every project.
 Chosen: remove this repository's `hooks.SessionEnd` entry, in the AgentKit sync to `v2026.10.06.1`. Nothing else in `settings.json` changes.

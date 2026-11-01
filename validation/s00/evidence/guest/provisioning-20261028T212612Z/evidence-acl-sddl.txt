@@ -1,0 +1,6 @@
+C:\S00Staging\fixture\scripts\guest\Set-S00EvidenceAcl.ps1 : Cannot convert 'System.Object[]' to 
+the type 'System.String' required by parameter 'Path'. Specified method is not supported.
+    + CategoryInfo          : InvalidArgument: (:) [Set-S00EvidenceAcl.ps1], ParameterBindingExce 
+   ption
+    + FullyQualifiedErrorId : CannotConvertArgument,Set-S00EvidenceAcl.ps1
+ 

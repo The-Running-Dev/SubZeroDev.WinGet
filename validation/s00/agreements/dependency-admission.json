@@ -1,0 +1,18 @@
+{
+  "schema": "subzerodev.filemanager.s00.dependency-admission/2",
+  "basis": "Frozen installer manifests at microsoft/winget-pkgs aaaf44e17204afb742dcf006ce6ee8c2263bd59e. [source]",
+  "profiles": [
+    { "profileId": "s01-putty-0.85.0.0-x64-wix-machine", "installerBlob": "e443bd2f53927d00031936ff6c68dcfc855bc829", "declared": { "WindowsFeatures": [], "WindowsLibraries": [], "PackageDependencies": [], "ExternalDependencies": [] }, "admitted": [] },
+    { "profileId": "s02-7zip-26.01-x64-exe-machine", "installerBlob": "681b2f73d42485dbec826280c6b3fe2516bc0ac6", "declared": { "WindowsFeatures": [], "WindowsLibraries": [], "PackageDependencies": [], "ExternalDependencies": [] }, "admitted": [] }
+  ],
+  "rule": "Any dependency declared by the resolved installer at runtime is unapproved and dispatch is refused. The worker always passes -SkipDependencies and never asks the module to install dependencies.",
+  "approval": {
+    "status": "approved",
+    "statement": "I approve an empty dependency admission for both profiles: no dependency of any kind is admitted, and any declared dependency blocks dispatch.",
+    "decision": "approved",
+    "approver": "operator",
+    "decidedUtc": "2026-10-28T20:19:00Z",
+    "recordedBy": "agent, at the operator's instruction",
+    "notes": "Approved by the operator in the S00 chat session; recorded in this file at the operator's instruction (the agent did not decide). Operator's words: \"I approve A-1 and A-2 as previously presented, bound to the exact frozen manifests. Record that approval and stop presenting them as pending unless the records change.\" decidedUtc is the chat message time to the minute. Bound to microsoft/winget-pkgs aaaf44e17204afb742dcf006ce6ee8c2263bd59e and the installerBlob of each profile. Any change to those ids voids this approval."
+  }
+}

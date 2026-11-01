@@ -1,0 +1,13 @@
+
+
+AlreadyInstalled : True
+PwshPath         : C:\Program Files\SubZeroDev\FileManager\Service\pwsh\pwsh.exe
+PwshVersion      : 7.6.6.500
+PwshSignature    : Valid
+ModulePath       : C:\Program 
+                   Files\SubZeroDev\FileManager\Service\Modules\Microsoft.WinGet.Client\1.29.380
+ModuleFiles      : 41
+NativeDll        : 1.29.380.00000
+
+
+

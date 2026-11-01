@@ -1,0 +1,14 @@
+
+Check                                              Pass Observed                                                                                                                                                             
+-----                                              ---- --------                                                                                                                                                             
+MSI machine context VersionString                  True @{Context=4; UserSid=; ReturnCode=1605; Value=}                                                                                                                      
+No per-user MSI installation (any user)            True                                                                                                                                                                      
+HKLM Installer\Products packed key                 True False                                                                                                                                                                
+No per-user Installer\Products key in loaded hives True                                                                                                                                                                      
+HKLM ARP (64-bit view) DisplayVersion              True @{Path=HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{3B0346D3-155D-43E5-9561-B9BE51CF2EB6}; Exists=False; DisplayVersion=; InstallLocation=}            
+No WOW6432Node ARP entry                           True @{Path=HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{3B0346D3-155D-43E5-9561-B9BE51CF2EB6}; Exists=False; DisplayVersion=; InstallLocation=}
+%ProgramFiles%\PuTTY absent                        True                                                                                                                                                                      
+
+
+
+PASS (expect Absent)

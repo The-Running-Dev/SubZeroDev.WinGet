@@ -1,0 +1,75 @@
+{
+  "schema": "subzerodev.filemanager.s00.package-profile/1",
+  "profileId": "s01-putty-0.85.0.0-x64-wix-machine",
+  "status": "validation-profile",
+  "source": {
+    "name": "winget",
+    "type": "Microsoft.PreIndexed.Package",
+    "argument": "https://cdn.winget.microsoft.com/cache",
+    "identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe"
+  },
+  "frozenManifests": {
+    "repository": "microsoft/winget-pkgs",
+    "commit": "aaaf44e17204afb742dcf006ce6ee8c2263bd59e",
+    "path": "manifests/p/PuTTY/PuTTY/0.85.0.0",
+    "blobs": {
+      "PuTTY.PuTTY.installer.yaml": "e443bd2f53927d00031936ff6c68dcfc855bc829",
+      "PuTTY.PuTTY.locale.en-US.yaml": "f8d8f59b59e257803535ebe8b1defb13ada5f7b4",
+      "PuTTY.PuTTY.locale.zh-CN.yaml": "960764f8f5e334aaf67ab29246410400828ad6a7",
+      "PuTTY.PuTTY.yaml": "a5a9aa7ec1ba672d6b534eb89b6fca53531bcd26"
+    }
+  },
+  "package": { "id": "PuTTY.PuTTY", "version": "0.85.0.0", "matchOption": "Equals" },
+  "installer": {
+    "architecture": "x64",
+    "installerType": "wix",
+    "scope": "machine",
+    "mode": "silent",
+    "url": "https://the.earth.li/~sgtatham/putty/0.85/w64/putty-64bit-0.85-installer.msi",
+    "sha256": "2213EBACF962B709411D654A40087508A694756BC4E41C5A1C24AD86596B2511",
+    "productCode": "{3B0346D3-155D-43E5-9561-B9BE51CF2EB6}",
+    "upgradeCode": "{C9EAA861-2B72-4FAF-9FEE-EEB1AD5FD15E}",
+    "customArguments": null,
+    "override": null,
+    "installLocation": null
+  },
+  "agreements": {
+    "package": "none-declared",
+    "packageRecord": "../agreements/package-agreements.none.json",
+    "source": "captured-during-preparation",
+    "sourceRecord": "../agreements/source-agreements.approval.json",
+    "installRequires": "all three approval records status 'approved' by the operator"
+  },
+  "dependencies": { "declared": [], "admission": "../agreements/dependency-admission.json", "moduleDependencyInstall": "skip" },
+  "verification": {
+    "msiContext": "MSIINSTALLCONTEXT_MACHINE",
+    "msiVersionString": "0.85.0.0",
+    "packedProductCode": "3D6430B3D5515E3459169BEB15FCE26B",
+    "uninstallKey": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{3B0346D3-155D-43E5-9561-B9BE51CF2EB6}",
+    "executable": "%ProgramFiles%\\PuTTY\\putty.exe",
+    "executableFileVersion": "0.85.0.0",
+    "executableSigner": "CN=Simon Tatham",
+    "script": "../scripts/guest/Test-S00PuTTY.ps1"
+  },
+  "returnCodes": {
+    "basis": "winget-cli v1.29.380: manifest InstallerSuccessCodes, then manifest ExpectedReturnCodes, then GetDefaultKnownReturnCodes(wix) for codes not declared (ManifestYamlPopulator.cpp:1352-1361, ManifestCommon.cpp:1088-1145)",
+    "manifestInstallerSuccessCodes": [],
+    "manifestExpectedReturnCodes": [],
+    "installerTypeDefaults": "wix",
+    "applicable": {
+      "success": [0],
+      "rebootRequiredToFinish": [3010],
+      "rebootInitiated": [1641],
+      "rebootRequiredForInstall": [],
+      "failure": {
+        "1618": "InstallInProgress", "112": "DiskFull", "1601": "ContactSupport", "1602": "CancelledByUser", "1638": "AlreadyInstalled",
+        "1654": "SystemNotSupported", "1623": "SystemNotSupported", "1633": "SystemNotSupported",
+        "1625": "BlockedByPolicy", "1644": "BlockedByPolicy", "1643": "BlockedByPolicy", "1649": "BlockedByPolicy", "1640": "BlockedByPolicy",
+        "87": "InvalidParameter", "1628": "InvalidParameter", "1639": "InvalidParameter", "1650": "InvalidParameter"
+      },
+      "otherNonZero": "unmapped-failure"
+    },
+    "osPendingRebootMarkers": "supplementary-only"
+  },
+  "rebootPolicy": { "requestRestart": false, "expectedRestartRequired": false, "expectedReturnCode": 0 }
+}

@@ -1,0 +1,33 @@
+# Captured 2026-10-28T14:32:21.7830252+02:00 as non-elevated user
+## Host OS
+
+ProductName    : Windows 10 Enterprise
+EditionID      : Enterprise
+DisplayVersion : 25H2
+CurrentBuild   : 26200
+UBR            : 9711
+
+
+## Elevation
+IsAdmin token: False
+Hyper-V Administrators (S-1-5-32-578) in token: False
+## Hyper-V services
+
+Name       Status StartType
+----       ------ ---------
+vmcompute Running    Manual
+vmms      Running Automatic
+
+
+## Get-VM attempt
+ERROR: You do not have the required permission to complete this task. Contact the administrator of the authorization policy for the computer '<redacted:host>'.
+## Local ISO candidates (not admitted: no verifiable Microsoft provenance for Win11 Pro 25H2)
+
+FullName                                                                Length LastWriteTime
+--------                                                                ------ -------------
+D:\Hyper-V\Setup-Windows-Spike-windows.iso                          8511985664 9/18/2026 2:10:07 AM
+D:\Hyper-V\Setup-Windows-Test-windows.iso                           8511985664 9/19/2026 9:12:27 AM
+D:\Temp\Microsoft_Windows_11_Enterprise_Version_26H1_X64-CYGiSO.iso 6610452480 2/10/2026 11:00:00 AM
+D:\Temp\Windows-11.Custom.iso                                       8515420160 7/2/2026 3:42:07 PM
+
+

@@ -1,0 +1,21 @@
+{
+  "schema": "subzerodev.filemanager.s00.agreement-record/2",
+  "kind": "package-agreements",
+  "finding": "none-declared",
+  "basis": "Inspection of the frozen installer and locale manifests at microsoft/winget-pkgs aaaf44e17204afb742dcf006ce6ee8c2263bd59e found no Agreements field for either package. [source]",
+  "packages": [
+    { "source": "winget", "id": "PuTTY.PuTTY", "version": "0.85.0.0", "installerBlob": "e443bd2f53927d00031936ff6c68dcfc855bc829", "localeBlobs": ["f8d8f59b59e257803535ebe8b1defb13ada5f7b4", "960764f8f5e334aaf67ab29246410400828ad6a7"], "rootBlob": "a5a9aa7ec1ba672d6b534eb89b6fca53531bcd26" },
+    { "source": "winget", "id": "7zip.7zip", "version": "26.01", "installerBlob": "681b2f73d42485dbec826280c6b3fe2516bc0ac6", "localeBlobs": ["4f6dea56e9122e7acf1d4f646b7bc4e29808e072", "dbad5679b90cca5f0d2842b8b13425ed18b99975"], "rootBlob": "ce96e123002f876f3ecb71551bd5c1a2b3bbb798" }
+  ],
+  "rule": "No agreement record is fabricated (FM-26). If the resolved package presents any agreement at runtime, the profile no longer matches and dispatch is refused until a new record for the exact text, URLs and digest is approved.",
+  "sourceAgreementsRecord": "source-agreements.approval.json",
+  "approval": {
+    "status": "approved",
+    "statement": "I have reviewed the frozen manifests identified by the blob ids above, confirm that no package agreement is declared for either package, and approve installing them on the validation guest on that basis.",
+    "decision": "approved",
+    "approver": "operator",
+    "decidedUtc": "2026-10-28T20:19:00Z",
+    "recordedBy": "agent, at the operator's instruction",
+    "notes": "Approved by the operator in the S00 chat session; recorded in this file at the operator's instruction (the agent did not decide). Operator's words: \"I approve A-1 and A-2 as previously presented, bound to the exact frozen manifests. Record that approval and stop presenting them as pending unless the records change.\" decidedUtc is the chat message time to the minute. Bound to microsoft/winget-pkgs aaaf44e17204afb742dcf006ce6ee8c2263bd59e and the installer, locale and root blob ids in packages[]. Any change to those ids voids this approval."
+  }
+}

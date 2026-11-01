@@ -1,0 +1,12 @@
+
+Check                                              Pass Observed                                                                                                                            
+-----                                              ---- --------                                                                                                                            
+HKLM ARP 7-Zip (64-bit view) DisplayVersion        True @{Path=HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\7-Zip; Exists=False; DisplayVersion=; InstallLocation=}            
+No WOW6432Node ARP entry                           True @{Path=HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\7-Zip; Exists=False; DisplayVersion=; InstallLocation=}
+No per-user ARP 7-Zip (incl. S-1-5-18)             True                                                                                                                                     
+Rejected x64 MSI not registered (any context/user) True                                                                                                                                     
+%ProgramFiles%\7-Zip absent                        True                                                                                                                                     
+
+
+
+PASS (expect Absent)

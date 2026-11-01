@@ -1,0 +1,20 @@
+# Live pre-arm drift check 2026-10-28T12:55:31Z on host (pwsh 7.6.9); upstream = microsoft/winget-pkgs default branch via gh api
+# Host-side GitHub comparison only. It does not observe the CDN index the module reads, and it is not an S01 pre-arm run.
+OK       s02-7zip-26.01-x64-exe-machine  7zip.7zip.installer.yaml  681b2f73d42485dbec826280c6b3fe2516bc0ac6
+OK       s02-7zip-26.01-x64-exe-machine  7zip.7zip.locale.en-US.yaml  4f6dea56e9122e7acf1d4f646b7bc4e29808e072
+OK       s02-7zip-26.01-x64-exe-machine  7zip.7zip.locale.zh-CN.yaml  dbad5679b90cca5f0d2842b8b13425ed18b99975
+OK       s02-7zip-26.01-x64-exe-machine  7zip.7zip.yaml  ce96e123002f876f3ecb71551bd5c1a2b3bbb798
+LIVE OK  s02-7zip-26.01-x64-exe-machine  7zip.7zip.installer.yaml  681b2f73d42485dbec826280c6b3fe2516bc0ac6
+LIVE OK  s02-7zip-26.01-x64-exe-machine  7zip.7zip.locale.en-US.yaml  4f6dea56e9122e7acf1d4f646b7bc4e29808e072
+LIVE OK  s02-7zip-26.01-x64-exe-machine  7zip.7zip.locale.zh-CN.yaml  dbad5679b90cca5f0d2842b8b13425ed18b99975
+LIVE OK  s02-7zip-26.01-x64-exe-machine  7zip.7zip.yaml  ce96e123002f876f3ecb71551bd5c1a2b3bbb798
+OK       s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.installer.yaml  e443bd2f53927d00031936ff6c68dcfc855bc829
+OK       s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.locale.en-US.yaml  f8d8f59b59e257803535ebe8b1defb13ada5f7b4
+OK       s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.locale.zh-CN.yaml  960764f8f5e334aaf67ab29246410400828ad6a7
+OK       s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.yaml  a5a9aa7ec1ba672d6b534eb89b6fca53531bcd26
+LIVE OK  s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.installer.yaml  e443bd2f53927d00031936ff6c68dcfc855bc829
+LIVE OK  s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.locale.en-US.yaml  f8d8f59b59e257803535ebe8b1defb13ada5f7b4
+LIVE OK  s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.locale.zh-CN.yaml  960764f8f5e334aaf67ab29246410400828ad6a7
+LIVE OK  s01-putty-0.85.0.0-x64-wix-machine  PuTTY.PuTTY.yaml  a5a9aa7ec1ba672d6b534eb89b6fca53531bcd26
+PASS
+exit=0

@@ -1,0 +1,5 @@
+[2026-10-28T21:44:07.1711905Z] Provisioning evidence: provisioning-20261028T214228Z
+[2026-10-28T21:44:07.2885840Z] OK   prerequisites-ready exists once, Id as at provisioning  [fc9b536f-885d-48ef-bf1a-15f6e5adfea0]
+[2026-10-28T21:44:07.2916958Z] FAIL D-9: prerequisites-ready is the root and the only checkpoint  [prerequisites-ready [fc9b536f-885d-48ef-bf1a-15f6e5adfea0] parent=]
+[2026-10-28T21:44:07.2928643Z] STOPPED: D-9: prerequisites-ready is the root and the only checkpoint failed.
+[2026-10-28T21:44:07.3119885Z] OK   Checkpoint list unchanged (names, Ids, parents)  [3 checkpoints]

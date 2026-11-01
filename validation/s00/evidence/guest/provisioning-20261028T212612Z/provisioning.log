@@ -1,0 +1,12 @@
+[2026-10-28T21:26:15.1498651Z] Test-S00StagedAssets -> exit 0
+[2026-10-28T21:26:16.6751057Z] PowerShell Direct session open
+[2026-10-28T21:26:33.7396385Z] Fixture and guest assets copied to C:\S00Staging
+[2026-10-28T21:26:42.0029700Z] Get-S00Inventory.ps1 -OutFile C:\S00Staging\pre-inventory.json -> exit 0; output in pre-inventory.txt
+[2026-10-28T21:26:42.3827814Z] Pre-inventory gate: pass
+[2026-10-28T21:27:03.1210573Z] Install-S00Prerequisites.ps1 -StagingRoot C:\S00Staging\assets -LockPath C:\S00Staging\fixture\prerequisites.lock.json -> exit 0; output in install-prerequisites.txt
+[2026-10-28T21:27:04.4692502Z] Set-S00PolicyPins.ps1  -> exit 0; output in policy-pins.txt
+[2026-10-28T21:27:05.8994877Z] Set-S00EvidenceAcl.ps1  -> exit 1; output in evidence-acl-sddl.txt
+[2026-10-28T21:27:05.9078941Z] STOPPED: Set-S00EvidenceAcl.ps1 exited 1.
+[2026-10-28T21:27:05.9477879Z] C:\S00Staging removed
+[2026-10-28T21:27:05.9762300Z] PowerShell Direct session closed
+[2026-10-28T21:27:05.9781260Z] No checkpoint taken (allPassed=False, agreementsExit=, SkipCheckpoint=False).

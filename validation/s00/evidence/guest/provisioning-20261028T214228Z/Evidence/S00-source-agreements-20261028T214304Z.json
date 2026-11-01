@@ -1,0 +1,29 @@
+{
+  "schema": "subzerodev.filemanager.s00.source-agreements-capture/1",
+  "capturedUtc": "2026-10-28T21:43:05.6080636Z",
+  "identitySid": "S-1-5-18",
+  "processSession": 0,
+  "apartmentState": "MTA",
+  "pwshVersion": "7.6.6",
+  "pwshRuntime": "10.0.12",
+  "module": {
+    "Name": "Microsoft.WinGet.Client",
+    "Version": "1.29.380",
+    "Path": "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\Modules\\Microsoft.WinGet.Client\\1.29.380\\net8.0-windows10.0.26100.0\\Microsoft.WinGet.Client.Cmdlets.dll"
+  },
+  "source": {
+    "Name": "winget",
+    "Argument": "https://cdn.winget.microsoft.com/cache",
+    "Type": "Microsoft.PreIndexed.Package",
+    "TrustLevel": "Trusted",
+    "Explicit": false,
+    "Priority": 0
+  },
+  "route": "Microsoft.WinGet.Client.Engine PackageManagerWrapper.Instance.GetPackageCatalogByName",
+  "status": "captured",
+  "agreementsPresented": 0,
+  "agreements": [],
+  "digestBasis": "SHA256 of UTF-8 ConvertTo-Json -Compress of the agreements array, each item ordered Label, Text, Url",
+  "digestSha256": "4F53CDA18C2BAA0C0354BB5F9A3ECBE5ED12AB4D8E11BA873C2F11161202B945",
+  "error": null
+}

@@ -1,0 +1,223 @@
+﻿{
+    "capturedUtc":  "2026-10-28T21:26:35.9949889Z",
+    "baseline":  {
+                     "decision":  "BC-1",
+                     "expected":  {
+                                      "EditionID":  "Professional",
+                                      "DisplayVersion":  "26H2",
+                                      "CurrentBuild":  "26300",
+                                      "Architecture":  "AMD64"
+                                  },
+                     "observed":  {
+                                      "EditionID":  "Professional",
+                                      "DisplayVersion":  "26H2",
+                                      "CurrentBuild":  "26300",
+                                      "Architecture":  "AMD64"
+                                  },
+                     "pass":  true,
+                     "mismatches":  [
+
+                                    ]
+                 },
+    "os":  {
+               "ProductName":  "Windows 10 Pro",
+               "EditionID":  "Professional",
+               "DisplayVersion":  "26H2",
+               "CurrentBuild":  "26300",
+               "UBR":  9711,
+               "BuildLabEx":  "26100.1.amd64fre.ge_release.240331-1435",
+               "Caption":  "Microsoft Windows 11 Pro",
+               "Version":  "10.0.26300",
+               "OSArchitecture":  "64-bit",
+               "InstallDateUtc":  "2026-10-28T17:31:28.0000000Z",
+               "LastBootUtc":  "2026-10-28T21:14:22.6895570Z",
+               "Model":  "Virtual Machine",
+               "Manufacturer":  "Microsoft Corporation",
+               "PartOfDomain":  false,
+               "SecureBoot":  true,
+               "Tpm":  "TpmPresent TpmReady\r\n---------- --------\r\n      True     True"
+           },
+    "updates":  {
+                    "HotFix":  [
+                                   "KB5124007 Security Update 09/13/2026 00:00:00",
+                                   "KB5127648 Security Update 10/28/2026 00:00:00",
+                                   "KB5127647 Security Update 10/28/2026 00:00:00",
+                                   "KB5127694 Update 10/28/2026 00:00:00",
+                                   "KB5121794 Update 10/28/2026 00:00:00",
+                                   "KB5128942 Update 10/28/2026 00:00:00"
+                               ],
+                    "PendingReboot":  {
+                                          "CbsRebootPending":  false,
+                                          "WuRebootRequired":  false,
+                                          "PendingFileRename":  false
+                                      }
+                },
+    "appx":  [
+                 {
+                     "Name":  "Microsoft.DesktopAppInstaller",
+                     "Version":  "1.29.379.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.DesktopAppInstaller_1.29.379.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00",
+                     "Version":  "14.0.33519.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00_14.0.33519.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00.UWPDesktop",
+                     "Version":  "14.0.33728.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00.UWPDesktop_14.0.33728.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00",
+                     "Version":  "14.0.33519.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00_14.0.33519.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.VCLibs.140.00.UWPDesktop",
+                     "Version":  "14.0.33728.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.VCLibs.140.00.UWPDesktop_14.0.33728.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.CBS",
+                     "Version":  "9.2603.18001.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.UI.Xaml.CBS_9.2603.18001.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.2.8",
+                     "Version":  "8.2511.26001.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.UI.Xaml.2.8_8.2511.26001.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.UI.Xaml.2.8",
+                     "Version":  "8.2501.31001.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.UI.Xaml.2.8_8.2501.31001.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.CBS.1.6",
+                     "Version":  "6000.900.156.100",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.CBS.1.6_6000.900.156.100_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.2.0.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.2.0.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.CBS.2",
+                     "Version":  "2.4.1.100",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.CBS.2_2.4.1.100_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.6.4.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.6.4.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.2",
+                     "Version":  "2.6.4.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.2_2.6.4.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.8",
+                     "Version":  "8000.994.2142.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.8_8000.994.2142.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.8",
+                     "Version":  "8000.994.2142.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.8_8000.994.2142.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.7",
+                     "Version":  "7000.785.2325.0",
+                     "Arch":  "X86",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.7_7000.785.2325.0_x86__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 },
+                 {
+                     "Name":  "Microsoft.WindowsAppRuntime.1.7",
+                     "Version":  "7000.785.2325.0",
+                     "Arch":  "X64",
+                     "PackageFullName":  "Microsoft.WindowsAppRuntime.1.7_7000.785.2325.0_x64__8wekyb3d8bbwe",
+                     "Status":  "Ok"
+                 }
+             ],
+    "appxProvisioned":  [
+                            "Microsoft.DesktopAppInstaller 2026.917.151.0"
+                        ],
+    "wingetPolicy":  {
+
+                     },
+    "worker":  {
+                   "PwshPath":  "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\pwsh\\pwsh.exe",
+                   "PwshFileVersion":  {
+
+                                       },
+                   "PwshRuntime":  {
+
+                                   },
+                   "PwshOnPath":  false,
+                   "ModulePath":  "C:\\Program Files\\SubZeroDev\\FileManager\\Service\\Modules\\Microsoft.WinGet.Client\\1.29.380",
+                   "ModuleFileCount":  {
+
+                                       },
+                   "ModuleInMachinePSModulePath":  false,
+                   "ModuleFileHashes":  {
+
+                                        }
+               },
+    "executionAliases":  [
+
+                         ],
+    "packagesAbsent":  {
+                           "PuTTYUninstallKey":  false,
+                           "PuTTYDir":  false,
+                           "SevenZipUninstallKey":  false,
+                           "SevenZipDir":  false
+                       },
+    "sessions":  [
+                     {
+                         "SessionId":  "1",
+                         "State":  "Active"
+                     }
+                 ],
+    "autoAdminLogon":  "0",
+    "network":  {
+                    "WinHttpProxy":  "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+                    "CdnReachable":  200
+                },
+    "shares":  [
+
+               ]
+}

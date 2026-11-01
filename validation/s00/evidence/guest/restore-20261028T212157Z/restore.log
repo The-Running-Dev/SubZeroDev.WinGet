@@ -1,0 +1,1 @@
+[2026-10-28T21:21:57.0418359Z] STOPPED: No evidence\guest\provisioning-* folder with checkpoint.json; run Invoke-S00Provisioning.ps1 first.

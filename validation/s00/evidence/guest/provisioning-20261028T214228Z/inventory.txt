@@ -1,0 +1,2 @@
+C:\ProgramData\SubZeroDev\FileManager\Validation\Evidence\S00-inventory-20261028T214228Z.json
+BASELINE PASS (Windows 11 Pro 26H2 x64)
